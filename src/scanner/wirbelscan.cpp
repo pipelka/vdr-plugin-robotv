@@ -32,149 +32,153 @@ cWirbelScan::cWirbelScan() : m_plugin(NULL) {
 }
 
 cWirbelScan::~cWirbelScan() {
-  if(!IsScanning()) {
-    return;
-  }
+    if(!IsScanning()) {
+        return;
+    }
 
-  WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
-  cmd.cmd = WIRBELSCAN_SERVICE::CmdStopScan;
-  DoCmd(cmd);
+    WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
+    cmd.cmd = WIRBELSCAN_SERVICE::CmdStopScan;
+    DoCmd(cmd);
 }
 
 bool cWirbelScan::Connect() {
-  if(m_plugin == NULL) {
-    m_plugin = cPluginManager::GetPlugin("wirbelscan");
-  }
+    if(m_plugin == NULL) {
+        m_plugin = cPluginManager::GetPlugin("wirbelscan");
+    }
 
-  if(m_plugin == NULL) {
-    ERRORLOG("Unable to connect to wirbelscan plugin !");
-    return false;
-  }
+    if(m_plugin == NULL) {
+        ERRORLOG("Unable to connect to wirbelscan plugin !");
+        return false;
+    }
 
-  INFOLOG("Connected to wirbelscan plugin ...");
+    INFOLOG("Connected to wirbelscan plugin ...");
 
-  cWirbelscanInfo info;
-  if(GetVersion(&info)) {
-    INFOLOG("wirbelscan plugin version: %s", info.PluginVersion);
-  }
-  else {
-    ERRORLOG("unable to fetch version information !");
-  }
+    cWirbelscanInfo info;
 
-  return true;
+    if(GetVersion(&info)) {
+        INFOLOG("wirbelscan plugin version: %s", info.PluginVersion);
+    }
+    else {
+        ERRORLOG("unable to fetch version information !");
+    }
+
+    return true;
 }
 
 bool cWirbelScan::GetVersion(cWirbelscanInfo* info) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  return m_plugin->Service(SPlugin "" SInfo, info);
+    return m_plugin->Service(SPlugin "" SInfo, info);
 }
 
 bool cWirbelScan::DoCmd(cWirbelscanCmd& cmd) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  if(!m_plugin->Service(SPlugin "" SCommand, &cmd)) {
-    cmd.replycode = false;
-  }
+    if(!m_plugin->Service(SPlugin "" SCommand, &cmd)) {
+        cmd.replycode = false;
+    }
 
-  return cmd.replycode;
+    return cmd.replycode;
 }
 
 bool cWirbelScan::GetStatus(cWirbelscanStatus& status) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  return m_plugin->Service(SPlugin "Get" SStatus, &status);
+    return m_plugin->Service(SPlugin "Get" SStatus, &status);
 }
 
 bool cWirbelScan::GetSetup(cWirbelscanScanSetup& param) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  return m_plugin->Service(SPlugin "Get" SSetup, &param);
+    return m_plugin->Service(SPlugin "Get" SSetup, &param);
 }
 
 bool cWirbelScan::SetSetup(cWirbelscanScanSetup& param) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  return m_plugin->Service(SPlugin "Set" SSetup, &param);
+    return m_plugin->Service(SPlugin "Set" SSetup, &param);
 }
 
 bool cWirbelScan::GetCountry(cWirbelScan::List& list) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  if(!m_plugin->Service(SPlugin "Get" SCountry, NULL)) {
-    return false;
-  }
+    if(!m_plugin->Service(SPlugin "Get" SCountry, NULL)) {
+        return false;
+    }
 
-  cPreAllocBuffer b = {0, 0, NULL};
-  m_plugin->Service(SPlugin "Get" SCountry, &b);
+    cPreAllocBuffer b = {0, 0, NULL};
+    m_plugin->Service(SPlugin "Get" SCountry, &b);
 
-  SListItem* buffer = new SListItem[b.size];
+    SListItem* buffer = new SListItem[b.size];
 
-  b.buffer = buffer;
-  m_plugin->Service(SPlugin "Get" SCountry, &b);
+    b.buffer = buffer;
+    m_plugin->Service(SPlugin "Get" SCountry, &b);
 
-  list.clear();
-  for(uint32_t i = 0; i < b.count; i++) {
-    list.push_back(b.buffer[i]);
-  }
+    list.clear();
 
-  return true;
+    for(uint32_t i = 0; i < b.count; i++) {
+        list.push_back(b.buffer[i]);
+    }
+
+    return true;
 }
 
 bool cWirbelScan::GetSat(cWirbelScan::List& list) {
-  if(m_plugin == NULL) {
-    return false;
-  }
+    if(m_plugin == NULL) {
+        return false;
+    }
 
-  if(!m_plugin->Service(SPlugin "Get" SSat, NULL)) {
-    return false;
-  }
+    if(!m_plugin->Service(SPlugin "Get" SSat, NULL)) {
+        return false;
+    }
 
-  cPreAllocBuffer b = {0, 0, NULL};
-  m_plugin->Service(SPlugin "Get" SSat, &b);
+    cPreAllocBuffer b = {0, 0, NULL};
+    m_plugin->Service(SPlugin "Get" SSat, &b);
 
-  SListItem* buffer = new SListItem[b.size];
+    SListItem* buffer = new SListItem[b.size];
 
-  b.buffer = buffer;
-  m_plugin->Service(SPlugin "Get" SSat, &b);
+    b.buffer = buffer;
+    m_plugin->Service(SPlugin "Get" SSat, &b);
 
-  list.clear();
-  for(uint32_t i = 0; i < b.count; i++) {
-    list.push_back(b.buffer[i]);
-  }
+    list.clear();
 
-  return true;
+    for(uint32_t i = 0; i < b.count; i++) {
+        list.push_back(b.buffer[i]);
+    }
+
+    return true;
 }
 
 bool cWirbelScan::IsScanning() {
-  cWirbelscanStatus status;
-  if(!GetStatus(status)) {
-    return false;
-  }
+    cWirbelscanStatus status;
 
-  return status.status == StatusScanning;
+    if(!GetStatus(status)) {
+        return false;
+    }
+
+    return status.status == StatusScanning;
 }
 
 // currently unused
 
 bool cWirbelScan::GetUser(cUserTransponder& transponder) {
-  return false;
+    return false;
 }
 
 // currently unused
 
 bool cWirbelScan::SetUser(cUserTransponder& transponder) {
-  return false;
+    return false;
 }

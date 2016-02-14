@@ -8,44 +8,44 @@
 #ifdef WIN32
 
 uint32_t htobe32(uint32_t u) {
-	return (u >> 24) | ((u >> 8) & 0xff00) | ((u << 8) & 0xff0000) | (u << 24);
+    return (u >> 24) | ((u >> 8) & 0xff00) | ((u << 8) & 0xff0000) | (u << 24);
 }
 
 uint64_t htobe64(uint64_t u) {
-	return ((uint64_t) htobe32((uint32_t) u) << 32) | htobe32((uint32_t)(u >> 32));
+    return ((uint64_t) htobe32((uint32_t) u) << 32) | htobe32((uint32_t)(u >> 32));
 }
 
 uint16_t htobe16(uint16_t u) {
-	return (u >> 8) | ((u & 0xff) << 8);
+    return (u >> 8) | ((u & 0xff) << 8);
 }
 
 uint32_t be32toh(uint32_t u) {
-	return (u << 24) | ((u << 8) & 0xff0000) | ((u >> 8) & 0xff00) | (u >> 24);
+    return (u << 24) | ((u << 8) & 0xff0000) | ((u >> 8) & 0xff00) | (u >> 24);
 }
 
 uint64_t be64toh(uint64_t u) {
-	return ((uint64_t) be32toh((uint32_t) u) << 32) | be32toh((uint32_t)(u >> 32));
+    return ((uint64_t) be32toh((uint32_t) u) << 32) | be32toh((uint32_t)(u >> 32));
 }
 
 uint16_t be16toh(uint16_t u) {
-	return (u >> 8) | (u & 0xff) << 8;
+    return (u >> 8) | (u & 0xff) << 8;
 }
 
 bool pollfd(int fd, int timeout_ms, bool in) {
-	fd_set fds;
-	struct timeval tv;
+    fd_set fds;
+    struct timeval tv;
 
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
 
-	tv.tv_sec = timeout_ms / 1000;
-	tv.tv_usec = 1000 * (timeout_ms % 1000);
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = 1000 * (timeout_ms % 1000);
 
-	if(in) {
-		return (select(fd + 1, &fds, NULL, NULL, &tv) > 0);
-	}
+    if(in) {
+        return (select(fd + 1, &fds, NULL, NULL, &tv) > 0);
+    }
 
-	return (select(fd + 1, NULL, &fds, NULL, &tv) > 0);
+    return (select(fd + 1, NULL, &fds, NULL, &tv) > 0);
 }
 
 // LINUX / OTHER
@@ -55,12 +55,12 @@ bool pollfd(int fd, int timeout_ms, bool in) {
 #include <poll.h>
 
 bool pollfd(int fd, int timeout_ms, bool in) {
-	struct pollfd p;
-	p.fd = fd;
-	p.events = in ? POLLIN : POLLOUT;
-	p.revents = 0;
+    struct pollfd p;
+    p.fd = fd;
+    p.events = in ? POLLIN : POLLOUT;
+    p.revents = 0;
 
-	return (::poll(&p, 1, timeout_ms) > 0);
+    return (::poll(&p, 1, timeout_ms) > 0);
 }
 #endif
 
@@ -68,55 +68,54 @@ bool pollfd(int fd, int timeout_ms, bool in) {
 
 bool setsock_nonblock(int fd, bool nonblock) {
 #ifdef WIN32
-	u_long sval = nonblock;
-	return (ioctlsocket(fd, FIONBIO, &sval) == 0);
+    u_long sval = nonblock;
+    return (ioctlsocket(fd, FIONBIO, &sval) == 0);
 #else
-	return (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) != -1);
+    return (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) != -1);
 #endif
 }
 
 int socketread(int fd, uint8_t* data, int datalen, int timeout_ms) {
-        int read = 0;
+    int read = 0;
 
-        while(read < datalen) {
-                if(pollfd(fd, timeout_ms, true) == 0) {
-                        return ETIMEDOUT;
-                }
-
-                int rc = recv(fd, (char*)(data + read), datalen - read, MSG_DONTWAIT);
-
-                if(rc == -1 && sockerror() == ENOTSOCK) {
-                        rc = ::read(fd, data + read, datalen - read);
-                }
-
-                if(rc == 0) {
-                        return ECONNRESET;
-                }
-                else if(rc == -1) {
-                        if(sockerror() == SEWOULDBLOCK) {
-                                continue;
-                        }
-
-                        return sockerror();
-                }
-
-                read += rc;
+    while(read < datalen) {
+        if(pollfd(fd, timeout_ms, true) == 0) {
+            return ETIMEDOUT;
         }
 
-        return 0;
+        int rc = recv(fd, (char*)(data + read), datalen - read, MSG_DONTWAIT);
+
+        if(rc == -1 && sockerror() == ENOTSOCK) {
+            rc = ::read(fd, data + read, datalen - read);
+        }
+
+        if(rc == 0) {
+            return ECONNRESET;
+        }
+        else if(rc == -1) {
+            if(sockerror() == SEWOULDBLOCK) {
+                continue;
+            }
+
+            return sockerror();
+        }
+
+        read += rc;
+    }
+
+    return 0;
 }
 
-char *xvdr_inet_ntoa(in6_addr addr)
-{
-	static char buff[INET6_ADDRSTRLEN];
+char* xvdr_inet_ntoa(in6_addr addr) {
+    static char buff[INET6_ADDRSTRLEN];
 
-	if (IN6_IS_ADDR_V4MAPPED(&addr) || IN6_IS_ADDR_V4COMPAT(&addr))
-	{
-		snprintf(buff, sizeof(buff), "%d.%d.%d.%d",
-			addr.s6_addr[12], addr.s6_addr[13], addr.s6_addr[14], addr.s6_addr[15]);
-	}
-	else
-		inet_ntop(AF_INET6, &(addr.s6_addr), buff, INET6_ADDRSTRLEN);
+    if(IN6_IS_ADDR_V4MAPPED(&addr) || IN6_IS_ADDR_V4COMPAT(&addr)) {
+        snprintf(buff, sizeof(buff), "%d.%d.%d.%d",
+                 addr.s6_addr[12], addr.s6_addr[13], addr.s6_addr[14], addr.s6_addr[15]);
+    }
+    else {
+        inet_ntop(AF_INET6, &(addr.s6_addr), buff, INET6_ADDRSTRLEN);
+    }
 
-	return buff;
+    return buff;
 }

@@ -25,52 +25,56 @@
 #include "demuxer_PES.h"
 #include "vdr/remux.h"
 
-cParserPES::cParserPES(cTSDemuxer *demuxer, int buffersize) : cParser(demuxer, buffersize, 0), m_length(0) {
-  m_startup = true;
+cParserPES::cParserPES(cTSDemuxer* demuxer, int buffersize) : cParser(demuxer, buffersize, 0), m_length(0) {
+    m_startup = true;
 }
 
-void cParserPES::Parse(unsigned char *data, int size, bool pusi) {
+void cParserPES::Parse(unsigned char* data, int size, bool pusi) {
 
-  // packet completely assembled ?
-  if(!m_startup) {
-    int length = 0;
-    uint8_t* buffer = Get(length);
+    // packet completely assembled ?
+    if(!m_startup) {
+        int length = 0;
+        uint8_t* buffer = Get(length);
 
-    if(((length >= m_length && m_length != 0) || (m_length == 0 && pusi)) && buffer != NULL) {
-      // get buffer size for packets with undefined length
-      if(m_length == 0)
-        m_length = Available();
+        if(((length >= m_length && m_length != 0) || (m_length == 0 && pusi)) && buffer != NULL) {
+            // get buffer size for packets with undefined length
+            if(m_length == 0) {
+                m_length = Available();
+            }
 
-      // parse payload
-      int len = ParsePayload(buffer, m_length);
+            // parse payload
+            int len = ParsePayload(buffer, m_length);
 
-      // send payload data
-      SendPayload(buffer, len);
+            // send payload data
+            SendPayload(buffer, len);
 
-      m_curDTS = DVD_NOPTS_VALUE;
-      m_curPTS = DVD_NOPTS_VALUE;
+            m_curDTS = DVD_NOPTS_VALUE;
+            m_curPTS = DVD_NOPTS_VALUE;
+        }
     }
-  }
 
-  // new packet
-  if(pusi) {
-    // get packet payload length
-    if(PesHasLength(data))
-      m_length = PesLength(data) - PesPayloadOffset(data);
-    else
-      m_length = 0;
+    // new packet
+    if(pusi) {
+        // get packet payload length
+        if(PesHasLength(data)) {
+            m_length = PesLength(data) - PesPayloadOffset(data);
+        }
+        else {
+            m_length = 0;
+        }
 
-    // strip PES header
-    int offset = ParsePESHeader(data, size);
-    data += offset;
-    size -= offset;
-    m_startup = false;
+        // strip PES header
+        int offset = ParsePESHeader(data, size);
+        data += offset;
+        size -= offset;
+        m_startup = false;
 
-    // reset buffer
-    Clear();
-  }
+        // reset buffer
+        Clear();
+    }
 
-  // we start with the beginning of a packet
-  if(!m_startup)
-    Put(data, size);
+    // we start with the beginning of a packet
+    if(!m_startup) {
+        Put(data, size);
+    }
 }

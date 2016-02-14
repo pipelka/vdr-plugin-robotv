@@ -30,27 +30,26 @@
 
 class cBitStream;
 
-class cParserLATM : public cParser
-{
+class cParserLATM : public cParser {
 public:
 
-  cParserLATM(cTSDemuxer *demuxer);
+    cParserLATM(cTSDemuxer* demuxer);
 
 protected:
 
-  int ParsePayload(unsigned char* data, int len);
+    int ParsePayload(unsigned char* data, int len);
 
-  void SendPayload(unsigned char* payload, int length);
+    void SendPayload(unsigned char* payload, int length);
 
-  bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
 
-  void ReadStreamMuxConfig(cBitStream *bs);
+    void ReadStreamMuxConfig(cBitStream* bs);
 
-  void ReadAudioSpecificConfig(cBitStream *bs);
+    void ReadAudioSpecificConfig(cBitStream* bs);
 
 private:
 
-  int m_samplerateindex;
+    int m_samplerateindex;
 
 };
 

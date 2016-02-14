@@ -34,40 +34,40 @@
 class cWirbelScan {
 public:
 
-  typedef std::list<WIRBELSCAN_SERVICE::SListItem> List;
+    typedef std::list<WIRBELSCAN_SERVICE::SListItem> List;
 
-  cWirbelScan();
+    cWirbelScan();
 
-  virtual ~cWirbelScan();
+    virtual ~cWirbelScan();
 
-  bool Connect();
+    bool Connect();
 
-  bool GetVersion(WIRBELSCAN_SERVICE::cWirbelscanInfo* info);
+    bool GetVersion(WIRBELSCAN_SERVICE::cWirbelscanInfo* info);
 
-  bool DoCmd(WIRBELSCAN_SERVICE::cWirbelscanCmd& cmd);
+    bool DoCmd(WIRBELSCAN_SERVICE::cWirbelscanCmd& cmd);
 
-  bool GetStatus(WIRBELSCAN_SERVICE::cWirbelscanStatus& status);
+    bool GetStatus(WIRBELSCAN_SERVICE::cWirbelscanStatus& status);
 
-  bool GetSetup(WIRBELSCAN_SERVICE::cWirbelscanScanSetup& param);
+    bool GetSetup(WIRBELSCAN_SERVICE::cWirbelscanScanSetup& param);
 
-  bool SetSetup(WIRBELSCAN_SERVICE::cWirbelscanScanSetup& param);
+    bool SetSetup(WIRBELSCAN_SERVICE::cWirbelscanScanSetup& param);
 
-  bool GetCountry(List& list);
+    bool GetCountry(List& list);
 
-  bool GetSat(List& list);
+    bool GetSat(List& list);
 
-  bool IsScanning();
+    bool IsScanning();
 
-  // get/set user are currently unused
-  // always returning false
+    // get/set user are currently unused
+    // always returning false
 
-  bool GetUser(WIRBELSCAN_SERVICE::cUserTransponder& transponder);
+    bool GetUser(WIRBELSCAN_SERVICE::cUserTransponder& transponder);
 
-  bool SetUser(WIRBELSCAN_SERVICE::cUserTransponder& transponder);
+    bool SetUser(WIRBELSCAN_SERVICE::cUserTransponder& transponder);
 
 protected:
 
-  cPlugin* m_plugin;
+    cPlugin* m_plugin;
 
 };
 

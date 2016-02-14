@@ -31,57 +31,56 @@
 
 class MsgPacket;
 
-class cLiveQueue : public cThread, protected std::queue<MsgPacket*>
-{
+class cLiveQueue : public cThread, protected std::queue<MsgPacket*> {
 public:
 
-  cLiveQueue(int s);
+    cLiveQueue(int s);
 
-  virtual ~cLiveQueue();
+    virtual ~cLiveQueue();
 
-  bool Add(MsgPacket* p, cStreamInfo::Content content);
+    bool Add(MsgPacket* p, cStreamInfo::Content content);
 
-  void Request();
+    void Request();
 
-  bool Pause(bool on = true);
+    bool Pause(bool on = true);
 
-  bool IsPaused();
+    bool IsPaused();
 
-  bool TimeShiftMode();
+    bool TimeShiftMode();
 
-  static void SetTimeShiftDir(const cString& dir);
+    static void SetTimeShiftDir(const cString& dir);
 
-  static void SetBufferSize(uint64_t s);
+    static void SetBufferSize(uint64_t s);
 
-  static void RemoveTimeShiftFiles();
+    static void RemoveTimeShiftFiles();
 
-  void Cleanup();
+    void Cleanup();
 
 protected:
 
-  void Action();
+    void Action();
 
-  void CloseTimeShift();
+    void CloseTimeShift();
 
-  int m_socket;
+    int m_socket;
 
-  int m_readfd;
+    int m_readfd;
 
-  int m_writefd;
+    int m_writefd;
 
-  bool m_pause;
+    bool m_pause;
 
-  cMutex m_lock;
+    cMutex m_lock;
 
-  cCondWait m_cond;
+    cCondWait m_cond;
 
-  cString m_storage;
+    cString m_storage;
 
-  int m_queuesize;
+    int m_queuesize;
 
-  static cString TimeShiftDir;
+    static cString TimeShiftDir;
 
-  static uint64_t BufferSize;
+    static uint64_t BufferSize;
 };
 
 #endif // XVDR_LIVEQUEUE_H

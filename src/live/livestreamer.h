@@ -47,82 +47,83 @@ class cLiveQueue;
 class cXVDRClient;
 
 class cLiveStreamer : public cThread
-                    , public cRingBufferLinear
-                    , public cReceiver
-                    , public cTSDemuxer::Listener
-{
+    , public cRingBufferLinear
+    , public cReceiver
+        , public cTSDemuxer::Listener {
 private:
-  friend class cTSDemuxer;
-  friend class cChannelCache;
+    friend class cTSDemuxer;
+    friend class cChannelCache;
 
-  void Detach(void);
-  bool Attach(void);
-  cTSDemuxer *FindStreamDemuxer(int Pid);
+    void Detach(void);
+    bool Attach(void);
+    cTSDemuxer* FindStreamDemuxer(int Pid);
 
-  void reorderStreams(int lang, cStreamInfo::Type type);
+    void reorderStreams(int lang, cStreamInfo::Type type);
 
-  void sendStreamChange();
-  void sendStatus(int status);
-  void sendDetach();
+    void sendStreamChange();
+    void sendStatus(int status);
+    void sendDetach();
 
-  cDevice          *m_Device;                       /*!> The receiving device the channel depents to */
-  cDemuxerBundle    m_Demuxers;
-  bool              m_startup;
-  bool              m_requestStreamChange;
-  uint32_t          m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
-  cTimeMs           m_last_tick;
-  bool              m_SignalLost;
-  int               m_LanguageIndex;
-  cStreamInfo::Type m_LangStreamType;
-  cLiveQueue*       m_Queue;
-  uint32_t          m_uid;
-  bool              m_ready;
-  uint32_t          m_protocolVersion;
-  bool              m_waitforiframe;
-  cXVDRClient*      m_parent;
-  bool              m_rawPTS;
+    cDevice*          m_Device;                       /*!> The receiving device the channel depents to */
+    cDemuxerBundle    m_Demuxers;
+    bool              m_startup;
+    bool              m_requestStreamChange;
+    uint32_t          m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
+    cTimeMs           m_last_tick;
+    bool              m_SignalLost;
+    int               m_LanguageIndex;
+    cStreamInfo::Type m_LangStreamType;
+    cLiveQueue*       m_Queue;
+    uint32_t          m_uid;
+    bool              m_ready;
+    uint32_t          m_protocolVersion;
+    bool              m_waitforiframe;
+    cXVDRClient*      m_parent;
+    bool              m_rawPTS;
 
-  std::mutex m_mutex;
+    std::mutex m_mutex;
 
 protected:
 
-  void Action(void);
+    void Action(void);
 
 #if VDRVERSNUM < 20300
-  void Receive(uchar *Data, int Length);
+    void Receive(uchar* Data, int Length);
 #else
-  void Receive(const uchar *Data, int Length);
+    void Receive(const uchar* Data, int Length);
 #endif
 
-  int SwitchChannel(const cChannel *channel);
+    int SwitchChannel(const cChannel* channel);
 
 private:
 
-  void TryChannelSwitch();
+    void TryChannelSwitch();
 
-  void CreateDemuxers(cStreamBundle* bundle);
+    void CreateDemuxers(cStreamBundle* bundle);
 
 public:
-  cLiveStreamer(cXVDRClient* parent, const cChannel *channel, int priority, bool rawPTS = false);
-  virtual ~cLiveStreamer();
+    cLiveStreamer(cXVDRClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
+    virtual ~cLiveStreamer();
 
-  bool IsReady();
-  bool IsStarting() { return m_startup; }
-  bool IsPaused();
-  bool TimeShiftMode();
+    bool IsReady();
+    bool IsStarting() {
+        return m_startup;
+    }
+    bool IsPaused();
+    bool TimeShiftMode();
 
-  void SetLanguage(int lang, cStreamInfo::Type streamtype = cStreamInfo::stAC3);
-  void SetTimeout(uint32_t timeout);
-  void SetProtocolVersion(uint32_t protocolVersion);
-  void SetWaitForIFrame(bool waitforiframe);
+    void SetLanguage(int lang, cStreamInfo::Type streamtype = cStreamInfo::stAC3);
+    void SetTimeout(uint32_t timeout);
+    void SetProtocolVersion(uint32_t protocolVersion);
+    void SetWaitForIFrame(bool waitforiframe);
 
-  void Pause(bool on);
-  void RequestPacket();
-  void RequestSignalInfo();
+    void Pause(bool on);
+    void RequestPacket();
+    void RequestSignalInfo();
 
-  void ChannelChange(const cChannel* Channel);
-  void sendStreamPacket(sStreamPacket *pkt);
-  void RequestStreamChange();
+    void ChannelChange(const cChannel* Channel);
+    void sendStreamPacket(sStreamPacket* pkt);
+    void RequestStreamChange();
 
 };
 

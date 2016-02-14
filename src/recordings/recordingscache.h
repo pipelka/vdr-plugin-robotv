@@ -32,51 +32,50 @@
 #include <vdr/recording.h>
 #include "db/storage.h"
 
-class cRecordingsCache
-{
+class cRecordingsCache {
 protected:
 
-  cRecordingsCache();
+    cRecordingsCache();
 
-  virtual ~cRecordingsCache();
+    virtual ~cRecordingsCache();
 
 public:
 
-  static cRecordingsCache& GetInstance();
+    static cRecordingsCache& GetInstance();
 
-  uint32_t Register(cRecording* recording);
+    uint32_t Register(cRecording* recording);
 
-  cRecording* Lookup(uint32_t uid);
+    cRecording* Lookup(uint32_t uid);
 
-  void SetPlayCount(uint32_t uid, int count);
+    void SetPlayCount(uint32_t uid, int count);
 
-  void SetLastPlayedPosition(uint32_t uid, uint64_t position);
+    void SetLastPlayedPosition(uint32_t uid, uint64_t position);
 
-  int GetPlayCount(uint32_t uid);
+    int GetPlayCount(uint32_t uid);
 
-  uint64_t GetLastPlayedPosition(uint32_t uid);
+    uint64_t GetLastPlayedPosition(uint32_t uid);
 
-  void SetPosterUrl(uint32_t uid, const char* url);
+    void SetPosterUrl(uint32_t uid, const char* url);
 
-  void SetBackgroundUrl(uint32_t uid, const char* url);
+    void SetBackgroundUrl(uint32_t uid, const char* url);
 
-  void SetMovieID(uint32_t uid, uint32_t id);
+    void SetMovieID(uint32_t uid, uint32_t id);
 
-  cString GetPosterUrl(uint32_t uid);
+    cString GetPosterUrl(uint32_t uid);
 
-  cString GetBackgroundUrl(uint32_t uid);
+    cString GetBackgroundUrl(uint32_t uid);
 
-  void gc();
+    void gc();
 
 protected:
 
-  void Update();
+    void Update();
 
-  void CreateDB();
+    void CreateDB();
 
 private:
 
-  XVDR::Storage& m_storage;
+    XVDR::Storage& m_storage;
 };
 
 

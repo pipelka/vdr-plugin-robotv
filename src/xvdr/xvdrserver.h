@@ -33,26 +33,25 @@
 
 class cXVDRClient;
 
-class cXVDRServer : public cThread
-{
+class cXVDRServer : public cThread {
 protected:
 
-  typedef std::list<cXVDRClient*> ClientList;
+    typedef std::list<cXVDRClient*> ClientList;
 
-  virtual void Action(void);
-  void NewClientConnected(int fd);
+    virtual void Action(void);
+    void NewClientConnected(int fd);
 
-  int           m_ServerPort;
-  int           m_ServerFD;
-  bool          m_IPv4Fallback;
-  cString       m_AllowedHostsFile;
-  ClientList    m_clients;
+    int           m_ServerPort;
+    int           m_ServerFD;
+    bool          m_IPv4Fallback;
+    cString       m_AllowedHostsFile;
+    ClientList    m_clients;
 
-  static unsigned int m_IdCnt;
+    static unsigned int m_IdCnt;
 
 public:
-  cXVDRServer(int listenPort);
-  virtual ~cXVDRServer();
+    cXVDRServer(int listenPort);
+    virtual ~cXVDRServer();
 };
 
 #endif // XVDR_SERVER_H

@@ -31,97 +31,98 @@
 static const uint16_t FrequencyTable[3] = { 44100, 48000, 32000 };
 
 static const uint16_t BitrateTable[2][3][15] = {
-  {
-    {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
-    {0, 32, 48, 56, 64,  80,  96,  112, 128, 160, 192, 224, 256, 320, 384 },
-    {0, 32, 40, 48, 56,  64,  80,  96,  112, 128, 160, 192, 224, 256, 320 }
-  },
-  {
-    {0, 32, 48, 56, 64,  80,  96,  112, 128, 144, 160, 176, 192, 224, 256},
-    {0, 8,  16, 24, 32,  40,  48,  56,  64,  80,  96,  112, 128, 144, 160},
-    {0, 8,  16, 24, 32,  40,  48,  56,  64,  80,  96,  112, 128, 144, 160}
-  }
+    {
+        {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
+        {0, 32, 48, 56, 64,  80,  96,  112, 128, 160, 192, 224, 256, 320, 384 },
+        {0, 32, 40, 48, 56,  64,  80,  96,  112, 128, 160, 192, 224, 256, 320 }
+    },
+    {
+        {0, 32, 48, 56, 64,  80,  96,  112, 128, 144, 160, 176, 192, 224, 256},
+        {0, 8,  16, 24, 32,  40,  48,  56,  64,  80,  96,  112, 128, 144, 160},
+        {0, 8,  16, 24, 32,  40,  48,  56,  64,  80,  96,  112, 128, 144, 160}
+    }
 };
 
 static const int Coefficients[2][3] = {
-  { 12, 144, 144 },
-  { 12, 144, 72 }
+    { 12, 144, 144 },
+    { 12, 144, 72 }
 };
 
 const int SlotSizes[3] = { 4, 1, 1 };
 
 
-cParserMPEG2Audio::cParserMPEG2Audio(cTSDemuxer *demuxer) : cParser(demuxer, 64 * 1024, 2048)
-{
-  m_headersize = 4;
+cParserMPEG2Audio::cParserMPEG2Audio(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 2048) {
+    m_headersize = 4;
 }
 
-bool cParserMPEG2Audio::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int &bitrate, int& framesize)
-{
-  uint32_t header = ((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] <<  8) | buffer[3]);
+bool cParserMPEG2Audio::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& bitrate, int& framesize) {
+    uint32_t header = ((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] <<  8) | buffer[3]);
 
-  // syncword FFE
-  if ((header & 0xffe00000) != 0xffe00000)
-    return false;
+    // syncword FFE
+    if((header & 0xffe00000) != 0xffe00000) {
+        return false;
+    }
 
-  int lsf = 0;
-  int mpeg25 = 0;
+    int lsf = 0;
+    int mpeg25 = 0;
 
-  // MPEG 2.5 ?
-  if (header & (1<<20))
-  {
-    lsf = (header & (1<<19)) ? 0 : 1;
-    mpeg25 = 0;
-  }
-  else
-  {
-    lsf = 1;
-    mpeg25 = 1;
-  }
+    // MPEG 2.5 ?
+    if(header & (1 << 20)) {
+        lsf = (header & (1 << 19)) ? 0 : 1;
+        mpeg25 = 0;
+    }
+    else {
+        lsf = 1;
+        mpeg25 = 1;
+    }
 
-  // get header properties
-  int layer             = 4 - ((header >> 17) & 3);
-  int sample_rate_index = (header >> 10) & 3;
-  bool padding          = (header >> 9) & 1;
-  samplerate            = FrequencyTable[sample_rate_index] >> (lsf + mpeg25);
-  int bitrate_index     = (header >> 12) & 0xf;
-  int mode              = (header >> 6) & 3;
+    // get header properties
+    int layer             = 4 - ((header >> 17) & 3);
+    int sample_rate_index = (header >> 10) & 3;
+    bool padding          = (header >> 9) & 1;
+    samplerate            = FrequencyTable[sample_rate_index] >> (lsf + mpeg25);
+    int bitrate_index     = (header >> 12) & 0xf;
+    int mode              = (header >> 6) & 3;
 
-  // valid layer ?
-  if (layer == 0 || layer == 4)
-    return false;
+    // valid layer ?
+    if(layer == 0 || layer == 4) {
+        return false;
+    }
 
-  // number of channels
-  channels = 2 - (mode == MPA_MONO);
+    // number of channels
+    channels = 2 - (mode == MPA_MONO);
 
-  // valid bit rate ?
-  if (bitrate_index >= 15)
-    return false;
+    // valid bit rate ?
+    if(bitrate_index >= 15) {
+        return false;
+    }
 
-  bitrate = BitrateTable[lsf][layer - 1][bitrate_index] * 1000;
+    bitrate = BitrateTable[lsf][layer - 1][bitrate_index] * 1000;
 
-  if(bitrate == 0 || samplerate == 0)
-    return false;
+    if(bitrate == 0 || samplerate == 0) {
+        return false;
+    }
 
-  // frame size in bytes
-  framesize = ((Coefficients[lsf][layer - 1] * bitrate) / samplerate + padding) * SlotSizes[layer - 1];
+    // frame size in bytes
+    framesize = ((Coefficients[lsf][layer - 1] * bitrate) / samplerate + padding) * SlotSizes[layer - 1];
 
-  return true;
+    return true;
 }
 
 bool cParserMPEG2Audio::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
-  int channels, samplerate, bitrate;
-  return ParseAudioHeader(buffer, channels, samplerate, bitrate, framesize);
+    int channels, samplerate, bitrate;
+    return ParseAudioHeader(buffer, channels, samplerate, bitrate, framesize);
 }
 
 int cParserMPEG2Audio::ParsePayload(unsigned char* payload, int length) {
-  int framesize = 0;
+    int framesize = 0;
 
-  if(!ParseAudioHeader(payload, m_channels, m_samplerate, m_bitrate, framesize))
+    if(!ParseAudioHeader(payload, m_channels, m_samplerate, m_bitrate, framesize)) {
+        return length;
+    }
+
+    m_duration = (framesize * 8 * 1000 * 90) / m_bitrate;
+
+    m_demuxer->SetAudioInformation(m_channels, m_samplerate, m_bitrate, 0, 0);
     return length;
-
-  m_duration = (framesize * 8 * 1000 * 90) / m_bitrate;
-
-  m_demuxer->SetAudioInformation(m_channels, m_samplerate, m_bitrate, 0, 0);
-  return length;
 }

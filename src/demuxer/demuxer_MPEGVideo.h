@@ -29,27 +29,26 @@
 #include "streaminfo.h"
 #include <map>
 
-class cParserMPEG2Video : public cParserPES
-{
+class cParserMPEG2Video : public cParserPES {
 public:
 
-  cParserMPEG2Video(cTSDemuxer *demuxer);
+    cParserMPEG2Video(cTSDemuxer* demuxer);
 
 protected:
 
-  int ParsePayload(unsigned char *data, int length);
+    int ParsePayload(unsigned char* data, int length);
 
-  void SendPayload(unsigned char* payload, int length);
+    void SendPayload(unsigned char* payload, int length);
 
 private:
 
-  void ParseSequenceStart(unsigned char* data, int length);
+    void ParseSequenceStart(unsigned char* data, int length);
 
-  cStreamInfo::FrameType ParsePicture(unsigned char* data, int length);
+    cStreamInfo::FrameType ParsePicture(unsigned char* data, int length);
 
-  int64_t m_pdiff;
+    int64_t m_pdiff;
 
-  int64_t m_lastDTS;
+    int64_t m_lastDTS;
 };
 
 #endif // XVDR_DEMUXER_MPEGVIDEO_H

@@ -34,117 +34,123 @@
 class cStreamInfo {
 public:
 
-  enum Content
-  {
-    scNONE,
-    scVIDEO,
-    scAUDIO,
-    scSUBTITLE,
-    scTELETEXT,
-    scSTREAMINFO
-  };
+    enum Content {
+        scNONE,
+        scVIDEO,
+        scAUDIO,
+        scSUBTITLE,
+        scTELETEXT,
+        scSTREAMINFO
+    };
 
-  enum Type
-  {
-    stNONE,
-    stMPEG2AUDIO,
-    stAC3,
-    stEAC3,
-    stAAC,
-    stLATM,
-    stMPEG2VIDEO,
-    stH264,
-    stDVBSUB,
-    stTELETEXT,
-    stH265
-  };
+    enum Type {
+        stNONE,
+        stMPEG2AUDIO,
+        stAC3,
+        stEAC3,
+        stAAC,
+        stLATM,
+        stMPEG2VIDEO,
+        stH264,
+        stDVBSUB,
+        stTELETEXT,
+        stH265
+    };
 
-  enum FrameType{
-    ftUNKNOWN,
-    ftIFRAME,
-    ftPFRAME,
-    ftBFRAME,
-    ftDFRAME
-  };
+    enum FrameType {
+        ftUNKNOWN,
+        ftIFRAME,
+        ftPFRAME,
+        ftBFRAME,
+        ftDFRAME
+    };
 
 public:
 
-  cStreamInfo();
+    cStreamInfo();
 
-  cStreamInfo(int pid, Type type, const char* lang = NULL);
+    cStreamInfo(int pid, Type type, const char* lang = NULL);
 
-  virtual ~cStreamInfo();
+    virtual ~cStreamInfo();
 
-  bool operator ==(const cStreamInfo& rhs) const;
+    bool operator ==(const cStreamInfo& rhs) const;
 
-  bool ismetaof(const cStreamInfo& rhs) const;
+    bool ismetaof(const cStreamInfo& rhs) const;
 
-  bool operator !=(const cStreamInfo& rhs) const;
+    bool operator !=(const cStreamInfo& rhs) const;
 
-  const int GetPID() const { return m_pid; }
+    const int GetPID() const {
+        return m_pid;
+    }
 
-  void SetContent();
+    void SetContent();
 
-  static const Content GetContent(Type type);
+    static const Content GetContent(Type type);
 
-  const Content GetContent() const { return m_content; }
+    const Content GetContent() const {
+        return m_content;
+    }
 
-  const Type GetType() const { return m_type; }
+    const Type GetType() const {
+        return m_type;
+    }
 
-  const char* TypeName();
+    const char* TypeName();
 
-  static const char* TypeName(const cStreamInfo::Type& type);
+    static const char* TypeName(const cStreamInfo::Type& type);
 
-  static const char* ContentName(const cStreamInfo::Content& content);
+    static const char* ContentName(const cStreamInfo::Content& content);
 
-  void info() const;
+    void info() const;
 
-  inline bool IsParsed() { return m_parsed; }
+    inline bool IsParsed() {
+        return m_parsed;
+    }
 
-  void SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId);
+    void SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId);
 
 protected:
 
-  Content m_content;   // stream content (e.g. scVIDEO)
-  Type m_type;         // stream type (e.g. stAC3)
-  int m_pid;           // transport stream pid
+    Content m_content;   // stream content (e.g. scVIDEO)
+    Type m_type;         // stream type (e.g. stAC3)
+    int m_pid;           // transport stream pid
 
-  char m_language[4];  // ISO 639 3-letter language code (empty string if undefined)
-  uint8_t m_audiotype; // ISO 639 audio type
+    char m_language[4];  // ISO 639 3-letter language code (empty string if undefined)
+    uint8_t m_audiotype; // ISO 639 audio type
 
-  int m_fpsscale;      // scale of 1000 and a rate of 29970 will result in 29.97 fps
-  int m_fpsrate;
-  int m_height;        // height of the stream reported by the demuxer
-  int m_width;         // width of the stream reported by the demuxer
-  float m_aspect;      // display aspect of stream
+    int m_fpsscale;      // scale of 1000 and a rate of 29970 will result in 29.97 fps
+    int m_fpsrate;
+    int m_height;        // height of the stream reported by the demuxer
+    int m_width;         // width of the stream reported by the demuxer
+    float m_aspect;      // display aspect of stream
 
-  int m_channels;      // number of audio channels (e.g. 6 for 5.1)
-  int m_samplerate;    // number of audio samples per second (e.g. 48000)
-  int m_bitrate;       // audio bitrate (e.g. 160000)
-  int m_bitspersample; // number of bits per audio sample (e.g. 16)
-  int m_blockalign;    // number of bytes per audio block
+    int m_channels;      // number of audio channels (e.g. 6 for 5.1)
+    int m_samplerate;    // number of audio samples per second (e.g. 48000)
+    int m_bitrate;       // audio bitrate (e.g. 160000)
+    int m_bitspersample; // number of bits per audio sample (e.g. 16)
+    int m_blockalign;    // number of bytes per audio block
 
-  bool m_parsed;       // stream parsed flag (if all stream data is known)
+    bool m_parsed;       // stream parsed flag (if all stream data is known)
 
-  unsigned char m_subtitlingtype; // subtitling type
-  uint16_t m_compositionpageid;   // composition page id
-  uint16_t m_ancillarypageid;     // ancillary page id
+    unsigned char m_subtitlingtype; // subtitling type
+    uint16_t m_compositionpageid;   // composition page id
+    uint16_t m_ancillarypageid;     // ancillary page id
 
-  // decoder data
-  uint8_t m_sps[128];  // SPS data (for decoder)
-  uint8_t m_pps[128];  // PPS data (for decoder)
-  uint8_t m_vps[128];  // VPS data (for decoder)
+    // decoder data
+    uint8_t m_sps[128];  // SPS data (for decoder)
+    uint8_t m_pps[128];  // PPS data (for decoder)
+    uint8_t m_vps[128];  // VPS data (for decoder)
 
-  int m_spsLength;     // SPS length
-  int m_ppsLength;     // PPS length
-  int m_vpsLength;     // VPS length
+    int m_spsLength;     // SPS length
+    int m_ppsLength;     // PPS length
+    int m_vpsLength;     // VPS length
 
-  friend MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs);
-  friend MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs);
+    friend MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs);
+    friend MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs);
 
 private:
 
-  void Initialize();
+    void Initialize();
 
 };
 

@@ -43,222 +43,234 @@
 #define DVD_TIME_BASE 1000000
 
 cTSDemuxer::cTSDemuxer(cTSDemuxer::Listener* streamer, const cStreamInfo& info) : cStreamInfo(info), m_Streamer(streamer) {
-  m_pesParser = CreateParser(m_type);
-  SetContent();
+    m_pesParser = CreateParser(m_type);
+    SetContent();
 }
 
 cTSDemuxer::cTSDemuxer(cTSDemuxer::Listener* streamer, cStreamInfo::Type type, int pid) : cStreamInfo(pid, type), m_Streamer(streamer) {
-  m_pesParser = CreateParser(m_type);
+    m_pesParser = CreateParser(m_type);
 }
 
 cParser* cTSDemuxer::CreateParser(cStreamInfo::Type type) {
-  switch(type)
-  {
-    case stMPEG2VIDEO:
-      return new cParserMPEG2Video(this);
-    case stH264:
-      return new cParserH264(this);
-    case stH265:
-      return new cParserH265(this);
-    case stMPEG2AUDIO:
-      return new cParserMPEG2Audio(this);
-    case stAAC:
-      return new cParserADTS(this);
-    case stLATM:
-      return new cParserLATM(this);
-    case stAC3:
-    case stEAC3:
-      return new cParserAC3(this);
-    case stTELETEXT:
-      m_parsed = true;
-      return new cParserPES(this);
-    case stDVBSUB:
-      return new cParserSubtitle(this);
-    default:
-      ERRORLOG("Unrecognized type %i", m_type);
-      m_content = scNONE;
-      m_type = stNONE;
-      break;
-  }
+    switch(type) {
+        case stMPEG2VIDEO:
+            return new cParserMPEG2Video(this);
 
-  return NULL;
+        case stH264:
+            return new cParserH264(this);
+
+        case stH265:
+            return new cParserH265(this);
+
+        case stMPEG2AUDIO:
+            return new cParserMPEG2Audio(this);
+
+        case stAAC:
+            return new cParserADTS(this);
+
+        case stLATM:
+            return new cParserLATM(this);
+
+        case stAC3:
+        case stEAC3:
+            return new cParserAC3(this);
+
+        case stTELETEXT:
+            m_parsed = true;
+            return new cParserPES(this);
+
+        case stDVBSUB:
+            return new cParserSubtitle(this);
+
+        default:
+            ERRORLOG("Unrecognized type %i", m_type);
+            m_content = scNONE;
+            m_type = stNONE;
+            break;
+    }
+
+    return NULL;
 }
 
-cTSDemuxer::~cTSDemuxer()
-{
-  delete m_pesParser;
+cTSDemuxer::~cTSDemuxer() {
+    delete m_pesParser;
 }
 
-int64_t cTSDemuxer::Rescale(int64_t a)
-{
-  uint64_t b = DVD_TIME_BASE;
-  uint64_t c = 90000;
+int64_t cTSDemuxer::Rescale(int64_t a) {
+    uint64_t b = DVD_TIME_BASE;
+    uint64_t c = 90000;
 
-  return (a * b)/c;
+    return (a * b) / c;
 }
 
-void cTSDemuxer::SendPacket(sStreamPacket *pkt)
-{
-  // raw pts/dts
-  pkt->rawdts = pkt->dts;
-  pkt->rawpts = pkt->pts;
+void cTSDemuxer::SendPacket(sStreamPacket* pkt) {
+    // raw pts/dts
+    pkt->rawdts = pkt->dts;
+    pkt->rawpts = pkt->pts;
 
-  int64_t dts = (pkt->dts == DVD_NOPTS_VALUE) ? pkt->dts : Rescale(pkt->dts);
-  int64_t pts = (pkt->pts == DVD_NOPTS_VALUE) ? pkt->pts : Rescale(pkt->pts);
+    int64_t dts = (pkt->dts == DVD_NOPTS_VALUE) ? pkt->dts : Rescale(pkt->dts);
+    int64_t pts = (pkt->pts == DVD_NOPTS_VALUE) ? pkt->pts : Rescale(pkt->pts);
 
-  // Rescale
-  pkt->type     = m_type;
-  pkt->content  = m_content;
-  pkt->pid      = GetPID();
-  pkt->dts      = dts;
-  pkt->pts      = pts;
-  pkt->duration = Rescale(pkt->duration);
+    // Rescale
+    pkt->type     = m_type;
+    pkt->content  = m_content;
+    pkt->pid      = GetPID();
+    pkt->dts      = dts;
+    pkt->pts      = pts;
+    pkt->duration = Rescale(pkt->duration);
 
-  m_Streamer->sendStreamPacket(pkt);
+    m_Streamer->sendStreamPacket(pkt);
 }
 
-bool cTSDemuxer::ProcessTSPacket(unsigned char *data)
-{
-  if (data == NULL)
-    return false;
+bool cTSDemuxer::ProcessTSPacket(unsigned char* data) {
+    if(data == NULL) {
+        return false;
+    }
 
-  bool pusi  = TsPayloadStart(data);
+    bool pusi  = TsPayloadStart(data);
 
-  int bytes = TS_SIZE - TsPayloadOffset(data);
+    int bytes = TS_SIZE - TsPayloadOffset(data);
 
-  if(bytes < 0 || bytes >= TS_SIZE)
-    return false;
+    if(bytes < 0 || bytes >= TS_SIZE) {
+        return false;
+    }
 
-  if (TsIsScrambled(data)) {
-    return false;
-  }
+    if(TsIsScrambled(data)) {
+        return false;
+    }
 
-  if (TsError(data))
-  {
-    ERRORLOG("transport error");
-    return false;
-  }
+    if(TsError(data)) {
+        ERRORLOG("transport error");
+        return false;
+    }
 
-  if (!TsHasPayload(data))
-  {
-    DEBUGLOG("no payload, size %d", bytes);
+    if(!TsHasPayload(data)) {
+        DEBUGLOG("no payload, size %d", bytes);
+        return true;
+    }
+
+    // strip ts header
+    data += TS_SIZE - bytes;
+
+    // valid packet ?
+    if(pusi && !PesIsHeader(data)) {
+        return false;
+    }
+
+    /* Parse the data */
+    if(m_pesParser) {
+        m_pesParser->Parse(data, bytes, pusi);
+    }
+
     return true;
-  }
-
-  // strip ts header
-  data += TS_SIZE - bytes;
-
-  // valid packet ?
-  if (pusi && !PesIsHeader(data))
-    return false;
-
-  /* Parse the data */
-  if (m_pesParser)
-    m_pesParser->Parse(data, bytes, pusi);
-
-  return true;
 }
 
-void cTSDemuxer::SetLanguageDescriptor(const char *language, uint8_t atype)
-{
-  m_language[0] = language[0];
-  m_language[1] = language[1];
-  m_language[2] = language[2];
-  m_language[3] = 0;
-  m_audiotype = atype;
+void cTSDemuxer::SetLanguageDescriptor(const char* language, uint8_t atype) {
+    m_language[0] = language[0];
+    m_language[1] = language[1];
+    m_language[2] = language[2];
+    m_language[3] = 0;
+    m_audiotype = atype;
 }
 
-void cTSDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den)
-{
-  // check for sane picture information
-  if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0)
-    return;
+void cTSDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
+    // check for sane picture information
+    if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0) {
+        return;
+    }
 
-  // only register changed video information
-  if(Width == m_width && Height == m_height && Aspect == m_aspect && FpsScale == m_fpsscale && FpsRate == m_fpsrate)
-    return;
+    // only register changed video information
+    if(Width == m_width && Height == m_height && Aspect == m_aspect && FpsScale == m_fpsscale && FpsRate == m_fpsrate) {
+        return;
+    }
 
-  INFOLOG("--------------------------------------");
-  INFOLOG("NEW PICTURE INFORMATION:");
-  INFOLOG("Picture Width: %i", Width);
-  INFOLOG("Picture Height: %i", Height);
+    INFOLOG("--------------------------------------");
+    INFOLOG("NEW PICTURE INFORMATION:");
+    INFOLOG("Picture Width: %i", Width);
+    INFOLOG("Picture Height: %i", Height);
 
-  if(num != 1 || den != 1)
-    INFOLOG("Pixel Aspect: %i:%i", num, den);
+    if(num != 1 || den != 1) {
+        INFOLOG("Pixel Aspect: %i:%i", num, den);
+    }
 
-  if(Aspect == 0)
-    INFOLOG("Unknown Display Aspect Ratio");
-  else 
-    INFOLOG("Display Aspect Ratio: %.2f", Aspect);
+    if(Aspect == 0) {
+        INFOLOG("Unknown Display Aspect Ratio");
+    }
+    else {
+        INFOLOG("Display Aspect Ratio: %.2f", Aspect);
+    }
 
-  if(FpsScale != 0 && FpsRate != 0) {
-    INFOLOG("Frames per second: %.2lf", (double)FpsRate / (double)FpsScale);
-  }
+    if(FpsScale != 0 && FpsRate != 0) {
+        INFOLOG("Frames per second: %.2lf", (double)FpsRate / (double)FpsScale);
+    }
 
-  INFOLOG("--------------------------------------");
+    INFOLOG("--------------------------------------");
 
-  m_fpsscale = FpsScale;
-  m_fpsrate  = FpsRate;
-  m_height   = Height;
-  m_width    = Width;
-  m_aspect   = Aspect;
-  m_parsed   = true;
+    m_fpsscale = FpsScale;
+    m_fpsrate  = FpsRate;
+    m_height   = Height;
+    m_width    = Width;
+    m_aspect   = Aspect;
+    m_parsed   = true;
 
-  m_Streamer->RequestStreamChange();
+    m_Streamer->RequestStreamChange();
 }
 
-void cTSDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign)
-{
-  // only register changed audio information
-  if(Channels == m_channels && SampleRate == m_samplerate && BitRate == m_bitrate)
-    return;
+void cTSDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
+    // only register changed audio information
+    if(Channels == m_channels && SampleRate == m_samplerate && BitRate == m_bitrate) {
+        return;
+    }
 
-  INFOLOG("--------------------------------------");
-  INFOLOG("NEW AUDIO INFORMATION:");
-  INFOLOG("Channels: %i", Channels);
-  INFOLOG("Samplerate: %i Hz", SampleRate);
-  if(BitRate > 0)
-    INFOLOG("Bitrate: %i bps", BitRate);
-  INFOLOG("--------------------------------------");
+    INFOLOG("--------------------------------------");
+    INFOLOG("NEW AUDIO INFORMATION:");
+    INFOLOG("Channels: %i", Channels);
+    INFOLOG("Samplerate: %i Hz", SampleRate);
 
-  m_channels      = Channels;
-  m_samplerate    = SampleRate;
-  m_blockalign    = BlockAlign;
-  m_bitrate       = BitRate;
-  m_bitspersample = BitsPerSample;
-  m_parsed        = true;
+    if(BitRate > 0) {
+        INFOLOG("Bitrate: %i bps", BitRate);
+    }
 
-  m_Streamer->RequestStreamChange();
+    INFOLOG("--------------------------------------");
+
+    m_channels      = Channels;
+    m_samplerate    = SampleRate;
+    m_blockalign    = BlockAlign;
+    m_bitrate       = BitRate;
+    m_bitspersample = BitsPerSample;
+    m_parsed        = true;
+
+    m_Streamer->RequestStreamChange();
 }
 
 void cTSDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
-  if(sps != NULL) {
-    m_spsLength = spsLength;
-    memcpy(m_sps, sps, spsLength);
-  }
+    if(sps != NULL) {
+        m_spsLength = spsLength;
+        memcpy(m_sps, sps, spsLength);
+    }
 
-  if(pps != NULL) {
-    m_ppsLength = ppsLength;
-    memcpy(m_pps, pps, ppsLength);
-  }
-  
-  if(vps != NULL) {
-    m_vpsLength = vpsLength;
-    memcpy(m_vps, vps, vpsLength);
-  }
+    if(pps != NULL) {
+        m_ppsLength = ppsLength;
+        memcpy(m_pps, pps, ppsLength);
+    }
+
+    if(vps != NULL) {
+        m_vpsLength = vpsLength;
+        memcpy(m_vps, vps, vpsLength);
+    }
 }
 
 uint8_t* cTSDemuxer::GetVideoDecoderSPS(int& length) {
-  length = m_spsLength;
-  return m_spsLength == 0 ? NULL : m_sps;
+    length = m_spsLength;
+    return m_spsLength == 0 ? NULL : m_sps;
 }
 
 uint8_t* cTSDemuxer::GetVideoDecoderPPS(int& length) {
-  length = m_ppsLength;
-  return m_ppsLength == 0 ? NULL : m_pps;
+    length = m_ppsLength;
+    return m_ppsLength == 0 ? NULL : m_pps;
 }
 
 uint8_t* cTSDemuxer::GetVideoDecoderVPS(int& length) {
-  length = m_vpsLength;
-  return m_vpsLength == 0 ? NULL : m_vps;
+    length = m_vpsLength;
+    return m_vpsLength == 0 ? NULL : m_vps;
 }

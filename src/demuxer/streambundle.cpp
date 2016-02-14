@@ -28,200 +28,211 @@ cStreamBundle::cStreamBundle() : m_bChanged(false) {
 }
 
 void cStreamBundle::AddStream(const cStreamInfo& s) {
-  if(s.GetPID() == 0 || s.GetType() == cStreamInfo::stNONE)
-    return;
-
-  // allow only one video stream
-  if(s.GetContent() == cStreamInfo::scVIDEO) {
-    for(iterator i = begin(); i != end(); i++) {
-      if(i->second.GetContent() == cStreamInfo::scVIDEO && i->second.GetPID() != s.GetPID()) {
+    if(s.GetPID() == 0 || s.GetType() == cStreamInfo::stNONE) {
         return;
-      }
     }
-  }
 
-  cStreamInfo old = (*this)[s.GetPID()];
-  (*this)[s.GetPID()] = s;
+    // allow only one video stream
+    if(s.GetContent() == cStreamInfo::scVIDEO) {
+        for(iterator i = begin(); i != end(); i++) {
+            if(i->second.GetContent() == cStreamInfo::scVIDEO && i->second.GetPID() != s.GetPID()) {
+                return;
+            }
+        }
+    }
 
-  m_bChanged = (old != s);
+    cStreamInfo old = (*this)[s.GetPID()];
+    (*this)[s.GetPID()] = s;
+
+    m_bChanged = (old != s);
 }
 
 bool cStreamBundle::IsParsed() {
-  if(empty())
-    return false;
+    if(empty()) {
+        return false;
+    }
 
-  for (iterator i = begin(); i != end(); i++)
-    if(!i->second.IsParsed())
-      return false;
+    for(iterator i = begin(); i != end(); i++)
+        if(!i->second.IsParsed()) {
+            return false;
+        }
 
- return true;
+    return true;
 }
 
 bool cStreamBundle::operator ==(const cStreamBundle& c) const {
-  if (size() != c.size())
-    return false;
+    if(size() != c.size()) {
+        return false;
+    }
 
-  for(const_iterator i = begin(); i != end(); i++)
-    if(!c.contains(i->second))
-      return false;
+    for(const_iterator i = begin(); i != end(); i++)
+        if(!c.contains(i->second)) {
+            return false;
+        }
 
-  return true;
+    return true;
 }
 
 bool cStreamBundle::ismetaof(const cStreamBundle& c) const {
-  if (size() != c.size())
-    return false;
+    if(size() != c.size()) {
+        return false;
+    }
 
-  for(const_iterator i = begin(); i != end(); i++) {
-    const_iterator it = c.find(i->second.GetPID());
-    if(it == c.end())
-      return false;
+    for(const_iterator i = begin(); i != end(); i++) {
+        const_iterator it = c.find(i->second.GetPID());
 
-    if(!i->second.ismetaof(it->second))
-      return false;
-  }
+        if(it == c.end()) {
+            return false;
+        }
 
-  return true;
+        if(!i->second.ismetaof(it->second)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool cStreamBundle::contains(const cStreamInfo& s) const {
-  const_iterator i = find(s.GetPID());
+    const_iterator i = find(s.GetPID());
 
-  if (i == end())
-    return false;
+    if(i == end()) {
+        return false;
+    }
 
-  return (i->second == s);
+    return (i->second == s);
 }
 
 cStreamBundle cStreamBundle::FromPatPmt(const cPatPmtParser* patpmt) {
-  cStreamBundle item;
-  int patVersion = 0;
-  int pmtVersion = 0;
-  
-  if(!patpmt->GetVersions(patVersion, pmtVersion)) {
+    cStreamBundle item;
+    int patVersion = 0;
+    int pmtVersion = 0;
+
+    if(!patpmt->GetVersions(patVersion, pmtVersion)) {
+        return item;
+    }
+
+    // add video stream
+    int vpid = patpmt->Vpid();
+    int vtype = patpmt->Vtype();
+
+    item.AddStream(cStreamInfo(vpid,
+                               vtype == 0x02 ? cStreamInfo::stMPEG2VIDEO :
+                               vtype == 0x1b ? cStreamInfo::stH264 :
+                               vtype == 0x24 ? cStreamInfo::stH265 :
+                               cStreamInfo::stNONE));
+
+    // add (E)AC3 streams
+    for(int i = 0; patpmt->Dpid(i) != 0; i++) {
+        int dtype = patpmt->Dtype(i);
+        item.AddStream(cStreamInfo(patpmt->Dpid(i),
+                                   dtype == 0x6A ? cStreamInfo::stAC3 :
+                                   dtype == 0x7A ? cStreamInfo::stEAC3 :
+                                   cStreamInfo::stNONE,
+                                   patpmt->Dlang(i)));
+    }
+
+    // add audio streams
+    for(int i = 0; patpmt->Apid(i) != 0; i++) {
+        int atype = patpmt->Atype(i);
+        item.AddStream(cStreamInfo(patpmt->Apid(i),
+                                   atype == 0x04 ? cStreamInfo::stMPEG2AUDIO :
+                                   atype == 0x03 ? cStreamInfo::stMPEG2AUDIO :
+                                   atype == 0x0f ? cStreamInfo::stAAC :
+                                   atype == 0x11 ? cStreamInfo::stLATM :
+                                   cStreamInfo::stNONE,
+                                   patpmt->Alang(i)));
+    }
+
+    // add subtitle streams
+    for(int i = 0; patpmt->Spid(i) != 0; i++) {
+        cStreamInfo stream(patpmt->Spid(i), cStreamInfo::stDVBSUB, patpmt->Slang(i));
+
+        stream.SetSubtitlingDescriptor(
+            patpmt->SubtitlingType(i),
+            patpmt->CompositionPageId(i),
+            patpmt->AncillaryPageId(i));
+
+        item.AddStream(stream);
+    }
+
     return item;
-  }
-  
-  // add video stream
-  int vpid = patpmt->Vpid();
-  int vtype = patpmt->Vtype();
-
-  item.AddStream(cStreamInfo(vpid, 
-    vtype == 0x02 ? cStreamInfo::stMPEG2VIDEO : 
-    vtype == 0x1b ? cStreamInfo::stH264 : 
-    vtype == 0x24 ? cStreamInfo::stH265 : 
-    cStreamInfo::stNONE));
-
-  // add (E)AC3 streams
-  for(int i=0; patpmt->Dpid(i) != 0; i++) {
-    int dtype = patpmt->Dtype(i);
-    item.AddStream(cStreamInfo(patpmt->Dpid(i), 
-      dtype == 0x6A ? cStreamInfo::stAC3 :
-      dtype == 0x7A ? cStreamInfo::stEAC3 :
-      cStreamInfo::stNONE,
-      patpmt->Dlang(i)));
-  }
-
-  // add audio streams
-  for(int i=0; patpmt->Apid(i) != 0; i++) {
-    int atype = patpmt->Atype(i);
-    item.AddStream(cStreamInfo(patpmt->Apid(i), 
-      atype == 0x04 ? cStreamInfo::stMPEG2AUDIO :
-      atype == 0x03 ? cStreamInfo::stMPEG2AUDIO :
-      atype == 0x0f ? cStreamInfo::stAAC :
-      atype == 0x11 ? cStreamInfo::stLATM :
-      cStreamInfo::stNONE,
-      patpmt->Alang(i)));
-  }
-
-  // add subtitle streams
-  for(int i=0; patpmt->Spid(i) != 0; i++) {
-   cStreamInfo stream(patpmt->Spid(i), cStreamInfo::stDVBSUB, patpmt->Slang(i));
-
-   stream.SetSubtitlingDescriptor(
-     patpmt->SubtitlingType(i),
-     patpmt->CompositionPageId(i),
-     patpmt->AncillaryPageId(i));
-
-   item.AddStream(stream);
-  }
-
-  return item;
 }
 
 cStreamBundle cStreamBundle::FromChannel(const cChannel* channel) {
-  cStreamBundle item;
+    cStreamBundle item;
 
-  // add video stream
-  int vpid = channel->Vpid();
-  int vtype = channel->Vtype();
+    // add video stream
+    int vpid = channel->Vpid();
+    int vtype = channel->Vtype();
 
-  item.AddStream(cStreamInfo(vpid, 
-    vtype == 0x02 ? cStreamInfo::stMPEG2VIDEO : 
-    vtype == 0x1b ? cStreamInfo::stH264 : 
-    vtype == 0x24 ? cStreamInfo::stH265 : 
-    cStreamInfo::stNONE));
+    item.AddStream(cStreamInfo(vpid,
+                               vtype == 0x02 ? cStreamInfo::stMPEG2VIDEO :
+                               vtype == 0x1b ? cStreamInfo::stH264 :
+                               vtype == 0x24 ? cStreamInfo::stH265 :
+                               cStreamInfo::stNONE));
 
-  // add (E)AC3 streams
-  for(int i=0; channel->Dpid(i) != 0; i++) {
-    int dtype = channel->Dtype(i);
-    item.AddStream(cStreamInfo(channel->Dpid(i), 
-      dtype == 0x6A ? cStreamInfo::stAC3 :
-      dtype == 0x7A ? cStreamInfo::stEAC3 :
-      cStreamInfo::stNONE,
-      channel->Dlang(i)));
-  }
+    // add (E)AC3 streams
+    for(int i = 0; channel->Dpid(i) != 0; i++) {
+        int dtype = channel->Dtype(i);
+        item.AddStream(cStreamInfo(channel->Dpid(i),
+                                   dtype == 0x6A ? cStreamInfo::stAC3 :
+                                   dtype == 0x7A ? cStreamInfo::stEAC3 :
+                                   cStreamInfo::stNONE,
+                                   channel->Dlang(i)));
+    }
 
-  // add audio streams
-  for(int i=0; channel->Apid(i) != 0; i++) {
-    int atype = channel->Atype(i);
-    item.AddStream(cStreamInfo(channel->Apid(i), 
-      atype == 0x04 ? cStreamInfo::stMPEG2AUDIO :
-      atype == 0x03 ? cStreamInfo::stMPEG2AUDIO :
-      atype == 0x0f ? cStreamInfo::stAAC :
-      atype == 0x11 ? cStreamInfo::stLATM :
-      cStreamInfo::stNONE,
-      channel->Alang(i)));
-  }
+    // add audio streams
+    for(int i = 0; channel->Apid(i) != 0; i++) {
+        int atype = channel->Atype(i);
+        item.AddStream(cStreamInfo(channel->Apid(i),
+                                   atype == 0x04 ? cStreamInfo::stMPEG2AUDIO :
+                                   atype == 0x03 ? cStreamInfo::stMPEG2AUDIO :
+                                   atype == 0x0f ? cStreamInfo::stAAC :
+                                   atype == 0x11 ? cStreamInfo::stLATM :
+                                   cStreamInfo::stNONE,
+                                   channel->Alang(i)));
+    }
 
-  // add teletext stream
-  if(channel->Tpid() != 0) {
-    item.AddStream(cStreamInfo(channel->Tpid(), cStreamInfo::stTELETEXT));
-  }
+    // add teletext stream
+    if(channel->Tpid() != 0) {
+        item.AddStream(cStreamInfo(channel->Tpid(), cStreamInfo::stTELETEXT));
+    }
 
-  // add subtitle streams
-  for(int i=0; channel->Spid(i) != 0; i++) {
-   cStreamInfo stream(channel->Spid(i), cStreamInfo::stDVBSUB, channel->Slang(i));
+    // add subtitle streams
+    for(int i = 0; channel->Spid(i) != 0; i++) {
+        cStreamInfo stream(channel->Spid(i), cStreamInfo::stDVBSUB, channel->Slang(i));
 
-   stream.SetSubtitlingDescriptor(
-     channel->SubtitlingType(i),
-     channel->CompositionPageId(i),
-     channel->AncillaryPageId(i));
+        stream.SetSubtitlingDescriptor(
+            channel->SubtitlingType(i),
+            channel->CompositionPageId(i),
+            channel->AncillaryPageId(i));
 
-   item.AddStream(stream);
-  }
+        item.AddStream(stream);
+    }
 
-  return item;
+    return item;
 }
 
 MsgPacket& operator<< (MsgPacket& lhs, const cStreamBundle& rhs) {
-  lhs.put_U32((int)rhs.size());
+    lhs.put_U32((int)rhs.size());
 
-  for(cStreamBundle::const_iterator i = rhs.begin(); i != rhs.end(); i++) {
-    lhs << i->second;
-  }
+    for(cStreamBundle::const_iterator i = rhs.begin(); i != rhs.end(); i++) {
+        lhs << i->second;
+    }
 
-  return lhs;
+    return lhs;
 }
 
 MsgPacket& operator>> (MsgPacket& lhs, cStreamBundle& rhs) {
-  rhs.clear();
-  uint32_t c = lhs.get_U32();
+    rhs.clear();
+    uint32_t c = lhs.get_U32();
 
-  for(uint32_t i = 0; i < c; i++) {
-    cStreamInfo s;
-    lhs >> s;
-    rhs.AddStream(s);
-  }
-  return lhs;
+    for(uint32_t i = 0; i < c; i++) {
+        cStreamInfo s;
+        lhs >> s;
+        rhs.AddStream(s);
+    }
+
+    return lhs;
 }

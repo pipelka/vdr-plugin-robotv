@@ -32,89 +32,102 @@
 #include "xvdrchannels.h"
 
 int CheckTimerConflicts(cTimer* timer) {
-  XVDRChannels.Lock(false);
+    XVDRChannels.Lock(false);
 
-  // check for timer conflicts
-  DEBUGLOG("Checking conflicts for: %s", (const char*)timer->ToText(true));
+    // check for timer conflicts
+    DEBUGLOG("Checking conflicts for: %s", (const char*)timer->ToText(true));
 
-  // order active timers by starttime
-  std::map<time_t, cTimer*> timeline;
-  int numTimers = Timers.Count();
-  for (int i = 0; i < numTimers; i++)
-  {
-    cTimer* t = Timers.Get(i);
+    // order active timers by starttime
+    std::map<time_t, cTimer*> timeline;
+    int numTimers = Timers.Count();
 
-    // same timer -> skip
-    if (!t || timer->Index() == i)
-      continue;
+    for(int i = 0; i < numTimers; i++) {
+        cTimer* t = Timers.Get(i);
 
-    // timer not active -> skip
-    if(!(t->Flags() & tfActive))
-      continue;
+        // same timer -> skip
+        if(!t || timer->Index() == i) {
+            continue;
+        }
 
-    // this one is earlier -> no match
-    if(t->StopTime() <= timer->StartTime())
-      continue;
+        // timer not active -> skip
+        if(!(t->Flags() & tfActive)) {
+            continue;
+        }
 
-    // this one is later -> no match
-    if(t->StartTime() >= timer->StopTime())
-      continue;
+        // this one is earlier -> no match
+        if(t->StopTime() <= timer->StartTime()) {
+            continue;
+        }
 
-    timeline[t->StartTime()] = t;
-  }
+        // this one is later -> no match
+        if(t->StartTime() >= timer->StopTime()) {
+            continue;
+        }
 
-  std::set<int> transponders;
-  transponders.insert(timer->Channel()->Transponder()); // we also count ourself
-  cTimer* to_check = timer;
+        timeline[t->StartTime()] = t;
+    }
 
-  std::map<time_t, cTimer*>::iterator i;
-  for (i = timeline.begin(); i != timeline.end(); i++) {
-    cTimer* t = i->second;
+    std::set<int> transponders;
+    transponders.insert(timer->Channel()->Transponder()); // we also count ourself
+    cTimer* to_check = timer;
 
-    // this one is earlier -> no match
-    if(t->StopTime() <= to_check->StartTime())
-      continue;
+    std::map<time_t, cTimer*>::iterator i;
 
-    // this one is later -> no match
-    if(t->StartTime() >= to_check->StopTime())
-      continue;
+    for(i = timeline.begin(); i != timeline.end(); i++) {
+        cTimer* t = i->second;
 
-    // same transponder -> no conflict
-    if(t->Channel()->Transponder() == to_check->Channel()->Transponder())
-      continue;
+        // this one is earlier -> no match
+        if(t->StopTime() <= to_check->StartTime()) {
+            continue;
+        }
 
-    // different source -> no conflict
-    if(t->Channel()->Source() != to_check->Channel()->Source())
-      continue;
+        // this one is later -> no match
+        if(t->StartTime() >= to_check->StopTime()) {
+            continue;
+        }
 
-    DEBUGLOG("Possible conflict: %s", (const char*)t->ToText(true));
-    transponders.insert(t->Channel()->Transponder());
+        // same transponder -> no conflict
+        if(t->Channel()->Transponder() == to_check->Channel()->Transponder()) {
+            continue;
+        }
 
-    // now check conflicting timer
-    to_check = t;
-  }
+        // different source -> no conflict
+        if(t->Channel()->Source() != to_check->Channel()->Source()) {
+            continue;
+        }
 
-  uint32_t number_of_devices_for_this_channel = 0;
-  for(int i = 0; i < cDevice::NumDevices(); i++) {
-    cDevice* device = cDevice::GetDevice(i);
-    if(device != NULL && device->ProvidesTransponder(timer->Channel()))
-      number_of_devices_for_this_channel++;
-  }
+        DEBUGLOG("Possible conflict: %s", (const char*)t->ToText(true));
+        transponders.insert(t->Channel()->Transponder());
 
-  int cflags = 0;
-  if(transponders.size() > number_of_devices_for_this_channel) {
-    DEBUGLOG("ERROR - Not enough devices");
-    cflags += 2048;
-  }
-  else if(transponders.size() > 1) {
-    DEBUGLOG("Overlapping timers - Will record");
-    cflags += 1024;
-  }
-  else {
-    DEBUGLOG("No conflicts");
-  }
+        // now check conflicting timer
+        to_check = t;
+    }
 
-  XVDRChannels.Unlock();
+    uint32_t number_of_devices_for_this_channel = 0;
 
-  return cflags;
+    for(int i = 0; i < cDevice::NumDevices(); i++) {
+        cDevice* device = cDevice::GetDevice(i);
+
+        if(device != NULL && device->ProvidesTransponder(timer->Channel())) {
+            number_of_devices_for_this_channel++;
+        }
+    }
+
+    int cflags = 0;
+
+    if(transponders.size() > number_of_devices_for_this_channel) {
+        DEBUGLOG("ERROR - Not enough devices");
+        cflags += 2048;
+    }
+    else if(transponders.size() > 1) {
+        DEBUGLOG("Overlapping timers - Will record");
+        cflags += 1024;
+    }
+    else {
+        DEBUGLOG("No conflicts");
+    }
+
+    XVDRChannels.Unlock();
+
+    return cflags;
 }

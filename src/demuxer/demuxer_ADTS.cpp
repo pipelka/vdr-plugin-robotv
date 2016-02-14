@@ -26,59 +26,64 @@
 #include "vdr/tools.h"
 #include "aaccommon.h"
 
-cParserADTS::cParserADTS(cTSDemuxer *demuxer) : cParser(demuxer, 64 * 1024, 8192)
-{
-  m_headersize = 9; // header is 9 bytes long (with CRC)
+cParserADTS::cParserADTS(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 8192) {
+    m_headersize = 9; // header is 9 bytes long (with CRC)
 }
 
-bool cParserADTS::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize)
-{
-  cBitStream bs(buffer, m_headersize * 8);
+bool cParserADTS::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize) {
+    cBitStream bs(buffer, m_headersize * 8);
 
-  // sync
-  if(bs.GetBits(12) != 0xFFF)
-    return false;
+    // sync
+    if(bs.GetBits(12) != 0xFFF) {
+        return false;
+    }
 
-  bs.SkipBits(1); // MPEG Version (0 = MPEG4 / 1 = MPEG2)
+    bs.SkipBits(1); // MPEG Version (0 = MPEG4 / 1 = MPEG2)
 
-  // layer if always 0
-  if(bs.GetBits(2) != 0)
-    return false;
+    // layer if always 0
+    if(bs.GetBits(2) != 0) {
+        return false;
+    }
 
-  bs.SkipBits(1); // Protection absent
-  bs.SkipBits(2); // AOT
-  int samplerateindex = bs.GetBits(4); // sample rate index
-  if(samplerateindex == 15)
-    return false;
+    bs.SkipBits(1); // Protection absent
+    bs.SkipBits(2); // AOT
+    int samplerateindex = bs.GetBits(4); // sample rate index
 
-  bs.SkipBits(1);      // Private bit
+    if(samplerateindex == 15) {
+        return false;
+    }
 
-  int channelindex = bs.GetBits(3); // channel index
-  if(channelindex > 7)
-    return false;
+    bs.SkipBits(1);      // Private bit
 
-  bs.SkipBits(4); // original, copy, copyright, ...
+    int channelindex = bs.GetBits(3); // channel index
 
-  framesize = bs.GetBits(13);
+    if(channelindex > 7) {
+        return false;
+    }
 
-  m_samplerate = aac_samplerates[samplerateindex];
-  m_channels = aac_channels[channelindex];
-  m_duration = 1024 * 90000 / m_samplerate;
+    bs.SkipBits(4); // original, copy, copyright, ...
 
-  return true;
+    framesize = bs.GetBits(13);
+
+    m_samplerate = aac_samplerates[samplerateindex];
+    m_channels = aac_channels[channelindex];
+    m_duration = 1024 * 90000 / m_samplerate;
+
+    return true;
 }
 
 bool cParserADTS::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
-  int channels, samplerate;
-  return ParseAudioHeader(buffer, channels, samplerate, framesize);
+    int channels, samplerate;
+    return ParseAudioHeader(buffer, channels, samplerate, framesize);
 }
 
 int cParserADTS::ParsePayload(unsigned char* payload, int length) {
-  int framesize = 0;
+    int framesize = 0;
 
-  if(!ParseAudioHeader(payload, m_channels, m_samplerate, framesize))
+    if(!ParseAudioHeader(payload, m_channels, m_samplerate, framesize)) {
+        return length;
+    }
+
+    m_demuxer->SetAudioInformation(m_channels, m_samplerate, 0, 0, 0);
     return length;
-
-  m_demuxer->SetAudioInformation(m_channels, m_samplerate, 0, 0, 0);
-  return length;
 }

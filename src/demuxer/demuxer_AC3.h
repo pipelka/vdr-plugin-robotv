@@ -28,20 +28,19 @@
 
 #include "parser.h"
 
-class cParserAC3 : public cParser
-{
+class cParserAC3 : public cParser {
 public:
 
-  cParserAC3(cTSDemuxer *demuxer);
+    cParserAC3(cTSDemuxer* demuxer);
 
 protected:
 
-  int ParsePayload(unsigned char* payload, int length);
+    int ParsePayload(unsigned char* payload, int length);
 
-  bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
 
-  bool m_enhanced;
-  
+    bool m_enhanced;
+
 };
 
 #endif // XVDR_DEMUXER_AC3_H

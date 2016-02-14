@@ -27,21 +27,20 @@
 
 #include "demuxer_H264.h"
 
-class cParserH265 : public cParserH264
-{
+class cParserH265 : public cParserH264 {
 public:
 
-  cParserH265(cTSDemuxer *demuxer);
+    cParserH265(cTSDemuxer* demuxer);
 
-  int ParsePayload(unsigned char *data, int length);
+    int ParsePayload(unsigned char* data, int length);
 
 private:
 
-  void skipScalingList(cBitStream& bs);
+    void skipScalingList(cBitStream& bs);
 
-  void skipShortTermRefPicSets(cBitStream& bs);
+    void skipShortTermRefPicSets(cBitStream& bs);
 
-  bool Parse_SPS(uint8_t *buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    bool Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
 
 };
 

@@ -28,41 +28,40 @@
 #include "demuxer_PES.h"
 #include "vdr/tools.h"
 
-class cParserH264 : public cParserPES
-{
+class cParserH264 : public cParserPES {
 public:
 
-  cParserH264(cTSDemuxer *demuxer);
+    cParserH264(cTSDemuxer* demuxer);
 
-  int ParsePayload(unsigned char *data, int length);
+    int ParsePayload(unsigned char* data, int length);
 
 protected:
 
-  typedef struct {
-    int num;
-    int den;
-  } pixel_aspect_t;
+    typedef struct {
+        int num;
+        int den;
+    } pixel_aspect_t;
 
-  // pixel aspect ratios
-  static const pixel_aspect_t m_aspect_ratios[17];
+    // pixel aspect ratios
+    static const pixel_aspect_t m_aspect_ratios[17];
 
-  uint8_t* ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len);
+    uint8_t* ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len);
 
-  int nalUnescape(uint8_t *dst, const uint8_t *src, int len);
+    int nalUnescape(uint8_t* dst, const uint8_t* src, int len);
 
-  uint32_t read_golomb_ue(cBitStream* bs);
+    uint32_t read_golomb_ue(cBitStream* bs);
 
-  int32_t read_golomb_se(cBitStream* bs);
+    int32_t read_golomb_se(cBitStream* bs);
 
-  int m_scale;
+    int m_scale;
 
-  int m_rate;
+    int m_rate;
 
 private:
 
-  bool Parse_SPS(uint8_t *buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    bool Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
 
-  void Parse_SLH(uint8_t *buf, int len);
+    void Parse_SLH(uint8_t* buf, int len);
 
 };
 

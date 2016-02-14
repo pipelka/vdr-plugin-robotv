@@ -33,27 +33,29 @@
 class cStreamBundle : public std::map<int, cStreamInfo> {
 public:
 
-  cStreamBundle();
+    cStreamBundle();
 
-  void AddStream(const cStreamInfo& s);
+    void AddStream(const cStreamInfo& s);
 
-  bool operator ==(const cStreamBundle& c) const;
+    bool operator ==(const cStreamBundle& c) const;
 
-  bool ismetaof(const cStreamBundle& c) const;
+    bool ismetaof(const cStreamBundle& c) const;
 
-  bool contains(const cStreamInfo& s) const;
+    bool contains(const cStreamInfo& s) const;
 
-  bool changed() const { return m_bChanged; }
+    bool changed() const {
+        return m_bChanged;
+    }
 
-  bool IsParsed();
+    bool IsParsed();
 
-  static cStreamBundle FromChannel(const cChannel* channel);
+    static cStreamBundle FromChannel(const cChannel* channel);
 
-  static cStreamBundle FromPatPmt(const cPatPmtParser* patpmt);
+    static cStreamBundle FromPatPmt(const cPatPmtParser* patpmt);
 
 private:
 
-  bool m_bChanged;
+    bool m_bChanged;
 
 };
 

@@ -26,8 +26,8 @@
 #include "packetplayer.h"
 
 cPacketPlayer::cPacketPlayer(cRecording* rec) : cRecPlayer(rec), m_demuxers(this) {
-  m_requestStreamChange = true;
-  m_firstKeyFrameSeen = false;
+    m_requestStreamChange = true;
+    m_firstKeyFrameSeen = false;
 }
 
 cPacketPlayer::~cPacketPlayer() {
@@ -35,192 +35,195 @@ cPacketPlayer::~cPacketPlayer() {
 }
 
 void cPacketPlayer::sendStreamPacket(sStreamPacket* p) {
-  // check if we've got a key frame
-  if(p->content == cStreamInfo::scVIDEO && p->frametype == cStreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
-    INFOLOG("got first key frame");
-    m_firstKeyFrameSeen = true;
-  }
-  
-  // streaming starts with a key frame
-  if(!m_firstKeyFrameSeen) {
-    return;
-  }
-  
-  // initialise stream packet
-  MsgPacket* packet = new MsgPacket(XVDR_STREAM_MUXPKT, XVDR_CHANNEL_STREAM);
-  packet->disablePayloadCheckSum();
+    // check if we've got a key frame
+    if(p->content == cStreamInfo::scVIDEO && p->frametype == cStreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
+        INFOLOG("got first key frame");
+        m_firstKeyFrameSeen = true;
+    }
 
-  // write stream data
-  packet->put_U16(p->pid);
+    // streaming starts with a key frame
+    if(!m_firstKeyFrameSeen) {
+        return;
+    }
 
-  packet->put_S64(p->rawpts);
-  packet->put_S64(p->rawdts);
-  packet->put_U32(p->duration);
+    // initialise stream packet
+    MsgPacket* packet = new MsgPacket(XVDR_STREAM_MUXPKT, XVDR_CHANNEL_STREAM);
+    packet->disablePayloadCheckSum();
 
-  // write frame type into unused header field clientid
-  packet->setClientID((uint16_t)p->frametype);
+    // write stream data
+    packet->put_U16(p->pid);
 
-  // write payload into stream packet
-  packet->put_U32(p->size);
-  packet->put_Blob(p->data, p->size);
-  packet->put_U64(m_position);
-  packet->put_U64(m_totalLength);
+    packet->put_S64(p->rawpts);
+    packet->put_S64(p->rawdts);
+    packet->put_U32(p->duration);
 
-  m_queue.push_back(packet);
+    // write frame type into unused header field clientid
+    packet->setClientID((uint16_t)p->frametype);
+
+    // write payload into stream packet
+    packet->put_U32(p->size);
+    packet->put_Blob(p->data, p->size);
+    packet->put_U64(m_position);
+    packet->put_U64(m_totalLength);
+
+    m_queue.push_back(packet);
 }
 
 void cPacketPlayer::RequestStreamChange() {
-  INFOLOG("stream change requested");
-  m_requestStreamChange = true;
+    INFOLOG("stream change requested");
+    m_requestStreamChange = true;
 }
 
 MsgPacket* cPacketPlayer::getNextPacket() {
-  int pmtVersion = 0;
-  int patVersion = 0;
-  
-  int packet_count = 1;
-  int packet_size = TS_SIZE * packet_count;
+    int pmtVersion = 0;
+    int patVersion = 0;
 
-  unsigned char buffer[packet_size];
+    int packet_count = 1;
+    int packet_size = TS_SIZE * packet_count;
 
-  // get next block (TS packets)
-  if(getBlock(buffer, m_position, packet_size) != packet_size) {
-    return NULL;
-  }
-  
-  // advance to next block
-  m_position += packet_size;
+    unsigned char buffer[packet_size];
 
-  // new PAT / PMT found ?
-  if(m_parser.ParsePatPmt(buffer, TS_SIZE)) {
-    m_parser.GetVersions(m_patVersion, pmtVersion);
-    if(pmtVersion > m_pmtVersion) {
-      INFOLOG("found new PMT version (%i)", pmtVersion);
-      m_pmtVersion = pmtVersion;
-      
-     // update demuxers from new PMT
-      INFOLOG("updating demuxers");
-      cStreamBundle streamBundle = cStreamBundle::FromPatPmt(&m_parser);
-      m_demuxers.updateFrom(&streamBundle);
-
-      m_requestStreamChange = true;
-    }
-  }
-
-  // put packets into demuxer
-  uint8_t* p = buffer;
-  for(int i = 0; i < packet_count; i++) {
-    m_demuxers.processTsPacket(p);
-    p += TS_SIZE;
-  }
-
-  // stream change needed / requested
-  if(m_requestStreamChange) {
-    // first we need valid PAT/PMT
-    if(!m_parser.GetVersions(patVersion, pmtVersion)) {
-      return NULL;
+    // get next block (TS packets)
+    if(getBlock(buffer, m_position, packet_size) != packet_size) {
+        return NULL;
     }
 
-    // demuxers need to be ready
-    if(!m_demuxers.isReady()) {
-      return NULL;
+    // advance to next block
+    m_position += packet_size;
+
+    // new PAT / PMT found ?
+    if(m_parser.ParsePatPmt(buffer, TS_SIZE)) {
+        m_parser.GetVersions(m_patVersion, pmtVersion);
+
+        if(pmtVersion > m_pmtVersion) {
+            INFOLOG("found new PMT version (%i)", pmtVersion);
+            m_pmtVersion = pmtVersion;
+
+            // update demuxers from new PMT
+            INFOLOG("updating demuxers");
+            cStreamBundle streamBundle = cStreamBundle::FromPatPmt(&m_parser);
+            m_demuxers.updateFrom(&streamBundle);
+
+            m_requestStreamChange = true;
+        }
     }
 
-    INFOLOG("demuxers ready");
-    for(auto i: m_demuxers) {
-      i->info();
+    // put packets into demuxer
+    uint8_t* p = buffer;
+
+    for(int i = 0; i < packet_count; i++) {
+        m_demuxers.processTsPacket(p);
+        p += TS_SIZE;
     }
 
-    INFOLOG("create streamchange packet");
-    m_requestStreamChange = false;
-    return m_demuxers.createStreamChangePacket();
-  }
+    // stream change needed / requested
+    if(m_requestStreamChange) {
+        // first we need valid PAT/PMT
+        if(!m_parser.GetVersions(patVersion, pmtVersion)) {
+            return NULL;
+        }
 
-  // get next packet from queue (if any)
-  if(m_queue.size() == 0) {
-    return NULL;
-  }
-  
-  MsgPacket* packet = m_queue.front();
-  m_queue.pop_front();
+        // demuxers need to be ready
+        if(!m_demuxers.isReady()) {
+            return NULL;
+        }
 
-  return packet;
+        INFOLOG("demuxers ready");
+
+        for(auto i : m_demuxers) {
+            i->info();
+        }
+
+        INFOLOG("create streamchange packet");
+        m_requestStreamChange = false;
+        return m_demuxers.createStreamChangePacket();
+    }
+
+    // get next packet from queue (if any)
+    if(m_queue.size() == 0) {
+        return NULL;
+    }
+
+    MsgPacket* packet = m_queue.front();
+    m_queue.pop_front();
+
+    return packet;
 }
 
 MsgPacket* cPacketPlayer::getPacket() {
-  MsgPacket* p = NULL;
+    MsgPacket* p = NULL;
 
-  // process data until the next packet drops out
-  while(p == NULL && m_position < m_totalLength) {
-    p = getNextPacket();
-  }
+    // process data until the next packet drops out
+    while(p == NULL && m_position < m_totalLength) {
+        p = getNextPacket();
+    }
 
-  return p;
+    return p;
 }
 
 void cPacketPlayer::clearQueue() {
-  MsgPacket* p = NULL;
+    MsgPacket* p = NULL;
 
-  while(m_queue.size() > 0) {
-    p = m_queue.front();
-    m_queue.pop_front();
-    delete p;
-  }
+    while(m_queue.size() > 0) {
+        p = m_queue.front();
+        m_queue.pop_front();
+        delete p;
+    }
 }
 
 void cPacketPlayer::reset() {
-  // reset parser
-  m_parser.Reset();
-  m_demuxers.clear();
-  m_requestStreamChange = true;
-  m_firstKeyFrameSeen = false;
-  m_patVersion = -1;
-  m_pmtVersion = -1;
+    // reset parser
+    m_parser.Reset();
+    m_demuxers.clear();
+    m_requestStreamChange = true;
+    m_firstKeyFrameSeen = false;
+    m_patVersion = -1;
+    m_pmtVersion = -1;
 
-  // remove pending packets
-  clearQueue();
+    // remove pending packets
+    clearQueue();
 }
 
 int64_t cPacketPlayer::seek(uint64_t position) {
-  // adujst position to TS packet borders
-  m_position = (position / TS_SIZE) * TS_SIZE;
+    // adujst position to TS packet borders
+    m_position = (position / TS_SIZE) * TS_SIZE;
 
-  // invalid position ?
-  if(m_position >= m_totalLength) {
-    return -1;
-  }
-
-  INFOLOG("seek: %llu / %llu", m_position, m_totalLength);
-
-  // reset parser
-  reset();
-  
-  // first check for next video packet (PTS) after seek
-  MsgPacket* p = NULL;
-
-  for(;;) {
-    p = getPacket();
-
-    // exit if we have no more packets
-    if(p == NULL) {
-      return -1;
+    // invalid position ?
+    if(m_position >= m_totalLength) {
+        return -1;
     }
 
-    // check for video pid
-    if(p->get_U16() == m_parser.Vpid()) {
-      break;
+    INFOLOG("seek: %llu / %llu", m_position, m_totalLength);
+
+    // reset parser
+    reset();
+
+    // first check for next video packet (PTS) after seek
+    MsgPacket* p = NULL;
+
+    for(;;) {
+        p = getPacket();
+
+        // exit if we have no more packets
+        if(p == NULL) {
+            return -1;
+        }
+
+        // check for video pid
+        if(p->get_U16() == m_parser.Vpid()) {
+            break;
+        }
+
+        // delete packet
+        delete p;
     }
 
-    // delete packet
-    delete p;
-  }
-
-  // get PTS of video packet
-  int64_t pts = p->get_U64();
+    // get PTS of video packet
+    int64_t pts = p->get_U64();
 
     // reset again
-  reset();
-  m_position = (position / TS_SIZE) * TS_SIZE;
+    reset();
+    m_position = (position / TS_SIZE) * TS_SIZE;
 
-  return pts;
+    return pts;
 }

@@ -36,43 +36,43 @@
 class cPacketPlayer : public cRecPlayer, protected cTSDemuxer::Listener {
 public:
 
-  cPacketPlayer(cRecording* rec);
+    cPacketPlayer(cRecording* rec);
 
-  virtual ~cPacketPlayer();
+    virtual ~cPacketPlayer();
 
-  MsgPacket* getPacket();
+    MsgPacket* getPacket();
 
-  int64_t seek(uint64_t position);
+    int64_t seek(uint64_t position);
 
 protected:
 
-  MsgPacket* getNextPacket();
+    MsgPacket* getNextPacket();
 
-  void sendStreamPacket(sStreamPacket* p);
+    void sendStreamPacket(sStreamPacket* p);
 
-  void RequestStreamChange();
+    void RequestStreamChange();
 
-  void clearQueue();
+    void clearQueue();
 
-  void reset();
+    void reset();
 
 private:
 
-  cPatPmtParser m_parser;
+    cPatPmtParser m_parser;
 
-  cDemuxerBundle m_demuxers;
+    cDemuxerBundle m_demuxers;
 
-  uint64_t m_position = 0;
+    uint64_t m_position = 0;
 
-  bool m_requestStreamChange;
+    bool m_requestStreamChange;
 
-  bool m_firstKeyFrameSeen;
+    bool m_firstKeyFrameSeen;
 
-  int m_patVersion = -1;
+    int m_patVersion = -1;
 
-  int m_pmtVersion = -1;
+    int m_pmtVersion = -1;
 
-  std::deque<MsgPacket*> m_queue;
+    std::deque<MsgPacket*> m_queue;
 
 };
 

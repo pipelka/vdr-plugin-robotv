@@ -27,15 +27,14 @@
 
 #include "demuxer_PES.h"
 
-class cParserSubtitle : public cParserPES
-{
+class cParserSubtitle : public cParserPES {
 public:
 
-  cParserSubtitle(cTSDemuxer *demuxer);
+    cParserSubtitle(cTSDemuxer* demuxer);
 
 protected:
 
-  void SendPayload(unsigned char* payload, int length);
+    void SendPayload(unsigned char* payload, int length);
 
 };
 

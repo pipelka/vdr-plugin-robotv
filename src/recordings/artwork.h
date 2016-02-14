@@ -6,22 +6,22 @@
 
 class cArtwork {
 public:
-  
-  cArtwork();
 
-  virtual ~cArtwork();
+    cArtwork();
 
-  bool get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl);
-  
-  bool set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId);
+    virtual ~cArtwork();
 
-  void cleanup(int afterDays = 4);
+    bool get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl);
+
+    bool set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId);
+
+    void cleanup(int afterDays = 4);
 
 private:
 
-  void CreateDB();
-  
-  XVDR::Storage& m_storage;
+    void CreateDB();
+
+    XVDR::Storage& m_storage;
 
 };
 

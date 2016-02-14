@@ -51,30 +51,29 @@
 
 // PES helper functions
 
-inline bool PesIsHeader(const uchar *p)
-{
-  return !(p)[0] && !(p)[1] && (p)[2] == 1;
+inline bool PesIsHeader(const uchar* p) {
+    return !(p)[0] && !(p)[1] && (p)[2] == 1;
 }
 
 #if VDRVERSNUM < 10732 // VDR VERSION < 1.7.32
 
 #define MAX33BIT  0x00000001FFFFFFFFLL // max. possible value with 33 bit
 
-inline bool PesHasDts(const uchar *p)
-{
-  return (p[7] & 0x40) && p[8] >= 10;
+inline bool PesHasDts(const uchar* p) {
+    return (p[7] & 0x40) && p[8] >= 10;
 }
 
-inline int64_t PesGetDts(const uchar *p)
-{
-  return ((((int64_t)p[14]) & 0x0E) << 29) |
-         (( (int64_t)p[15])         << 22) |
-         ((((int64_t)p[16]) & 0xFE) << 14) |
-         (( (int64_t)p[17])         <<  7) |
-         ((((int64_t)p[18]) & 0xFE) >>  1);
+inline int64_t PesGetDts(const uchar* p) {
+    return ((((int64_t)p[14]) & 0x0E) << 29) |
+           (((int64_t)p[15])         << 22) |
+           ((((int64_t)p[16]) & 0xFE) << 14) |
+           (((int64_t)p[17])         <<  7) |
+           ((((int64_t)p[18]) & 0xFE) >>  1);
 }
 
-inline int64_t PtsAdd(int64_t Pts1, int64_t Pts2) { return (Pts1 + Pts2) & MAX33BIT; }
+inline int64_t PtsAdd(int64_t Pts1, int64_t Pts2) {
+    return (Pts1 + Pts2) & MAX33BIT;
+}
 
 #endif // VERSION 1.7.32
 

@@ -27,17 +27,16 @@
 
 #include "parser.h"
 
-class cParserPES : public cParser
-{
+class cParserPES : public cParser {
 public:
 
-  cParserPES(cTSDemuxer *demuxer, int buffersize = 4096);
+    cParserPES(cTSDemuxer* demuxer, int buffersize = 4096);
 
-  void Parse(unsigned char *data, int size, bool pusi);
+    void Parse(unsigned char* data, int size, bool pusi);
 
 protected:
 
-  int m_length;
+    int m_length;
 
 };
 

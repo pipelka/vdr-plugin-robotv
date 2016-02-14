@@ -27,21 +27,20 @@
 
 #include "parser.h"
 
-class cParserADTS : public cParser
-{
+class cParserADTS : public cParser {
 public:
 
-  cParserADTS(cTSDemuxer *demuxer);
+    cParserADTS(cTSDemuxer* demuxer);
 
 protected:
 
-  int ParsePayload(unsigned char* payload, int length);
+    int ParsePayload(unsigned char* payload, int length);
 
-  bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
 
 private:
 
-  bool ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize);
+    bool ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize);
 
 };
 

@@ -30,21 +30,20 @@
 
 // --- cParserMPEG2Audio -------------------------------------------------
 
-class cParserMPEG2Audio : public cParser
-{
+class cParserMPEG2Audio : public cParser {
 public:
 
-  cParserMPEG2Audio(cTSDemuxer *demuxer);
+    cParserMPEG2Audio(cTSDemuxer* demuxer);
 
 protected:
 
-  int ParsePayload(unsigned char* payload, int length);
+    int ParsePayload(unsigned char* payload, int length);
 
-  bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
 
 private:
 
-  bool ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int &bitrate, int& framesize);
+    bool ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& bitrate, int& framesize);
 
 };
 

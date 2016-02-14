@@ -11,27 +11,27 @@
 class cDemuxerBundle : public std::list<cTSDemuxer*> {
 public:
 
-  cDemuxerBundle(cTSDemuxer::Listener* listener);
-  
-  virtual ~cDemuxerBundle();
-  
-  void clear();
+    cDemuxerBundle(cTSDemuxer::Listener* listener);
 
-  cTSDemuxer* findDemuxer(int pid);
+    virtual ~cDemuxerBundle();
 
-  void reorderStreams(int lang, cStreamInfo::Type type);
+    void clear();
 
-  bool isReady();
+    cTSDemuxer* findDemuxer(int pid);
 
-  void updateFrom(cStreamBundle* bundle);
-  
-  bool processTsPacket(uint8_t* packet);
+    void reorderStreams(int lang, cStreamInfo::Type type);
 
-  MsgPacket* createStreamChangePacket(int protocolVersion = XVDR_PROTOCOLVERSION);
-  
+    bool isReady();
+
+    void updateFrom(cStreamBundle* bundle);
+
+    bool processTsPacket(uint8_t* packet);
+
+    MsgPacket* createStreamChangePacket(int protocolVersion = XVDR_PROTOCOLVERSION);
+
 protected:
-  
-  cTSDemuxer::Listener* m_listener = NULL;
+
+    cTSDemuxer::Listener* m_listener = NULL;
 
 };
 

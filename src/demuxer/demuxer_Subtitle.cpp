@@ -24,19 +24,21 @@
 
 #include "demuxer_Subtitle.h"
 
-cParserSubtitle::cParserSubtitle(cTSDemuxer *demuxer) : cParserPES(demuxer, 64 * 1024) {
+cParserSubtitle::cParserSubtitle(cTSDemuxer* demuxer) : cParserPES(demuxer, 64 * 1024) {
 }
 
 void cParserSubtitle::SendPayload(unsigned char* payload, int length) {
 
-  if (length < 3 || payload[0] != 0x20 || payload[1] != 0x00)
-    return;
+    if(length < 3 || payload[0] != 0x20 || payload[1] != 0x00) {
+        return;
+    }
 
-  payload += 2;
-  length -= 3;
+    payload += 2;
+    length -= 3;
 
-  if (payload[length] != 0xff)
-    return;
+    if(payload[length] != 0xff) {
+        return;
+    }
 
-  cParser::SendPayload(payload, length);
+    cParser::SendPayload(payload, length);
 }

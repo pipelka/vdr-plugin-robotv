@@ -143,7 +143,6 @@ $(I18Npot): $(wildcard src/*/*.cpp)
 $(I18Nmsgs): $(DESTDIR)$(LOCDIR)/%/LC_MESSAGES/vdr-$(PLUGIN).mo: $(PODIR)/%.mo
 	install -D -m644 $< $@
 
-.PHONY: i18n
 i18n: $(I18Nmo) $(I18Npot)
 
 install-i18n: $(I18Nmsgs)
@@ -173,3 +172,9 @@ dist: $(I18Npo) clean
 clean:
 	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
 	@-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~
+
+astyle:
+	astyle  --exclude=src/db/sqlite3.h --exclude=src/db/sqlite3ext.h --options=./astylerc -r "src/*.cpp" "src/*.h"
+
+
+.PHONY: i18n astyle clean

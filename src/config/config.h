@@ -69,26 +69,25 @@
 #endif
 
 
-class cXVDRServerConfig : public cConfig<cSetupLine>
-{
+class cXVDRServerConfig : public cConfig<cSetupLine> {
 public:
-  cXVDRServerConfig();
+    cXVDRServerConfig();
 
-  void Load();
+    void Load();
 
 protected:
 
-  bool Parse(const char* Name, const char* Value);
+    bool Parse(const char* Name, const char* Value);
 
 public:
 
-  // Remote server settings
-  cString ConfigDirectory;      // config directory path
-  cString CacheDirectory;       // cache directory path
-  uint16_t listen_port;         // Port of remote server
-  uint16_t stream_timeout;      // timeout in seconds for stream data
-  cString PiconsURL;
-  cString ReorderCmd;
+    // Remote server settings
+    cString ConfigDirectory;      // config directory path
+    cString CacheDirectory;       // cache directory path
+    uint16_t listen_port;         // Port of remote server
+    uint16_t stream_timeout;      // timeout in seconds for stream data
+    cString PiconsURL;
+    cString ReorderCmd;
 };
 
 // Global instance

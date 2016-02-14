@@ -31,27 +31,31 @@
 class cChannelCache {
 public:
 
-  static void LoadChannelCacheData();
+    static void LoadChannelCacheData();
 
-  static void SaveChannelCacheData();
+    static void SaveChannelCacheData();
 
-  static void AddToCache(uint32_t channeluid, const cStreamBundle& channel);
+    static void AddToCache(uint32_t channeluid, const cStreamBundle& channel);
 
-  static void AddToCache(const cChannel* channel);
+    static void AddToCache(const cChannel* channel);
 
-  static cStreamBundle GetFromCache(uint32_t channeluid);
+    static cStreamBundle GetFromCache(uint32_t channeluid);
 
-  static void gc();
+    static void gc();
 
 private:
 
-  static void Lock() { m_access.Lock(); }
+    static void Lock() {
+        m_access.Lock();
+    }
 
-  static void Unlock() { m_access.Unlock(); }
+    static void Unlock() {
+        m_access.Unlock();
+    }
 
-  static std::map<uint32_t, cStreamBundle> m_cache;
+    static std::map<uint32_t, cStreamBundle> m_cache;
 
-  static cMutex m_access;
+    static cMutex m_access;
 
 };
 

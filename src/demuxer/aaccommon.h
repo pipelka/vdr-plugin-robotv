@@ -25,15 +25,13 @@
 #ifndef XVDR_AAC_COMMON
 #define XVDR_AAC_COMMON
 
-static const int aac_channels[8] =
-{
-  0, 1, 2, 3, 4, 5, 6, 8
+static const int aac_channels[8] = {
+    0, 1, 2, 3, 4, 5, 6, 8
 };
 
-static const int aac_samplerates[16] =
-{
-  96000, 88200, 64000, 48000, 44100, 32000,
-  24000, 22050, 16000, 12000, 11025, 8000, 7350
+static const int aac_samplerates[16] = {
+    96000, 88200, 64000, 48000, 44100, 32000,
+    24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
 #endif // XVDR_AAC_COMMON

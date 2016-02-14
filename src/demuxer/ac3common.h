@@ -29,16 +29,15 @@
 #define AC3_HEADER_SIZE 7
 
 // Channel mode (audio coding mode)
-typedef enum
-{
-  AC3_CHMODE_DUALMONO = 0,
-  AC3_CHMODE_MONO,
-  AC3_CHMODE_STEREO,
-  AC3_CHMODE_3F,
-  AC3_CHMODE_2F1R,
-  AC3_CHMODE_3F1R,
-  AC3_CHMODE_2F2R,
-  AC3_CHMODE_3F2R
+typedef enum {
+    AC3_CHMODE_DUALMONO = 0,
+    AC3_CHMODE_MONO,
+    AC3_CHMODE_STEREO,
+    AC3_CHMODE_3F,
+    AC3_CHMODE_2F1R,
+    AC3_CHMODE_3F1R,
+    AC3_CHMODE_2F2R,
+    AC3_CHMODE_3F2R
 } AC3ChannelMode;
 
 // possible frequencies
@@ -98,14 +97,14 @@ static const uint16_t AC3FrameSizeTable[38][3] = {
 };
 
 static const uint8_t EAC3Blocks[4] = {
-  1, 2, 3, 6
+    1, 2, 3, 6
 };
-  
+
 typedef enum {
-  EAC3_FRAME_TYPE_INDEPENDENT = 0,
-  EAC3_FRAME_TYPE_DEPENDENT,
-  EAC3_FRAME_TYPE_AC3_CONVERT,
-  EAC3_FRAME_TYPE_RESERVED
+    EAC3_FRAME_TYPE_INDEPENDENT = 0,
+    EAC3_FRAME_TYPE_DEPENDENT,
+    EAC3_FRAME_TYPE_AC3_CONVERT,
+    EAC3_FRAME_TYPE_RESERVED
 } EAC3FrameType;
-          
+
 #endif // XVDR_AC3_COMMON_H

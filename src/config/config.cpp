@@ -35,43 +35,52 @@
 #include "live/channelcache.h"
 #include "live/livequeue.h"
 
-cXVDRServerConfig::cXVDRServerConfig()
-{
-  listen_port         = LISTEN_PORT;
-  ConfigDirectory     = NULL;
-  stream_timeout      = 3;
-  ReorderCmd          = NULL;
+cXVDRServerConfig::cXVDRServerConfig() {
+    listen_port         = LISTEN_PORT;
+    ConfigDirectory     = NULL;
+    stream_timeout      = 3;
+    ReorderCmd          = NULL;
 }
 
 void cXVDRServerConfig::Load() {
 #if VDRVERSNUM >= 20102
-  cLiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
+    cLiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
 #else
-  cLiveQueue::SetTimeShiftDir(VideoDirectory);
+    cLiveQueue::SetTimeShiftDir(VideoDirectory);
 #endif
 
-  if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory, GENERAL_CONFIG_FILE), true, false))
-    return;
+    if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory, GENERAL_CONFIG_FILE), true, false)) {
+        return;
+    }
 
-  for (cSetupLine* l = First(); l; l = Next(l))
-  {
-    if(!Parse(l->Name(), l->Value()))
-      ERRORLOG("Unknown config parameter %s = %s in %s", l->Name(), l->Value(), GENERAL_CONFIG_FILE);
-  }
+    for(cSetupLine* l = First(); l; l = Next(l)) {
+        if(!Parse(l->Name(), l->Value())) {
+            ERRORLOG("Unknown config parameter %s = %s in %s", l->Name(), l->Value(), GENERAL_CONFIG_FILE);
+        }
+    }
 
-  cLiveQueue::RemoveTimeShiftFiles();
-  cChannelCache::LoadChannelCacheData();
+    cLiveQueue::RemoveTimeShiftFiles();
+    cChannelCache::LoadChannelCacheData();
 }
 
-bool cXVDRServerConfig::Parse(const char* Name, const char* Value)
-{
-  if     (!strcasecmp(Name, "TimeShiftDir")) cLiveQueue::SetTimeShiftDir(Value);
-  else if(!strcasecmp(Name, "MaxTimeShiftSize")) cLiveQueue::SetBufferSize(strtoull(Value, NULL, 10));
-  else if(!strcasecmp(Name, "PiconsURL")) PiconsURL = Value;
-  else if(!strcasecmp(Name, "ReorderCmd")) ReorderCmd = Value;
-  else return false;
+bool cXVDRServerConfig::Parse(const char* Name, const char* Value) {
+    if(!strcasecmp(Name, "TimeShiftDir")) {
+        cLiveQueue::SetTimeShiftDir(Value);
+    }
+    else if(!strcasecmp(Name, "MaxTimeShiftSize")) {
+        cLiveQueue::SetBufferSize(strtoull(Value, NULL, 10));
+    }
+    else if(!strcasecmp(Name, "PiconsURL")) {
+        PiconsURL = Value;
+    }
+    else if(!strcasecmp(Name, "ReorderCmd")) {
+        ReorderCmd = Value;
+    }
+    else {
+        return false;
+    }
 
-  return true;
+    return true;
 }
 
 /* Global instance */
