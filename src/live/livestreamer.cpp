@@ -218,6 +218,7 @@ void cLiveStreamer::Action(void)
 }
 
 int cLiveStreamer::SwitchChannel(const cChannel *channel) {
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   if (channel == NULL) {
     return XVDR_RET_ERROR;
