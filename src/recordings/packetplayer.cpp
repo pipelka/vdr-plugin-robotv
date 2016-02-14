@@ -41,6 +41,12 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
         m_firstKeyFrameSeen = true;
     }
 
+    // skip non video / audio packets
+    if(p->content != StreamInfo::scVIDEO && p->content != StreamInfo::scAUDIO) {
+        m_positionMarker = m_position;
+        return;
+    }
+
     // streaming starts with a key frame
     if(!m_firstKeyFrameSeen) {
         return;
