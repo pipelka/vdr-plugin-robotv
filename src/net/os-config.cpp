@@ -106,7 +106,7 @@ int socketread(int fd, uint8_t* data, int datalen, int timeout_ms) {
     return 0;
 }
 
-char* xvdr_inet_ntoa(in6_addr addr) {
+char* robotv_inet_ntoa(in6_addr addr) {
     static char buff[INET6_ADDRSTRLEN];
 
     if(IN6_IS_ADDR_V4MAPPED(&addr) || IN6_IS_ADDR_V4COMPAT(&addr)) {

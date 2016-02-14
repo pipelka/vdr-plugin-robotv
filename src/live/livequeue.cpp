@@ -211,7 +211,7 @@ bool cLiveQueue::Pause(bool on) {
 
     // create offline storage
     if(m_readfd == -1) {
-        m_storage = cString::sprintf("%s/xvdr-ringbuffer-%05i.data", (const char*)TimeShiftDir, m_socket);
+        m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)TimeShiftDir, m_socket);
         DEBUGLOG("FILE: %s", (const char*)m_storage);
 
         m_readfd = open(m_storage, O_CREAT | O_RDONLY, 0644);
@@ -261,7 +261,7 @@ void cLiveQueue::RemoveTimeShiftFiles() {
     struct dirent* entry = NULL;
 
     while((entry = readdir(dir)) != NULL) {
-        if(strncmp(entry->d_name, "xvdr-ringbuffer-", 16) == 0) {
+        if(strncmp(entry->d_name, "robotv-ringbuffer-", 16) == 0) {
             INFOLOG("Removing old time-shift storage: %s", entry->d_name);
             unlink(AddDirectory(TimeShiftDir, entry->d_name));
         }

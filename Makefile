@@ -11,7 +11,7 @@ PLUGIN = robotv
 
 ### The version number of this plugin (taken from the main source file):
 
-VERSION = $(shell grep 'static const char\* VERSION *=' src/xvdr/xvdr.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = $(shell grep 'static const char\* VERSION *=' src/robotv/robotv.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
 
 ### The directory environment:
 
@@ -92,11 +92,11 @@ OBJS = \
 	src/scanner/wirbelscan.o \
 	src/tools/hash.o \
 	src/tools/urlencode.o \
-	src/xvdr/timerconflicts.o \
-	src/xvdr/xvdr.o \
-	src/xvdr/xvdrclient.o \
-	src/xvdr/xvdrserver.o \
-	src/xvdr/xvdrchannels.o
+	src/robotv/timerconflicts.o \
+	src/robotv/robotv.o \
+	src/robotv/robotvclient.o \
+	src/robotv/robotvserver.o \
+	src/robotv/robotvchannels.o
 
 SQLITE_OBJS = \
 	src/db/sqlite3.o

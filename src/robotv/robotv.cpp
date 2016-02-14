@@ -24,7 +24,7 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "xvdr.h"
+#include "robotv.h"
 
 cPluginRoboTVServer::cPluginRoboTVServer(void) {
     Server = NULL;

@@ -2,7 +2,7 @@
 #include "config/config.h"
 #include "tools/hash.h"
 #include "vdr/tools.h"
-#include "xvdrchannels.h"
+#include "robotvchannels.h"
 
 cRoboTVChannels RoboTVChannels;
 

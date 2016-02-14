@@ -24,7 +24,7 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
-#include "xvdrserver.h"
+#include "robotvserver.h"
 
 static const char* VERSION        = "1.0.0";
 static const char* DESCRIPTION    = "RoboTV Server";

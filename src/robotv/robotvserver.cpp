@@ -39,9 +39,9 @@
 #include <vdr/plugin.h>
 #include <vdr/shutdown.h>
 
-#include "xvdrserver.h"
-#include "xvdrclient.h"
-#include "xvdrchannels.h"
+#include "robotvserver.h"
+#include "robotvclient.h"
+#include "robotvchannels.h"
 #include "live/channelcache.h"
 #include "recordings/recordingscache.h"
 #include "recordings/artwork.h"
@@ -208,7 +208,7 @@ void cRoboTVServer::NewClientConnected(int fd) {
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 
     if(!m_IPv4Fallback) {
-        INFOLOG("Client %s:%i with ID %d connected.", xvdr_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_IdCnt);
+        INFOLOG("Client %s:%i with ID %d connected.", robotv_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_IdCnt);
     }
     else {
         INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_IdCnt);

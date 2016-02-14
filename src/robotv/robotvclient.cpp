@@ -48,11 +48,11 @@
 #include "tools/hash.h"
 #include "tools/urlencode.h"
 
-#include "xvdr/xvdrchannels.h"
+#include "robotv/robotvchannels.h"
 
-#include "xvdrcommand.h"
-#include "xvdrclient.h"
-#include "xvdrserver.h"
+#include "robotvcommand.h"
+#include "robotvclient.h"
+#include "robotvserver.h"
 #include "timerconflicts.h"
 
 

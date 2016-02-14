@@ -25,7 +25,7 @@
 
 #include <vdr/tools.h>
 #include <vdr/channels.h>
-#include "xvdr/xvdrchannels.h"
+#include "robotv/robotvchannels.h"
 
 #include "hash.h"
 

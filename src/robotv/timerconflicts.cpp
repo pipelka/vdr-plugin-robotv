@@ -29,7 +29,7 @@
 #include <vdr/device.h>
 #include "config/config.h"
 #include "timerconflicts.h"
-#include "xvdrchannels.h"
+#include "robotvchannels.h"
 
 int CheckTimerConflicts(cTimer* timer) {
     RoboTVChannels.Lock(false);

@@ -28,7 +28,7 @@
 #include "demuxer/demuxer.h"
 #include "demuxer/streambundle.h"
 #include "net/msgpacket.h"
-#include "xvdr/xvdrcommand.h"
+#include "robotv/robotvcommand.h"
 
 #include <list>
 

@@ -25,7 +25,7 @@
 #include "channelcache.h"
 #include "config/config.h"
 #include "tools/hash.h"
-#include "xvdr/xvdrchannels.h"
+#include "robotv/robotvchannels.h"
 
 cMutex cChannelCache::m_access;
 std::map<uint32_t, cStreamBundle> cChannelCache::m_cache;

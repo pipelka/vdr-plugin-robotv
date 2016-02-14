@@ -52,7 +52,7 @@
 
 #define ALLOWED_HOSTS_FILE  "allowed_hosts.conf"
 #define FRONTEND_DEVICE     "/dev/dvb/adapter%d/frontend%d"
-#define GENERAL_CONFIG_FILE "xvdr.conf"
+#define GENERAL_CONFIG_FILE "robotv.conf"
 #define RESUME_DATA_FILE    "resume.data"
 #define CHANNEL_CACHE_FILE  "channelcache.data"
 #define STORAGE_DB_FILE     "storage.db"

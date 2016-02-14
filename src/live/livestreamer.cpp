@@ -40,8 +40,8 @@
 
 #include "config/config.h"
 #include "net/msgpacket.h"
-#include "xvdr/xvdrcommand.h"
-#include "xvdr/xvdrclient.h"
+#include "robotv/robotvcommand.h"
+#include "robotv/robotvclient.h"
 #include "tools/hash.h"
 
 #include "livestreamer.h"

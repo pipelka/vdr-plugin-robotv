@@ -119,7 +119,7 @@ bool cStreamInfo::operator ==(const cStreamInfo& rhs) const {
 
         case scTELETEXT:
             return true;
-        
+
         case scSTREAMINFO:
             return false;
     }
