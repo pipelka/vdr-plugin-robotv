@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,16 +26,16 @@
 #include <vdr/plugin.h>
 #include "xvdrserver.h"
 
-static const char* VERSION        = "0.9.9";
-static const char* DESCRIPTION    = "XVDR Server";
+static const char* VERSION        = "1.0.0";
+static const char* DESCRIPTION    = "RoboTV Server";
 
-class cPluginXVDRServer : public cPlugin {
+class cPluginRoboTVServer : public cPlugin {
 private:
-    cXVDRServer* Server;
+    cRoboTVServer* Server;
 
 public:
-    cPluginXVDRServer(void);
-    virtual ~cPluginXVDRServer();
+    cPluginRoboTVServer(void);
+    virtual ~cPluginRoboTVServer();
     virtual const char* Version(void) {
         return VERSION;
     }

@@ -1,5 +1,5 @@
 #
-# Makefile for the XVDR plugin
+# Makefile for the RoboTV plugin
 #
 
 
@@ -7,11 +7,11 @@
 # This name will be used in the '-P...' option of VDR to load the plugin.
 # By default the main source file also carries this name.
 #
-PLUGIN = xvdr
+PLUGIN = robotv
 
 ### The version number of this plugin (taken from the main source file):
 
-VERSION = $(shell grep 'static const char \*VERSION *=' src/xvdr/xvdr.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = $(shell grep 'static const char\* VERSION *=' src/xvdr/xvdr.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
 
 ### The directory environment:
 
@@ -58,14 +58,13 @@ ifdef DEBUG
 INCLUDES += -DDEBUG
 endif
 
-DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DXVDR_VERSION='"$(VERSION)"'
+DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DROBOTV_VERSION='"$(VERSION)"'
 
 ### The object files (add further files here):
 
 OBJS = \
 	src/config/config.o \
 	src/db/database.o \
-	src/db/sqlite3.co \
 	src/db/storage.o \
 	src/demuxer/demuxer.o \
 	src/demuxer/demuxer_ADTS.o \
@@ -99,6 +98,9 @@ OBJS = \
 	src/xvdr/xvdrserver.o \
 	src/xvdr/xvdrchannels.o
 
+SQLITE_OBJS = \
+	src/db/sqlite3.o
+
 LIBS =
 
 ### The main target:
@@ -107,11 +109,11 @@ all: $(SOFILE) i18n
 
 ### Implicit rules:
 
+src/db/sqlite3.o: src/db/sqlite3.c
+	$(CC) $(CFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
-
-%.co: %.c
-	$(CC) $(CFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
 
 ### Dependencies:
 
@@ -149,8 +151,8 @@ install-i18n: $(I18Nmsgs)
 
 ### Targets:
 
-$(SOFILE): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(LIBS) -o $@
+$(SOFILE): $(OBJS) $(SQLITE_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(SQLITE_OBJS) $(LIBS) -o $@
 
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
@@ -171,10 +173,11 @@ dist: $(I18Npo) clean
 
 clean:
 	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
-	@-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~
+	@-rm -f $(OBJS) $(SQLITE_OBJS) $(DEPFILE) *.so *.tgz core* *~
 
 astyle:
 	astyle  --exclude=src/db/sqlite3.h --exclude=src/db/sqlite3ext.h --options=./astylerc -r "src/*.cpp" "src/*.h"
 
 
 .PHONY: i18n astyle clean
+

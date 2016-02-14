@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
  *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 #include "tools/hash.h"
 #include <string>
 
-cRecordingsCache::cRecordingsCache() : m_storage(XVDR::Storage::getInstance()) {
+cRecordingsCache::cRecordingsCache() : m_storage(RoboTV::Storage::getInstance()) {
     // create db schema
     CreateDB();
 
@@ -139,7 +139,7 @@ int cRecordingsCache::GetPlayCount(uint32_t uid) {
         return 0;
     }
 
-    int count;
+    int count = 0;
 
     if(sqlite3_step(s) == SQLITE_ROW) {
         count = sqlite3_column_int(s, 0);
@@ -197,7 +197,7 @@ uint64_t cRecordingsCache::GetLastPlayedPosition(uint32_t uid) {
         return 0;
     }
 
-    uint64_t position;
+    uint64_t position = 0;
 
     if(sqlite3_step(s) == SQLITE_ROW) {
         position = sqlite3_column_int64(s, 0);

@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,14 +49,14 @@
 
 //#define ENABLE_CHANNELTRIGGER 1
 
-unsigned int cXVDRServer::m_IdCnt = 0;
+unsigned int cRoboTVServer::m_IdCnt = 0;
 
 class cAllowedHosts : public cSVDRPhosts {
 public:
     cAllowedHosts(const cString& AllowedHostsFile) {
         if(!Load(AllowedHostsFile, true, true)) {
             ERRORLOG("Invalid or missing '%s'. falling back to 'svdrphosts.conf'.", *AllowedHostsFile);
-            cString Base = cString::sprintf("%s/../svdrphosts.conf", *XVDRServerConfig.ConfigDirectory);
+            cString Base = cString::sprintf("%s/../svdrphosts.conf", *RoboTVServerConfig.ConfigDirectory);
 
             if(!Load(Base, true, true)) {
                 ERRORLOG("Invalid or missing %s. Adding 127.0.0.1 to list of allowed hosts.", *Base);
@@ -74,15 +73,15 @@ public:
     }
 };
 
-cXVDRServer::cXVDRServer(int listenPort) : cThread("VDR XVDR Server") {
+cRoboTVServer::cRoboTVServer(int listenPort) : cThread("VDR RoboTV Server") {
     m_IPv4Fallback = false;
     m_ServerPort  = listenPort;
 
-    if(*XVDRServerConfig.ConfigDirectory) {
-        m_AllowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, *XVDRServerConfig.ConfigDirectory);
+    if(*RoboTVServerConfig.ConfigDirectory) {
+        m_AllowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, *RoboTVServerConfig.ConfigDirectory);
     }
     else {
-        ERRORLOG("cXVDRServer: missing ConfigDirectory!");
+        ERRORLOG("cRoboTVServer: missing ConfigDirectory!");
         m_AllowedHostsFile = cString::sprintf("/video/" ALLOWED_HOSTS_FILE);
     }
 
@@ -109,7 +108,7 @@ cXVDRServer::cXVDRServer(int listenPort) : cThread("VDR XVDR Server") {
     int no = 0;
 
     if(!m_IPv4Fallback && setsockopt(m_ServerFD, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&no, sizeof(no)) < 0) {
-        ERRORLOG("cXVDRServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
+        ERRORLOG("cRoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
     }
 
     struct sockaddr_storage s;
@@ -129,7 +128,7 @@ cXVDRServer::cXVDRServer(int listenPort) : cThread("VDR XVDR Server") {
 
     if(x < 0) {
         close(m_ServerFD);
-        INFOLOG("Unable to start XVDR Server, port already in use ?");
+        INFOLOG("Unable to start RoboTV Server, port already in use ?");
         m_ServerFD = -1;
         return;
     }
@@ -138,22 +137,22 @@ cXVDRServer::cXVDRServer(int listenPort) : cThread("VDR XVDR Server") {
 
     Start();
 
-    INFOLOG("XVDR Server started");
-    INFOLOG("Channel streaming timeout: %i seconds", XVDRServerConfig.stream_timeout);
+    INFOLOG("RoboTV Server started");
+    INFOLOG("Channel streaming timeout: %i seconds", RoboTVServerConfig.stream_timeout);
     return;
 }
 
-cXVDRServer::~cXVDRServer() {
+cRoboTVServer::~cRoboTVServer() {
     Cancel(5);
 
     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
         delete(*i);
     }
 
-    INFOLOG("XVDR Server stopped");
+    INFOLOG("RoboTV Server stopped");
 }
 
-void cXVDRServer::NewClientConnected(int fd) {
+void cRoboTVServer::NewClientConnected(int fd) {
     struct sockaddr_storage sin;
     socklen_t len = sizeof(sin);
     in_addr_t* ipv4_addr = NULL;
@@ -215,12 +214,12 @@ void cXVDRServer::NewClientConnected(int fd) {
         INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_IdCnt);
     }
 
-    cXVDRClient* connection = new cXVDRClient(fd, m_IdCnt);
+    cRoboTVClient* connection = new cRoboTVClient(fd, m_IdCnt);
     m_clients.push_back(connection);
     m_IdCnt++;
 }
 
-void cXVDRServer::Action(void) {
+void cRoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
     cTimeMs channelReloadTimer;
@@ -285,8 +284,8 @@ void cXVDRServer::Action(void) {
 
             // trigger clients to reload the modified channel list
             if(m_clients.size() > 0) {
-                uint64_t hash = XVDRChannels.CheckUpdates();
-                XVDRChannels.Lock(false);
+                uint64_t hash = RoboTVChannels.CheckUpdates();
+                RoboTVChannels.Lock(false);
 
                 if(hash != channelsHash) {
                     channelReloadTrigger = true;
@@ -305,7 +304,7 @@ void cXVDRServer::Action(void) {
                     INFOLOG("Done.");
                 }
 
-                XVDRChannels.Unlock();
+                RoboTVChannels.Unlock();
                 channelsHash = hash;
             }
 

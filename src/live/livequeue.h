@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2012 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_LIVEQUEUE_H
-#define XVDR_LIVEQUEUE_H
+#ifndef ROBOTV_LIVEQUEUE_H
+#define ROBOTV_LIVEQUEUE_H
 
 #include <queue>
 #include <vdr/thread.h>
@@ -76,11 +76,11 @@ protected:
 
     cString m_storage;
 
-    int m_queuesize;
+    size_type m_queuesize;
 
     static cString TimeShiftDir;
 
     static uint64_t BufferSize;
 };
 
-#endif // XVDR_LIVEQUEUE_H
+#endif // ROBOTV_LIVEQUEUE_H

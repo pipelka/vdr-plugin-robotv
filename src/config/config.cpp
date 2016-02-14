@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,14 +34,14 @@
 #include "live/channelcache.h"
 #include "live/livequeue.h"
 
-cXVDRServerConfig::cXVDRServerConfig() {
+cRoboTVServerConfig::cRoboTVServerConfig() {
     listen_port         = LISTEN_PORT;
     ConfigDirectory     = NULL;
     stream_timeout      = 3;
     ReorderCmd          = NULL;
 }
 
-void cXVDRServerConfig::Load() {
+void cRoboTVServerConfig::Load() {
 #if VDRVERSNUM >= 20102
     cLiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
 #else
@@ -63,7 +62,7 @@ void cXVDRServerConfig::Load() {
     cChannelCache::LoadChannelCacheData();
 }
 
-bool cXVDRServerConfig::Parse(const char* Name, const char* Value) {
+bool cRoboTVServerConfig::Parse(const char* Name, const char* Value) {
     if(!strcasecmp(Name, "TimeShiftDir")) {
         cLiveQueue::SetTimeShiftDir(Value);
     }
@@ -84,4 +83,4 @@ bool cXVDRServerConfig::Parse(const char* Name, const char* Value) {
 }
 
 /* Global instance */
-cXVDRServerConfig XVDRServerConfig;
+cRoboTVServerConfig RoboTVServerConfig;

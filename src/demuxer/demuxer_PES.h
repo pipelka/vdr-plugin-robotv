@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2012 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_DEMUXER_PES_H
-#define XVDR_DEMUXER_PES_H
+#ifndef ROBOTV_DEMUXER_PES_H
+#define ROBOTV_DEMUXER_PES_H
 
 #include "parser.h"
 
@@ -40,4 +40,4 @@ protected:
 
 };
 
-#endif // XVDR_DEMUXER_PES_H
+#endif // ROBOTV_DEMUXER_PES_H

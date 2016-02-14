@@ -1,11 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2004-2005 Chris Tallon
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,12 +22,8 @@
  *
  */
 
-/*
- * This code is taken from VOMP for VDR plugin.
- */
-
-#ifndef XVDR_RECPLAYER_H
-#define XVDR_RECPLAYER_H
+#ifndef ROBOTV_RECPLAYER_H
+#define ROBOTV_RECPLAYER_H
 
 #include <stdio.h>
 #include <vdr/tools.h>
@@ -89,4 +83,4 @@ private:
     uint32_t m_rescanInterval;
 };
 
-#endif // XVDR_RECPLAYER_H
+#endif // ROBOTV_RECPLAYER_H

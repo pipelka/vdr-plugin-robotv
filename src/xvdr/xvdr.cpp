@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,19 +26,19 @@
 #include <vdr/plugin.h>
 #include "xvdr.h"
 
-cPluginXVDRServer::cPluginXVDRServer(void) {
+cPluginRoboTVServer::cPluginRoboTVServer(void) {
     Server = NULL;
 }
 
-cPluginXVDRServer::~cPluginXVDRServer() {
+cPluginRoboTVServer::~cPluginRoboTVServer() {
     // Clean up after yourself!
 }
 
-const char* cPluginXVDRServer::CommandLineHelp(void) {
+const char* cPluginRoboTVServer::CommandLineHelp(void) {
     return "  -t n, --timeout=n      stream data timeout in seconds (default: 10)\n";
 }
 
-bool cPluginXVDRServer::ProcessArgs(int argc, char* argv[]) {
+bool cPluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
     // Implement command line argument processing here if applicable.
     static struct option long_options[] = {
         { "timeout",  required_argument, NULL, 't' },
@@ -52,7 +51,7 @@ bool cPluginXVDRServer::ProcessArgs(int argc, char* argv[]) {
         switch(c) {
             case 't':
                 if(optarg != NULL) {
-                    XVDRServerConfig.stream_timeout = atoi(optarg);
+                    RoboTVServerConfig.stream_timeout = atoi(optarg);
                 }
 
                 break;
@@ -65,71 +64,71 @@ bool cPluginXVDRServer::ProcessArgs(int argc, char* argv[]) {
     return true;
 }
 
-bool cPluginXVDRServer::Initialize(void) {
+bool cPluginRoboTVServer::Initialize(void) {
     // Initialize any background activities the plugin shall perform.
-    XVDRServerConfig.ConfigDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
+    RoboTVServerConfig.ConfigDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
 #if VDRVERSNUM >= 10730
-    XVDRServerConfig.CacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
+    RoboTVServerConfig.CacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
 #else
-    XVDRServerConfig.CacheDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
+    RoboTVServerConfig.CacheDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
 #endif
-    XVDRServerConfig.Load();
+    RoboTVServerConfig.Load();
     return true;
 }
 
-bool cPluginXVDRServer::Start(void) {
-    Server = new cXVDRServer(XVDRServerConfig.listen_port);
+bool cPluginRoboTVServer::Start(void) {
+    Server = new cRoboTVServer(RoboTVServerConfig.listen_port);
 
     return true;
 }
 
-void cPluginXVDRServer::Stop(void) {
+void cPluginRoboTVServer::Stop(void) {
     delete Server;
     Server = NULL;
 }
 
-void cPluginXVDRServer::Housekeeping(void) {
+void cPluginRoboTVServer::Housekeeping(void) {
     // Perform any cleanup or other regular tasks.
 }
 
-void cPluginXVDRServer::MainThreadHook(void) {
+void cPluginRoboTVServer::MainThreadHook(void) {
     // Perform actions in the context of the main program thread.
     // WARNING: Use with great care - see PLUGINS.html!
 }
 
-cString cPluginXVDRServer::Active(void) {
+cString cPluginRoboTVServer::Active(void) {
     // Return a message string if shutdown should be postponed
     return NULL;
 }
 
-time_t cPluginXVDRServer::WakeupTime(void) {
+time_t cPluginRoboTVServer::WakeupTime(void) {
     // Return custom wakeup time for shutdown script
     return 0;
 }
 
-cMenuSetupPage* cPluginXVDRServer::SetupMenu(void) {
+cMenuSetupPage* cPluginRoboTVServer::SetupMenu(void) {
     // Return a setup menu in case the plugin supports one.
     return NULL;
 }
 
-bool cPluginXVDRServer::SetupParse(const char* Name, const char* Value) {
+bool cPluginRoboTVServer::SetupParse(const char* Name, const char* Value) {
     // Parse your own setup parameters and store their values.
     return false;
 }
 
-bool cPluginXVDRServer::Service(const char* Id, void* Data) {
+bool cPluginRoboTVServer::Service(const char* Id, void* Data) {
     // Handle custom service requests from other plugins
     return false;
 }
 
-const char** cPluginXVDRServer::SVDRPHelpPages(void) {
+const char** cPluginRoboTVServer::SVDRPHelpPages(void) {
     // Return help text for SVDRP commands this plugin implements
     return NULL;
 }
 
-cString cPluginXVDRServer::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
+cString cPluginRoboTVServer::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
     // Process SVDRP commands this plugin implements
     return NULL;
 }
 
-VDRPLUGINCREATOR(cPluginXVDRServer); // Don't touch this!
+VDRPLUGINCREATOR(cPluginRoboTVServer); // Don't touch this!

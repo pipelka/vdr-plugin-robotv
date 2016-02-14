@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,20 +22,20 @@
  *
  */
 
-#ifndef XVDR_SERVER_H
-#define XVDR_SERVER_H
+#ifndef ROBOTV_SERVER_H
+#define ROBOTV_SERVER_H
 
 #include <list>
 #include <vdr/thread.h>
 
 #include "config/config.h"
 
-class cXVDRClient;
+class cRoboTVClient;
 
-class cXVDRServer : public cThread {
+class cRoboTVServer : public cThread {
 protected:
 
-    typedef std::list<cXVDRClient*> ClientList;
+    typedef std::list<cRoboTVClient*> ClientList;
 
     virtual void Action(void);
     void NewClientConnected(int fd);
@@ -50,8 +49,8 @@ protected:
     static unsigned int m_IdCnt;
 
 public:
-    cXVDRServer(int listenPort);
-    virtual ~cXVDRServer();
+    cRoboTVServer(int listenPort);
+    virtual ~cRoboTVServer();
 };
 
-#endif // XVDR_SERVER_H
+#endif // ROBOTV_SERVER_H

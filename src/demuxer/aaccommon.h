@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2012 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_AAC_COMMON
-#define XVDR_AAC_COMMON
+#ifndef ROBOTV_AAC_COMMON
+#define ROBOTV_AAC_COMMON
 
 static const int aac_channels[8] = {
     0, 1, 2, 3, 4, 5, 6, 8
@@ -34,4 +34,4 @@ static const int aac_samplerates[16] = {
     24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
-#endif // XVDR_AAC_COMMON
+#endif // ROBOTV_AAC_COMMON

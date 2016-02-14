@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2013 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@
  *
  */
 
-#ifndef XVDR_TIMERCONFLICTS_H
-#define XVDR_TIMERCONFLICTS_H
+#ifndef ROBOTV_TIMERCONFLICTS_H
+#define ROBOTV_TIMERCONFLICTS_H
 
 int CheckTimerConflicts(cTimer* timer);
 
-#endif // XVDR_TIMERCONFLICTS_H
+#endif // ROBOTV_TIMERCONFLICTS_H

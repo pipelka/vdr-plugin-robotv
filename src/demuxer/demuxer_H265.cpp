@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
  *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -280,7 +280,7 @@ bool cParserH265::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, 
 
     if(bs.GetBit()) {  // long_term_ref_pics_present_flag
         // num_long_term_ref_pics_sps
-        for(int i = 0; i < read_golomb_ue(&bs); i++) {
+        for(uint32_t i = 0; i < read_golomb_ue(&bs); i++) {
             int ltRefPicPocLsbSpsLength = log2MaxPicOrderCntLsbMinus4 + 4;
             // lt_ref_pic_poc_lsb_sps[i], used_by_curr_pic_lt_sps_flag[i]
             bs.SkipBits(ltRefPicPocLsbSpsLength + 1);
@@ -294,7 +294,7 @@ bool cParserH265::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, 
 
     if(bs.GetBit()) {  // vui_parameters_present_flag
         if(bs.GetBit()) {  // aspect_ratio_info_present_flag
-            int aspect_ratio_idc = bs.GetBits(8);
+            unsigned int aspect_ratio_idc = bs.GetBits(8);
 
             if(aspect_ratio_idc == 255) {
                 pixelaspect.num = bs.GetBits(16);

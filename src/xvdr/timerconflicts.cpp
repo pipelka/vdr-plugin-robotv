@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2013 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #include "xvdrchannels.h"
 
 int CheckTimerConflicts(cTimer* timer) {
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
 
     // check for timer conflicts
     DEBUGLOG("Checking conflicts for: %s", (const char*)timer->ToText(true));
@@ -127,7 +127,7 @@ int CheckTimerConflicts(cTimer* timer) {
         DEBUGLOG("No conflicts");
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     return cflags;
 }

@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,7 +48,7 @@
 #include "livequeue.h"
 #include "channelcache.h"
 
-cLiveStreamer::cLiveStreamer(cXVDRClient* parent, const cChannel* channel, int priority, bool rawPTS)
+cLiveStreamer::cLiveStreamer(cRoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS)
     : cThread("cLiveStreamer stream processor")
     , cRingBufferLinear(MEGABYTE(10), TS_SIZE, true)
     , cReceiver(NULL, priority)
@@ -63,14 +62,14 @@ cLiveStreamer::cLiveStreamer(cXVDRClient* parent, const cChannel* channel, int p
     m_LangStreamType  = cStreamInfo::stMPEG2AUDIO;
     m_LanguageIndex   = -1;
     m_uid             = CreateChannelUID(channel);
-    m_protocolVersion = XVDR_PROTOCOLVERSION;
+    m_protocolVersion = ROBOTV_PROTOCOLVERSION;
     m_waitforiframe   = false;
     m_rawPTS          = rawPTS;
 
     m_requestStreamChange = false;
 
     if(m_scanTimeout == 0) {
-        m_scanTimeout = XVDRServerConfig.stream_timeout;
+        m_scanTimeout = RoboTVServerConfig.stream_timeout;
     }
 
     // create send queue
@@ -137,7 +136,7 @@ void cLiveStreamer::TryChannelSwitch() {
     int rc = SwitchChannel(channel);
 
     // succeeded -> exit
-    if(rc == XVDR_RET_OK) {
+    if(rc == ROBOTV_RET_OK) {
         return;
     }
 
@@ -149,22 +148,22 @@ void cLiveStreamer::TryChannelSwitch() {
 
     // push notification after timeout
     switch(rc) {
-        case XVDR_RET_ENCRYPTED:
+        case ROBOTV_RET_ENCRYPTED:
             ERRORLOG("Unable to decrypt channel %i - %s", channel->Number(), channel->Name());
             m_parent->StatusMessage(tr("Unable to decrypt channel"));
             break;
 
-        case XVDR_RET_DATALOCKED:
+        case ROBOTV_RET_DATALOCKED:
             ERRORLOG("Can't get device for channel %i - %s", channel->Number(), channel->Name());
             m_parent->StatusMessage(tr("All tuners busy"));
             break;
 
-        case XVDR_RET_RECRUNNING:
+        case ROBOTV_RET_RECRUNNING:
             ERRORLOG("Active recording blocking channel %i - %s", channel->Number(), channel->Name());
             m_parent->StatusMessage(tr("Blocked by active recording"));
             break;
 
-        case XVDR_RET_ERROR:
+        case ROBOTV_RET_ERROR:
             ERRORLOG("Error switching to channel %i - %s", channel->Number(), channel->Name());
             m_parent->StatusMessage(tr("Failed to switch"));
             break;
@@ -192,7 +191,7 @@ void cLiveStreamer::Action(void) {
 
         if(!IsStarting() && (m_last_tick.Elapsed() > (uint64_t)(m_scanTimeout * 1000)) && !m_SignalLost) {
             INFOLOG("timeout. signal lost!");
-            sendStatus(XVDR_STREAM_STATUS_SIGNALLOST);
+            sendStatus(ROBOTV_STREAM_STATUS_SIGNALLOST);
             m_SignalLost = true;
         }
 
@@ -221,7 +220,7 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if(channel == NULL) {
-        return XVDR_RET_ERROR;
+        return ROBOTV_RET_ERROR;
     }
 
     if(IsAttached()) {
@@ -243,7 +242,7 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
         }
 
         if(!NumUsableSlots) {
-            return XVDR_RET_ENCRYPTED;
+            return ROBOTV_RET_ENCRYPTED;
         }
     }
 
@@ -256,18 +255,18 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
 
         for(cTimer* ti = Timers.First(); ti; ti = Timers.Next(ti)) {
             if(ti->Recording() && ti->Matches(now)) {
-                return XVDR_RET_RECRUNNING;
+                return ROBOTV_RET_RECRUNNING;
             }
         }
 
-        return XVDR_RET_DATALOCKED;
+        return ROBOTV_RET_DATALOCKED;
     }
 
     INFOLOG("Found available device %d", m_Device->DeviceNumber() + 1);
 
     if(!m_Device->SwitchChannel(channel, false)) {
         ERRORLOG("Can't switch to channel %i - %s", channel->Number(), channel->Name());
-        return XVDR_RET_ERROR;
+        return ROBOTV_RET_ERROR;
     }
 
     // get cached demuxer data
@@ -314,11 +313,11 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
 
     if(!Attach()) {
         INFOLOG("Unable to attach receiver !");
-        return XVDR_RET_DATALOCKED;
+        return ROBOTV_RET_DATALOCKED;
     }
 
     INFOLOG("done switching.");
-    return XVDR_RET_OK;
+    return ROBOTV_RET_OK;
 }
 
 bool cLiveStreamer::Attach(void) {
@@ -370,7 +369,7 @@ void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
     // if a audio or video packet was sent, the signal is restored
     if(m_SignalLost && (pkt->content == cStreamInfo::scVIDEO || pkt->content == cStreamInfo::scAUDIO)) {
         INFOLOG("signal restored");
-        sendStatus(XVDR_STREAM_STATUS_SIGNALRESTORED);
+        sendStatus(ROBOTV_STREAM_STATUS_SIGNALRESTORED);
         m_SignalLost = false;
         m_requestStreamChange = true;
         m_last_tick.Set(0);
@@ -382,7 +381,7 @@ void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
     }
 
     // initialise stream packet
-    MsgPacket* packet = new MsgPacket(XVDR_STREAM_MUXPKT, XVDR_CHANNEL_STREAM);
+    MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_MUXPKT, ROBOTV_CHANNEL_STREAM);
     packet->disablePayloadCheckSum();
 
     // write stream data
@@ -414,7 +413,7 @@ void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
 
 void cLiveStreamer::sendDetach() {
     INFOLOG("sending detach message");
-    MsgPacket* resp = new MsgPacket(XVDR_STREAM_DETACH, XVDR_CHANNEL_STREAM);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
     m_parent->QueueMessage(resp);
 }
 
@@ -441,7 +440,7 @@ void cLiveStreamer::sendStreamChange() {
 }
 
 void cLiveStreamer::sendStatus(int status) {
-    MsgPacket* packet = new MsgPacket(XVDR_STREAM_STATUS, XVDR_CHANNEL_STREAM);
+    MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_STATUS, ROBOTV_CHANNEL_STREAM);
     packet->put_U32(status);
     m_parent->QueueMessage(packet);
 }
@@ -457,7 +456,7 @@ void cLiveStreamer::RequestSignalInfo() {
         return;
     }
 
-    MsgPacket* resp = new MsgPacket(XVDR_STREAM_SIGNALINFO, XVDR_CHANNEL_STREAM);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_SIGNALINFO, ROBOTV_CHANNEL_STREAM);
 
     int DeviceNumber = m_Device->DeviceNumber() + 1;
     int Strength = 0;

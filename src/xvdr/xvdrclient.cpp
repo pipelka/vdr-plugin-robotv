@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -79,7 +78,7 @@ static uint32_t recid2uid(const char* recid) {
     return uid;
 }
 
-void cXVDRClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
+void cRoboTVClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
     p->put_U32(channel->Number());
     p->put_String(m_toUTF8.Convert(channel->Name()));
     p->put_U32(CreateChannelUID(channel));
@@ -94,7 +93,7 @@ void cXVDRClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
     }
 }
 
-cString cXVDRClient::CreateServiceReference(const cChannel* channel) {
+cString cRoboTVClient::CreateServiceReference(const cChannel* channel) {
     int hash = 0;
 
     if(cSource::IsSat(channel->Source())) {
@@ -137,8 +136,8 @@ cString cXVDRClient::CreateServiceReference(const cChannel* channel) {
     return serviceref;
 }
 
-cString cXVDRClient::CreateLogoURL(const cChannel* channel) {
-    const char* url = (const char*)XVDRServerConfig.PiconsURL;
+cString cRoboTVClient::CreateLogoURL(const cChannel* channel) {
+    const char* url = (const char*)RoboTVServerConfig.PiconsURL;
 
     if(url == NULL || strlen(url) == 0) {
         return "";
@@ -150,11 +149,11 @@ cString cXVDRClient::CreateLogoURL(const cChannel* channel) {
         filename = url_encode(filename);
     }
 
-    cString piconurl = AddDirectory(XVDRServerConfig.PiconsURL, filename.c_str());
+    cString piconurl = AddDirectory(RoboTVServerConfig.PiconsURL, filename.c_str());
     return cString::sprintf("%s.png", (const char*)piconurl);
 }
 
-void cXVDRClient::PutTimer(cTimer* timer, MsgPacket* p) {
+void cRoboTVClient::PutTimer(cTimer* timer, MsgPacket* p) {
     int flags = CheckTimerConflicts(timer);
 
     p->put_U32(CreateTimerUID(timer));
@@ -169,7 +168,7 @@ void cXVDRClient::PutTimer(cTimer* timer, MsgPacket* p) {
     p->put_String(m_toUTF8.Convert(timer->File()));
 }
 
-cXVDRClient::cXVDRClient(int fd, unsigned int id) {
+cRoboTVClient::cRoboTVClient(int fd, unsigned int id) {
     m_Id                      = id;
     m_loggedIn                = false;
     m_Streamer                = NULL;
@@ -193,7 +192,7 @@ cXVDRClient::cXVDRClient(int fd, unsigned int id) {
     m_scanSupported = m_scanner.Connect();
 }
 
-cXVDRClient::~cXVDRClient() {
+cRoboTVClient::~cRoboTVClient() {
     DEBUGLOG("%s", __FUNCTION__);
     StopChannelStreaming();
 
@@ -221,7 +220,7 @@ cXVDRClient::~cXVDRClient() {
     DEBUGLOG("done");
 }
 
-void cXVDRClient::Action(void) {
+void cRoboTVClient::Action(void) {
     bool bClosed(false);
 
     // only root may change the priority
@@ -269,7 +268,7 @@ void cXVDRClient::Action(void) {
     StopChannelStreaming();
 }
 
-int cXVDRClient::StartChannelStreaming(const cChannel* channel, uint32_t timeout, int32_t priority, bool waitforiframe, bool rawPTS) {
+int cRoboTVClient::StartChannelStreaming(const cChannel* channel, uint32_t timeout, int32_t priority, bool waitforiframe, bool rawPTS) {
     cMutexLock lock(&m_streamerLock);
 
     m_Streamer = new cLiveStreamer(this, channel, priority, rawPTS);
@@ -278,17 +277,17 @@ int cXVDRClient::StartChannelStreaming(const cChannel* channel, uint32_t timeout
     m_Streamer->SetProtocolVersion(m_protocolVersion);
     m_Streamer->SetWaitForIFrame(waitforiframe);
 
-    return XVDR_RET_OK;
+    return ROBOTV_RET_OK;
 }
 
-void cXVDRClient::StopChannelStreaming() {
+void cRoboTVClient::StopChannelStreaming() {
     cMutexLock lock(&m_streamerLock);
 
     delete m_Streamer;
     m_Streamer = NULL;
 }
 
-void cXVDRClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
+void cRoboTVClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     // ignore invalid timers
     if(Timer == NULL) {
         return;
@@ -297,7 +296,7 @@ void cXVDRClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     TimerChange();
 }
 
-void cXVDRClient::ChannelChange(const cChannel* Channel) {
+void cRoboTVClient::ChannelChange(const cChannel* Channel) {
     cMutexLock lock(&m_streamerLock);
 
     INFOLOG("ChannelChange: %i - %s", Channel->Number(), Channel->ShortName());
@@ -309,23 +308,23 @@ void cXVDRClient::ChannelChange(const cChannel* Channel) {
     cMutexLock msgLock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled && m_protocolVersion >= 6) {
-        MsgPacket* resp = new MsgPacket(XVDR_STATUS_CHANNELCHANGED, XVDR_CHANNEL_STATUS);
+        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGED, ROBOTV_CHANNEL_STATUS);
         addChannelToPacket(Channel, resp);
         QueueMessage(resp);
     }
 }
 
-void cXVDRClient::TimerChange() {
+void cRoboTVClient::TimerChange() {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled) {
         INFOLOG("Sending timer change request to client #%i ...", m_Id);
-        MsgPacket* resp = new MsgPacket(XVDR_STATUS_TIMERCHANGE, XVDR_CHANNEL_STATUS);
+        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
         QueueMessage(resp);
     }
 }
 
-void cXVDRClient::ChannelsChanged() {
+void cRoboTVClient::ChannelsChanged() {
     cMutexLock lock(&m_msgLock);
 
     if(!m_StatusInterfaceEnabled) {
@@ -346,26 +345,26 @@ void cXVDRClient::ChannelsChanged() {
         INFOLOG("Client %i : %i channels, %i available - sending request", m_Id, m_channelCount, count);
     }
 
-    MsgPacket* resp = new MsgPacket(XVDR_STATUS_CHANNELCHANGE, XVDR_CHANNEL_STATUS);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGE, ROBOTV_CHANNEL_STATUS);
     QueueMessage(resp);
 }
 
-void cXVDRClient::RecordingsChange() {
+void cRoboTVClient::RecordingsChange() {
     cMutexLock lock(&m_msgLock);
 
     if(!m_StatusInterfaceEnabled) {
         return;
     }
 
-    MsgPacket* resp = new MsgPacket(XVDR_STATUS_RECORDINGSCHANGE, XVDR_CHANNEL_STATUS);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
     QueueMessage(resp);
 }
 
-void cXVDRClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
+void cRoboTVClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled) {
-        MsgPacket* resp = new MsgPacket(XVDR_STATUS_RECORDING, XVDR_CHANNEL_STATUS);
+        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
 
         resp->put_U32(Device->CardIndex());
         resp->put_U32(On);
@@ -388,7 +387,7 @@ void cXVDRClient::Recording(const cDevice* Device, const char* Name, const char*
     }
 }
 
-void cXVDRClient::OsdStatusMessage(const char* Message) {
+void cRoboTVClient::OsdStatusMessage(const char* Message) {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled && Message) {
@@ -458,8 +457,8 @@ void cXVDRClient::OsdStatusMessage(const char* Message) {
     }
 }
 
-void cXVDRClient::StatusMessage(const char* Message) {
-    MsgPacket* resp = new MsgPacket(XVDR_STATUS_MESSAGE, XVDR_CHANNEL_STATUS);
+void cRoboTVClient::StatusMessage(const char* Message) {
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_MESSAGE, ROBOTV_CHANNEL_STATUS);
 
     resp->put_U32(0);
     resp->put_String(Message);
@@ -467,7 +466,7 @@ void cXVDRClient::StatusMessage(const char* Message) {
     QueueMessage(resp);
 }
 
-bool cXVDRClient::IsChannelWanted(cChannel* channel, int type) {
+bool cRoboTVClient::IsChannelWanted(cChannel* channel, int type) {
     // dismiss invalid channels
     if(channel == NULL) {
         return false;
@@ -557,207 +556,207 @@ bool cXVDRClient::IsChannelWanted(cChannel* channel, int type) {
     return false;
 }
 
-bool cXVDRClient::processRequest() {
+bool cRoboTVClient::processRequest() {
     cMutexLock lock(&m_msgLock);
 
-    m_resp = new MsgPacket(m_req->getMsgID(), XVDR_CHANNEL_REQUEST_RESPONSE, m_req->getUID());
-    m_resp->setProtocolVersion(XVDR_PROTOCOLVERSION);
+    m_resp = new MsgPacket(m_req->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, m_req->getUID());
+    m_resp->setProtocolVersion(ROBOTV_PROTOCOLVERSION);
 
     bool result = false;
 
     switch(m_req->getMsgID()) {
-            /** OPCODE 1 - 19: XVDR network functions for general purpose */
-        case XVDR_LOGIN:
+            /** OPCODE 1 - 19: RoboTV network functions for general purpose */
+        case ROBOTV_LOGIN:
             result = process_Login();
             break;
 
-        case XVDR_GETTIME:
+        case ROBOTV_GETTIME:
             result = process_GetTime();
             break;
 
-        case XVDR_ENABLESTATUSINTERFACE:
+        case ROBOTV_ENABLESTATUSINTERFACE:
             result = process_EnableStatusInterface();
             break;
 
-        case XVDR_UPDATECHANNELS:
+        case ROBOTV_UPDATECHANNELS:
             result = process_UpdateChannels();
             break;
 
-        case XVDR_CHANNELFILTER:
+        case ROBOTV_CHANNELFILTER:
             result = process_ChannelFilter();
             break;
 
-            /** OPCODE 20 - 39: XVDR network functions for live streaming */
-        case XVDR_CHANNELSTREAM_OPEN:
+            /** OPCODE 20 - 39: RoboTV network functions for live streaming */
+        case ROBOTV_CHANNELSTREAM_OPEN:
             result = processChannelStream_Open();
             break;
 
-        case XVDR_CHANNELSTREAM_CLOSE:
+        case ROBOTV_CHANNELSTREAM_CLOSE:
             result = processChannelStream_Close();
             break;
 
-        case XVDR_CHANNELSTREAM_REQUEST:
+        case ROBOTV_CHANNELSTREAM_REQUEST:
             result = processChannelStream_Request();
             break;
 
-        case XVDR_CHANNELSTREAM_PAUSE:
+        case ROBOTV_CHANNELSTREAM_PAUSE:
             result = processChannelStream_Pause();
             break;
 
-        case XVDR_CHANNELSTREAM_SIGNAL:
+        case ROBOTV_CHANNELSTREAM_SIGNAL:
             result = processChannelStream_Signal();
             break;
 
-            /** OPCODE 40 - 59: XVDR network functions for recording streaming */
-        case XVDR_RECSTREAM_OPEN:
+            /** OPCODE 40 - 59: RoboTV network functions for recording streaming */
+        case ROBOTV_RECSTREAM_OPEN:
             result = processRecStream_Open();
             break;
 
-        case XVDR_RECSTREAM_CLOSE:
+        case ROBOTV_RECSTREAM_CLOSE:
             result = processRecStream_Close();
             break;
 
-        case XVDR_RECSTREAM_GETBLOCK:
+        case ROBOTV_RECSTREAM_GETBLOCK:
             result = processRecStream_GetBlock();
             break;
 
-        case XVDR_RECSTREAM_GETPACKET:
+        case ROBOTV_RECSTREAM_GETPACKET:
             result = processRecStream_GetPacket();
             break;
 
-        case XVDR_RECSTREAM_UPDATE:
+        case ROBOTV_RECSTREAM_UPDATE:
             result = processRecStream_Update();
             break;
 
-        case XVDR_RECSTREAM_SEEK:
+        case ROBOTV_RECSTREAM_SEEK:
             result = processRecStream_Seek();
             break;
 
 
-            /** OPCODE 60 - 79: XVDR network functions for channel access */
-        case XVDR_CHANNELS_GETCOUNT:
+            /** OPCODE 60 - 79: RoboTV network functions for channel access */
+        case ROBOTV_CHANNELS_GETCOUNT:
             result = processCHANNELS_ChannelsCount();
             break;
 
-        case XVDR_CHANNELS_GETCHANNELS:
+        case ROBOTV_CHANNELS_GETCHANNELS:
             result = processCHANNELS_GetChannels();
             break;
 
-        case XVDR_CHANNELGROUP_GETCOUNT:
+        case ROBOTV_CHANNELGROUP_GETCOUNT:
             result = processCHANNELS_GroupsCount();
             break;
 
-        case XVDR_CHANNELGROUP_LIST:
+        case ROBOTV_CHANNELGROUP_LIST:
             result = processCHANNELS_GroupList();
             break;
 
-        case XVDR_CHANNELGROUP_MEMBERS:
+        case ROBOTV_CHANNELGROUP_MEMBERS:
             result = processCHANNELS_GetGroupMembers();
             break;
 
-            /** OPCODE 80 - 99: XVDR network functions for timer access */
-        case XVDR_TIMER_GETCOUNT:
+            /** OPCODE 80 - 99: RoboTV network functions for timer access */
+        case ROBOTV_TIMER_GETCOUNT:
             result = processTIMER_GetCount();
             break;
 
-        case XVDR_TIMER_GET:
+        case ROBOTV_TIMER_GET:
             result = processTIMER_Get();
             break;
 
-        case XVDR_TIMER_GETLIST:
+        case ROBOTV_TIMER_GETLIST:
             result = processTIMER_GetList();
             break;
 
-        case XVDR_TIMER_ADD:
+        case ROBOTV_TIMER_ADD:
             result = processTIMER_Add();
             break;
 
-        case XVDR_TIMER_DELETE:
+        case ROBOTV_TIMER_DELETE:
             result = processTIMER_Delete();
             break;
 
-        case XVDR_TIMER_UPDATE:
+        case ROBOTV_TIMER_UPDATE:
             result = processTIMER_Update();
             break;
 
 
-            /** OPCODE 100 - 119: XVDR network functions for recording access */
-        case XVDR_RECORDINGS_DISKSIZE:
+            /** OPCODE 100 - 119: RoboTV network functions for recording access */
+        case ROBOTV_RECORDINGS_DISKSIZE:
             result = processRECORDINGS_GetDiskSpace();
             break;
 
-        case XVDR_RECORDINGS_GETCOUNT:
+        case ROBOTV_RECORDINGS_GETCOUNT:
             result = processRECORDINGS_GetCount();
             break;
 
-        case XVDR_RECORDINGS_GETLIST:
+        case ROBOTV_RECORDINGS_GETLIST:
             result = processRECORDINGS_GetList();
             break;
 
-        case XVDR_RECORDINGS_RENAME:
+        case ROBOTV_RECORDINGS_RENAME:
             result = processRECORDINGS_Rename();
             break;
 
-        case XVDR_RECORDINGS_DELETE:
+        case ROBOTV_RECORDINGS_DELETE:
             result = processRECORDINGS_Delete();
             break;
 
-        case XVDR_RECORDINGS_SETPLAYCOUNT:
+        case ROBOTV_RECORDINGS_SETPLAYCOUNT:
             result = processRECORDINGS_SetPlayCount();
             break;
 
-        case XVDR_RECORDINGS_SETPOSITION:
+        case ROBOTV_RECORDINGS_SETPOSITION:
             result = processRECORDINGS_SetPosition();
             break;
 
-        case XVDR_RECORDINGS_SETURLS:
+        case ROBOTV_RECORDINGS_SETURLS:
             result = processRECORDINGS_SetUrls();
             break;
 
-        case XVDR_RECORDINGS_GETPOSITION:
+        case ROBOTV_RECORDINGS_GETPOSITION:
             result = processRECORDINGS_GetPosition();
             break;
 
-        case XVDR_RECORDINGS_GETMARKS:
+        case ROBOTV_RECORDINGS_GETMARKS:
             result = processRECORDINGS_GetMarks();
             break;
 
-        case XVDR_ARTWORK_GET:
+        case ROBOTV_ARTWORK_GET:
             result = processArtwork_Get();
             break;
 
-        case XVDR_ARTWORK_SET:
+        case ROBOTV_ARTWORK_SET:
             result = processArtwork_Set();
             break;
 
-            /** OPCODE 120 - 139: XVDR network functions for epg access and manipulating */
-        case XVDR_EPG_GETFORCHANNEL:
+            /** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
+        case ROBOTV_EPG_GETFORCHANNEL:
             result = processEPG_GetForChannel();
             break;
 
 
-            /** OPCODE 140 - 159: XVDR network functions for channel scanning */
-        case XVDR_SCAN_SUPPORTED:
+            /** OPCODE 140 - 159: RoboTV network functions for channel scanning */
+        case ROBOTV_SCAN_SUPPORTED:
             result = processSCAN_ScanSupported();
             break;
 
-        case XVDR_SCAN_GETSETUP:
+        case ROBOTV_SCAN_GETSETUP:
             result = processSCAN_GetSetup();
             break;
 
-        case XVDR_SCAN_SETSETUP:
+        case ROBOTV_SCAN_SETSETUP:
             result = processSCAN_SetSetup();
             break;
 
-        case XVDR_SCAN_START:
+        case ROBOTV_SCAN_START:
             result = processSCAN_Start();
             break;
 
-        case XVDR_SCAN_STOP:
+        case ROBOTV_SCAN_STOP:
             result = processSCAN_Stop();
             break;
 
-        case XVDR_SCAN_GETSTATUS:
+        case ROBOTV_SCAN_GETSTATUS:
             result = processSCAN_GetStatus();
             break;
 
@@ -775,9 +774,9 @@ bool cXVDRClient::processRequest() {
 }
 
 
-/** OPCODE 1 - 19: XVDR network functions for general purpose */
+/** OPCODE 1 - 19: RoboTV network functions for general purpose */
 
-bool cXVDRClient::process_Login() { /* OPCODE 1 */
+bool cRoboTVClient::process_Login() { /* OPCODE 1 */
     m_protocolVersion = m_req->getProtocolVersion();
     m_compressionLevel = m_req->get_U8();
     m_clientName = m_req->get_String();
@@ -790,7 +789,7 @@ bool cXVDRClient::process_Login() { /* OPCODE 1 */
         m_LangStreamType = (cStreamInfo::Type)m_req->get_U8();
     }
 
-    if(m_protocolVersion > XVDR_PROTOCOLVERSION || m_protocolVersion < 4) {
+    if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 4) {
         ERRORLOG("Client '%s' has unsupported protocol version '%u', terminating client", m_clientName.c_str(), m_protocolVersion);
         return false;
     }
@@ -809,14 +808,14 @@ bool cXVDRClient::process_Login() { /* OPCODE 1 */
     m_resp->setProtocolVersion(m_protocolVersion);
     m_resp->put_U32(timeNow);
     m_resp->put_S32(timeOffset);
-    m_resp->put_String("VDR-XVDR Server");
-    m_resp->put_String(XVDR_VERSION);
+    m_resp->put_String("VDR-RoboTV Server");
+    m_resp->put_String(ROBOTV_VERSION);
 
     SetLoggedIn(true);
     return true;
 }
 
-bool cXVDRClient::process_GetTime() { /* OPCODE 2 */
+bool cRoboTVClient::process_GetTime() { /* OPCODE 2 */
     time_t timeNow        = time(NULL);
     struct tm* timeStruct = localtime(&timeNow);
     int timeOffset        = timeStruct->tm_gmtoff;
@@ -827,32 +826,32 @@ bool cXVDRClient::process_GetTime() { /* OPCODE 2 */
     return true;
 }
 
-bool cXVDRClient::process_EnableStatusInterface() {
+bool cRoboTVClient::process_EnableStatusInterface() {
     bool enabled = m_req->get_U8();
 
     SetStatusInterface(enabled);
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
-bool cXVDRClient::process_UpdateChannels() {
+bool cRoboTVClient::process_UpdateChannels() {
     uint8_t updatechannels = m_req->get_U8();
 
     if(updatechannels <= 5) {
         Setup.UpdateChannels = updatechannels;
         INFOLOG("Setting channel update method: %i", updatechannels);
-        m_resp->put_U32(XVDR_RET_OK);
+        m_resp->put_U32(ROBOTV_RET_OK);
     }
     else {
-        m_resp->put_U32(XVDR_RET_DATAINVALID);
+        m_resp->put_U32(ROBOTV_RET_DATAINVALID);
     }
 
     return true;
 }
 
-bool cXVDRClient::process_ChannelFilter() {
+bool cRoboTVClient::process_ChannelFilter() {
     INFOLOG("Channellist filter:");
 
     // do we want fta channels ?
@@ -879,16 +878,16 @@ bool cXVDRClient::process_ChannelFilter() {
     }
 
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
 
 
-/** OPCODE 20 - 39: XVDR network functions for live streaming */
+/** OPCODE 20 - 39: RoboTV network functions for live streaming */
 
-bool cXVDRClient::processChannelStream_Open() { /* OPCODE 20 */
+bool cRoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
     // only root may change the priority
     if(geteuid() == 0) {
         SetPriority(-15);
@@ -911,11 +910,11 @@ bool cXVDRClient::processChannelStream_Open() { /* OPCODE 20 */
         rawPTS = m_req->get_U8();
     }
 
-    uint32_t timeout = XVDRServerConfig.stream_timeout;
+    uint32_t timeout = RoboTVServerConfig.stream_timeout;
 
     StopChannelStreaming();
 
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
     const cChannel* channel = NULL;
 
     // try to find channel by uid first
@@ -923,19 +922,19 @@ bool cXVDRClient::processChannelStream_Open() { /* OPCODE 20 */
 
     // try channelnumber
     if(channel == NULL) {
-        channel = XVDRChannels.Get()->GetByNumber(uid);
+        channel = RoboTVChannels.Get()->GetByNumber(uid);
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     if(channel == NULL) {
         ERRORLOG("Can't find channel %08x", uid);
-        m_resp->put_U32(XVDR_RET_DATAINVALID);
+        m_resp->put_U32(ROBOTV_RET_DATAINVALID);
     }
     else {
         int status = StartChannelStreaming(channel, timeout, priority, waitforiframe, rawPTS);
 
-        if(status == XVDR_RET_OK) {
+        if(status == ROBOTV_RET_OK) {
             INFOLOG("--------------------------------------");
             INFOLOG("Started streaming of channel %s (timeout %i seconds, priority %i)", channel->Name(), timeout, priority);
         }
@@ -949,12 +948,12 @@ bool cXVDRClient::processChannelStream_Open() { /* OPCODE 20 */
     return true;
 }
 
-bool cXVDRClient::processChannelStream_Close() { /* OPCODE 21 */
+bool cRoboTVClient::processChannelStream_Close() { /* OPCODE 21 */
     StopChannelStreaming();
     return true;
 }
 
-bool cXVDRClient::processChannelStream_Request() { /* OPCODE 22 */
+bool cRoboTVClient::processChannelStream_Request() { /* OPCODE 22 */
     if(m_Streamer != NULL) {
         m_Streamer->RequestPacket();
     }
@@ -963,7 +962,7 @@ bool cXVDRClient::processChannelStream_Request() { /* OPCODE 22 */
     return false;
 }
 
-bool cXVDRClient::processChannelStream_Pause() { /* OPCODE 23 */
+bool cRoboTVClient::processChannelStream_Pause() { /* OPCODE 23 */
     bool on = m_req->get_U32();
     INFOLOG("LIVESTREAM: %s", on ? "PAUSED" : "TIMESHIFT");
 
@@ -972,7 +971,7 @@ bool cXVDRClient::processChannelStream_Pause() { /* OPCODE 23 */
     return true;
 }
 
-bool cXVDRClient::processChannelStream_Signal() { /* OPCODE 24 */
+bool cRoboTVClient::processChannelStream_Signal() { /* OPCODE 24 */
     if(m_Streamer == NULL) {
         return false;
     }
@@ -981,9 +980,9 @@ bool cXVDRClient::processChannelStream_Signal() { /* OPCODE 24 */
     return false;
 }
 
-/** OPCODE 40 - 59: XVDR network functions for recording streaming */
+/** OPCODE 40 - 59: RoboTV network functions for recording streaming */
 
-bool cXVDRClient::processRecStream_Open() { /* OPCODE 40 */
+bool cRoboTVClient::processRecStream_Open() { /* OPCODE 40 */
     cRecording* recording = NULL;
 
     // only root may change the priority
@@ -999,7 +998,7 @@ bool cXVDRClient::processRecStream_Open() { /* OPCODE 40 */
     if(recording && m_RecPlayer == NULL) {
         m_RecPlayer = new cPacketPlayer(recording);
 
-        m_resp->put_U32(XVDR_RET_OK);
+        m_resp->put_U32(ROBOTV_RET_OK);
         m_resp->put_U32(0);
         m_resp->put_U64(m_RecPlayer->getLengthBytes());
 #if VDRVERSNUM < 10703
@@ -1010,25 +1009,25 @@ bool cXVDRClient::processRecStream_Open() { /* OPCODE 40 */
         m_resp->put_U32(recording->LengthInSeconds());
     }
     else {
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         ERRORLOG("%s - unable to start recording !", __FUNCTION__);
     }
 
     return true;
 }
 
-bool cXVDRClient::processRecStream_Close() { /* OPCODE 41 */
+bool cRoboTVClient::processRecStream_Close() { /* OPCODE 41 */
     if(m_RecPlayer) {
         delete m_RecPlayer;
         m_RecPlayer = NULL;
     }
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
-bool cXVDRClient::processRecStream_Update() { /* OPCODE 46 */
+bool cRoboTVClient::processRecStream_Update() { /* OPCODE 46 */
     if(m_RecPlayer == NULL) {
         return false;
     }
@@ -1040,7 +1039,7 @@ bool cXVDRClient::processRecStream_Update() { /* OPCODE 46 */
     return true;
 }
 
-bool cXVDRClient::processRecStream_GetBlock() { /* OPCODE 42 */
+bool cRoboTVClient::processRecStream_GetBlock() { /* OPCODE 42 */
     if(!m_RecPlayer) {
         ERRORLOG("Get block called when no recording open");
         return false;
@@ -1060,7 +1059,7 @@ bool cXVDRClient::processRecStream_GetBlock() { /* OPCODE 42 */
     return true;
 }
 
-bool cXVDRClient::processRecStream_GetPacket() {
+bool cRoboTVClient::processRecStream_GetPacket() {
     if(!m_RecPlayer) {
         return false;
     }
@@ -1076,7 +1075,7 @@ bool cXVDRClient::processRecStream_GetPacket() {
     // taint response packet
     /*p->setType(m_req->getType());
     p->setUID(m_req->getUID());
-    p->setProtocolVersion(XVDR_PROTOCOLVERSION);
+    p->setProtocolVersion(ROBOTV_PROTOCOLVERSION);
 
     // inject new response
     delete m_resp;
@@ -1085,7 +1084,7 @@ bool cXVDRClient::processRecStream_GetPacket() {
     return true;
 }
 
-bool cXVDRClient::processRecStream_Seek() {
+bool cRoboTVClient::processRecStream_Seek() {
     if(!m_RecPlayer) {
         return false;
     }
@@ -1098,9 +1097,9 @@ bool cXVDRClient::processRecStream_Seek() {
     return true;
 }
 
-int cXVDRClient::ChannelsCount() {
-    XVDRChannels.Lock(false);
-    cChannels* channels = XVDRChannels.Get();
+int cRoboTVClient::ChannelsCount() {
+    RoboTVChannels.Lock(false);
+    cChannels* channels = RoboTVChannels.Get();
     int count = 0;
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
@@ -1113,29 +1112,29 @@ int cXVDRClient::ChannelsCount() {
         }
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
     return count;
 }
 
-/** OPCODE 60 - 79: XVDR network functions for channel access */
+/** OPCODE 60 - 79: RoboTV network functions for channel access */
 
-bool cXVDRClient::processCHANNELS_ChannelsCount() { /* OPCODE 61 */
+bool cRoboTVClient::processCHANNELS_ChannelsCount() { /* OPCODE 61 */
     m_channelCount = ChannelsCount();
     m_resp->put_U32(m_channelCount);
 
     return true;
 }
 
-bool cXVDRClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
+bool cRoboTVClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
     int type = m_req->get_U32();
 
     m_channelCount = ChannelsCount();
 
-    if(!XVDRChannels.Lock(false)) {
+    if(!RoboTVChannels.Lock(false)) {
         return true;
     }
 
-    cChannels* channels = XVDRChannels.Get();
+    cChannels* channels = RoboTVChannels.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         if(!IsChannelWanted(channel, type)) {
@@ -1156,17 +1155,17 @@ bool cXVDRClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
         }
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     m_resp->compress(m_compressionLevel);
 
     return true;
 }
 
-bool cXVDRClient::processCHANNELS_GroupsCount() {
+bool cRoboTVClient::processCHANNELS_GroupsCount() {
     uint32_t type = m_req->get_U32();
 
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
 
     m_channelgroups[0].clear();
     m_channelgroups[1].clear();
@@ -1184,7 +1183,7 @@ bool cXVDRClient::processCHANNELS_GroupsCount() {
             break;
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     uint32_t count = m_channelgroups[0].size() + m_channelgroups[1].size();
 
@@ -1193,7 +1192,7 @@ bool cXVDRClient::processCHANNELS_GroupsCount() {
     return true;
 }
 
-bool cXVDRClient::processCHANNELS_GroupList() {
+bool cRoboTVClient::processCHANNELS_GroupList() {
     uint32_t radio = m_req->get_U8();
     std::map<std::string, ChannelGroup>::iterator i;
 
@@ -1205,7 +1204,7 @@ bool cXVDRClient::processCHANNELS_GroupList() {
     return true;
 }
 
-bool cXVDRClient::processCHANNELS_GetGroupMembers() {
+bool cRoboTVClient::processCHANNELS_GetGroupMembers() {
     const char* groupname = m_req->get_String();
     uint32_t radio = m_req->get_U8();
     int index = 0;
@@ -1220,8 +1219,8 @@ bool cXVDRClient::processCHANNELS_GetGroupMembers() {
 
     m_channelCount = ChannelsCount();
 
-    XVDRChannels.Lock(false);
-    cChannels* channels = XVDRChannels.Get();
+    RoboTVChannels.Lock(false);
+    cChannels* channels = RoboTVChannels.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
 
@@ -1249,13 +1248,13 @@ bool cXVDRClient::processCHANNELS_GetGroupMembers() {
         }
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
     return true;
 }
 
-void cXVDRClient::CreateChannelGroups(bool automatic) {
+void cRoboTVClient::CreateChannelGroups(bool automatic) {
     std::string groupname;
-    cChannels* channels = XVDRChannels.Get();
+    cChannels* channels = RoboTVChannels.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         bool isRadio = IsRadio(channel);
@@ -1285,9 +1284,9 @@ void cXVDRClient::CreateChannelGroups(bool automatic) {
     }
 }
 
-/** OPCODE 80 - 99: XVDR network functions for timer access */
+/** OPCODE 80 - 99: RoboTV network functions for timer access */
 
-bool cXVDRClient::processTIMER_GetCount() { /* OPCODE 80 */
+bool cRoboTVClient::processTIMER_GetCount() { /* OPCODE 80 */
     int count = Timers.Count();
 
     m_resp->put_U32(count);
@@ -1295,31 +1294,31 @@ bool cXVDRClient::processTIMER_GetCount() { /* OPCODE 80 */
     return true;
 }
 
-bool cXVDRClient::processTIMER_Get() { /* OPCODE 81 */
+bool cRoboTVClient::processTIMER_Get() { /* OPCODE 81 */
     uint32_t number = m_req->get_U32();
 
     if(Timers.Count() == 0) {
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
     cTimer* timer = Timers.Get(number - 1);
 
     if(timer == NULL) {
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
     PutTimer(timer, m_resp);
 
     return true;
 }
 
-bool cXVDRClient::processTIMER_GetList() { /* OPCODE 82 */
+bool cRoboTVClient::processTIMER_GetList() { /* OPCODE 82 */
     if(Timers.BeingEdited()) {
         ERRORLOG("Unable to delete timer - timers being edited at VDR");
-        m_resp->put_U32(XVDR_RET_DATALOCKED);
+        m_resp->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
@@ -1341,10 +1340,10 @@ bool cXVDRClient::processTIMER_GetList() { /* OPCODE 82 */
     return true;
 }
 
-bool cXVDRClient::processTIMER_Add() { /* OPCODE 83 */
+bool cRoboTVClient::processTIMER_Add() { /* OPCODE 83 */
     if(Timers.BeingEdited()) {
         ERRORLOG("Unable to add timer - timers being edited at VDR");
-        m_resp->put_U32(XVDR_RET_DATALOCKED);
+        m_resp->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
@@ -1378,14 +1377,14 @@ bool cXVDRClient::processTIMER_Add() { /* OPCODE 83 */
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
     const cChannel* channel = FindChannelByUID(channelid);
 
     if(channel != NULL) {
         buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     cTimer* timer = new cTimer;
 
@@ -1396,17 +1395,17 @@ bool cXVDRClient::processTIMER_Add() { /* OPCODE 83 */
             Timers.Add(timer);
             Timers.SetModified();
             INFOLOG("Timer %s added", *timer->ToDescr());
-            m_resp->put_U32(XVDR_RET_OK);
+            m_resp->put_U32(ROBOTV_RET_OK);
             return true;
         }
         else {
             ERRORLOG("Timer already defined: %d %s", t->Index() + 1, *t->ToText());
-            m_resp->put_U32(XVDR_RET_DATALOCKED);
+            m_resp->put_U32(ROBOTV_RET_DATALOCKED);
         }
     }
     else {
         ERRORLOG("Error in timer settings");
-        m_resp->put_U32(XVDR_RET_DATAINVALID);
+        m_resp->put_U32(ROBOTV_RET_DATAINVALID);
     }
 
     delete timer;
@@ -1414,7 +1413,7 @@ bool cXVDRClient::processTIMER_Add() { /* OPCODE 83 */
     return true;
 }
 
-bool cXVDRClient::processTIMER_Delete() { /* OPCODE 84 */
+bool cRoboTVClient::processTIMER_Delete() { /* OPCODE 84 */
     uint32_t uid = m_req->get_U32();
     bool     force  = m_req->get_U32();
 
@@ -1422,19 +1421,19 @@ bool cXVDRClient::processTIMER_Delete() { /* OPCODE 84 */
 
     if(timer == NULL) {
         ERRORLOG("Unable to delete timer - invalid timer identifier");
-        m_resp->put_U32(XVDR_RET_DATAINVALID);
+        m_resp->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
 
     if(Timers.BeingEdited()) {
         ERRORLOG("Unable to delete timer - timers being edited at VDR");
-        m_resp->put_U32(XVDR_RET_DATALOCKED);
+        m_resp->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
     if(timer->Recording() && !force) {
         ERRORLOG("Timer is recording and can be deleted (use force to stop it)");
-        m_resp->put_U32(XVDR_RET_RECRUNNING);
+        m_resp->put_U32(ROBOTV_RET_RECRUNNING);
         return true;
     }
 
@@ -1444,12 +1443,12 @@ bool cXVDRClient::processTIMER_Delete() { /* OPCODE 84 */
     INFOLOG("Deleting timer %s", *timer->ToDescr());
     Timers.Del(timer);
     Timers.SetModified();
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
-bool cXVDRClient::processTIMER_Update() { /* OPCODE 85 */
+bool cRoboTVClient::processTIMER_Update() { /* OPCODE 85 */
     uint32_t uid = m_req->get_U32();
     bool active = m_req->get_U32();
 
@@ -1457,13 +1456,13 @@ bool cXVDRClient::processTIMER_Update() { /* OPCODE 85 */
 
     if(timer == NULL) {
         ERRORLOG("Timer not defined");
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
     if(timer->Recording()) {
         INFOLOG("Will not update timer - currently recording");
-        m_resp->put_U32(XVDR_RET_OK);
+        m_resp->put_U32(ROBOTV_RET_OK);
         return true;
     }
 
@@ -1492,18 +1491,18 @@ bool cXVDRClient::processTIMER_Update() { /* OPCODE 85 */
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
     const cChannel* channel = FindChannelByUID(channelid);
 
     if(channel != NULL) {
         buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     if(!t.Parse(buffer)) {
         ERRORLOG("Error in timer settings");
-        m_resp->put_U32(XVDR_RET_DATAINVALID);
+        m_resp->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
 
@@ -1511,15 +1510,15 @@ bool cXVDRClient::processTIMER_Update() { /* OPCODE 85 */
     Timers.SetModified();
     TimerChange();
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
 
-/** OPCODE 100 - 119: XVDR network functions for recording access */
+/** OPCODE 100 - 119: RoboTV network functions for recording access */
 
-bool cXVDRClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
+bool cRoboTVClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
     int FreeMB;
 #if VDRVERSNUM >= 20102
     int Percent = cVideoDirectory::VideoDiskSpace(&FreeMB);
@@ -1535,13 +1534,13 @@ bool cXVDRClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_GetCount() { /* OPCODE 101 */
+bool cRoboTVClient::processRECORDINGS_GetCount() { /* OPCODE 101 */
     m_resp->put_U32(Recordings.Count());
 
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_GetList() { /* OPCODE 102 */
+bool cRoboTVClient::processRECORDINGS_GetList() { /* OPCODE 102 */
     cRecordingsCache& reccache = cRecordingsCache::GetInstance();
 
     for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
@@ -1689,14 +1688,14 @@ bool cXVDRClient::processRECORDINGS_GetList() { /* OPCODE 102 */
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_Rename() { /* OPCODE 103 */
+bool cRoboTVClient::processRECORDINGS_Rename() { /* OPCODE 103 */
     uint32_t uid = 0;
     const char* recid = m_req->get_String();
     uid = recid2uid(recid);
 
     const char* newtitle     = m_req->get_String();
     cRecording* recording    = cRecordingsCache::GetInstance().Lookup(uid);
-    int         r            = XVDR_RET_DATAINVALID;
+    int         r            = ROBOTV_RET_DATAINVALID;
 
     if(recording != NULL) {
         // get filename and remove last part (recording time)
@@ -1732,14 +1731,14 @@ bool cXVDRClient::processRECORDINGS_Rename() { /* OPCODE 103 */
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_Delete() { /* OPCODE 104 */
+bool cRoboTVClient::processRECORDINGS_Delete() { /* OPCODE 104 */
     const char* recid = m_req->get_String();
     uint32_t uid = recid2uid(recid);
     cRecording* recording = cRecordingsCache::GetInstance().Lookup(uid);
 
     if(recording == NULL) {
         ERRORLOG("Recording not found !");
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
@@ -1749,24 +1748,24 @@ bool cXVDRClient::processRECORDINGS_Delete() { /* OPCODE 104 */
 
     if(rc != NULL) {
         ERRORLOG("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
-        m_resp->put_U32(XVDR_RET_DATALOCKED);
+        m_resp->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
     if(!recording->Delete()) {
         ERRORLOG("Error while deleting recording!");
-        m_resp->put_U32(XVDR_RET_ERROR);
+        m_resp->put_U32(ROBOTV_RET_ERROR);
         return true;
     }
 
     Recordings.DelByName(recording->FileName());
     INFOLOG("Recording \"%s\" deleted", recording->FileName());
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_SetPlayCount() {
+bool cRoboTVClient::processRECORDINGS_SetPlayCount() {
     const char* recid = m_req->get_String();
     uint32_t count = m_req->get_U32();
 
@@ -1776,7 +1775,7 @@ bool cXVDRClient::processRECORDINGS_SetPlayCount() {
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_SetPosition() {
+bool cRoboTVClient::processRECORDINGS_SetPosition() {
     const char* recid = m_req->get_String();
     uint64_t position = m_req->get_U64();
 
@@ -1786,7 +1785,7 @@ bool cXVDRClient::processRECORDINGS_SetPosition() {
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_SetUrls() {
+bool cRoboTVClient::processRECORDINGS_SetUrls() {
     const char* recid = m_req->get_String();
     const char* poster = m_req->get_String();
     const char* background = m_req->get_String();
@@ -1800,7 +1799,7 @@ bool cXVDRClient::processRECORDINGS_SetUrls() {
     return true;
 }
 
-bool cXVDRClient::processArtwork_Get() {
+bool cRoboTVClient::processArtwork_Get() {
     const char* title = m_req->get_String();
     uint32_t content = m_req->get_U32();
 
@@ -1819,7 +1818,7 @@ bool cXVDRClient::processArtwork_Get() {
     return true;
 }
 
-bool cXVDRClient::processArtwork_Set() {
+bool cRoboTVClient::processArtwork_Set() {
     const char* title = m_req->get_String();
     uint32_t content = m_req->get_U32();
     const char* poster = m_req->get_String();
@@ -1831,7 +1830,7 @@ bool cXVDRClient::processArtwork_Set() {
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_GetPosition() {
+bool cRoboTVClient::processRECORDINGS_GetPosition() {
     const char* recid = m_req->get_String();
 
     uint32_t uid = recid2uid(recid);
@@ -1841,9 +1840,9 @@ bool cXVDRClient::processRECORDINGS_GetPosition() {
     return true;
 }
 
-bool cXVDRClient::processRECORDINGS_GetMarks() {
+bool cRoboTVClient::processRECORDINGS_GetMarks() {
 #if VDRVERSNUM < 10732
-    m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+    m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
     return true;
 #endif
 
@@ -1854,7 +1853,7 @@ bool cXVDRClient::processRECORDINGS_GetMarks() {
 
     if(recording == NULL) {
         ERRORLOG("GetMarks: recording not found !");
-        m_resp->put_U32(XVDR_RET_DATAUNKNOWN);
+        m_resp->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
@@ -1862,11 +1861,11 @@ bool cXVDRClient::processRECORDINGS_GetMarks() {
 
     if(!marks.Load(recording->FileName(), recording->FramesPerSecond(), recording->IsPesRecording())) {
         INFOLOG("no marks found for: '%s'", recording->FileName());
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     m_resp->put_U64(recording->FramesPerSecond() * 10000);
 
@@ -1892,14 +1891,14 @@ bool cXVDRClient::processRECORDINGS_GetMarks() {
 }
 
 
-/** OPCODE 120 - 139: XVDR network functions for epg access and manipulating */
+/** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
 
-bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
+bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
     uint32_t channelUID = m_req->get_U32();
     uint32_t startTime  = m_req->get_U32();
     uint32_t duration   = m_req->get_U32();
 
-    XVDRChannels.Lock(false);
+    RoboTVChannels.Lock(false);
 
     const cChannel* channel = NULL;
 
@@ -1911,7 +1910,7 @@ bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!channel) {
         m_resp->put_U32(0);
-        XVDRChannels.Unlock();
+        RoboTVChannels.Unlock();
 
         ERRORLOG("written 0 because channel = NULL");
         return true;
@@ -1922,7 +1921,7 @@ bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!Schedules) {
         m_resp->put_U32(0);
-        XVDRChannels.Unlock();
+        RoboTVChannels.Unlock();
 
         DEBUGLOG("written 0 because Schedule!s! = NULL");
         return true;
@@ -1932,7 +1931,7 @@ bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!Schedule) {
         m_resp->put_U32(0);
-        XVDRChannels.Unlock();
+        RoboTVChannels.Unlock();
 
         DEBUGLOG("written 0 because Schedule = NULL");
         return true;
@@ -2022,7 +2021,7 @@ bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
         atLeastOneEvent = true;
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
     DEBUGLOG("Got all event data");
 
     if(!atLeastOneEvent) {
@@ -2036,26 +2035,26 @@ bool cXVDRClient::processEPG_GetForChannel() { /* OPCODE 120 */
 }
 
 
-/** OPCODE 140 - 169: XVDR network functions for channel scanning */
+/** OPCODE 140 - 169: RoboTV network functions for channel scanning */
 
-bool cXVDRClient::processSCAN_ScanSupported() { /* OPCODE 140 */
+bool cRoboTVClient::processSCAN_ScanSupported() { /* OPCODE 140 */
     if(m_scanSupported) {
-        m_resp->put_U32(XVDR_RET_OK);
+        m_resp->put_U32(ROBOTV_RET_OK);
     }
     else {
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
     }
 
     return true;
 }
 
-bool cXVDRClient::processSCAN_GetSetup() { /* OPCODE 141 */
+bool cRoboTVClient::processSCAN_GetSetup() { /* OPCODE 141 */
     // get setup
     WIRBELSCAN_SERVICE::cWirbelscanScanSetup setup;
 
     if(!m_scanner.GetSetup(setup)) {
         INFOLOG("Unable to get wirbelscan setup !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
@@ -2064,7 +2063,7 @@ bool cXVDRClient::processSCAN_GetSetup() { /* OPCODE 141 */
 
     if(!m_scanner.GetSat(satellites)) {
         INFOLOG("Unable to get wirbelscan satellite list !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
@@ -2073,12 +2072,12 @@ bool cXVDRClient::processSCAN_GetSetup() { /* OPCODE 141 */
 
     if(!m_scanner.GetCountry(countries)) {
         INFOLOG("Unable to get wirbelscan country list !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
     // assemble response packet
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     // add setup
     m_resp->put_U16(setup.verbosity);
@@ -2117,7 +2116,7 @@ bool cXVDRClient::processSCAN_GetSetup() { /* OPCODE 141 */
     return true;
 }
 
-bool cXVDRClient::processSCAN_SetSetup() { /* OPCODE 141 */
+bool cRoboTVClient::processSCAN_SetSetup() { /* OPCODE 141 */
     WIRBELSCAN_SERVICE::cWirbelscanScanSetup setup;
 
     // read setup
@@ -2138,7 +2137,7 @@ bool cXVDRClient::processSCAN_SetSetup() { /* OPCODE 141 */
     // set setup
     if(!m_scanner.SetSetup(setup)) {
         INFOLOG("Unable to set wirbelscan setup !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
@@ -2148,57 +2147,57 @@ bool cXVDRClient::processSCAN_SetSetup() { /* OPCODE 141 */
 
     if(!m_scanner.DoCmd(cmd)) {
         INFOLOG("Unable to store wirbelscan setup !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
     INFOLOG("new wirbelscan setup stored.");
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
     return true;
 }
 
-bool cXVDRClient::processSCAN_Start() {
+bool cRoboTVClient::processSCAN_Start() {
     WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
     cmd.cmd = WIRBELSCAN_SERVICE::CmdStartScan;
 
     if(!m_scanner.DoCmd(cmd)) {
         INFOLOG("Unable to start channel scanner !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
     INFOLOG("channel scanner started ...");
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
     return true;
 }
 
-bool cXVDRClient::processSCAN_Stop() {
+bool cRoboTVClient::processSCAN_Stop() {
     WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
     cmd.cmd = WIRBELSCAN_SERVICE::CmdStopScan;
 
     if(!m_scanner.DoCmd(cmd)) {
         INFOLOG("Unable to stop channel scanner !");
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
     INFOLOG("channel scanner stopped.");
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
     return true;
 }
 
-bool cXVDRClient::processSCAN_GetStatus() {
+bool cRoboTVClient::processSCAN_GetStatus() {
     WIRBELSCAN_SERVICE::cWirbelscanStatus status;
 
     if(!m_scanner.GetStatus(status)) {
-        m_resp->put_U32(XVDR_RET_NOTSUPPORTED);
+        m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }
 
-    m_resp->put_U32(XVDR_RET_OK);
+    m_resp->put_U32(ROBOTV_RET_OK);
 
     m_resp->put_U8((uint8_t)status.status);
     m_resp->put_U16(status.progress);
@@ -2212,15 +2211,15 @@ bool cXVDRClient::processSCAN_GetStatus() {
     return true;
 }
 
-void cXVDRClient::SendScannerStatus() {
+void cRoboTVClient::SendScannerStatus() {
     WIRBELSCAN_SERVICE::cWirbelscanStatus status;
 
     if(!m_scanner.GetStatus(status)) {
         return;
     }
 
-    MsgPacket* resp = new MsgPacket(XVDR_STATUS_CHANNELSCAN, XVDR_CHANNEL_STATUS);
-    resp->setProtocolVersion(XVDR_PROTOCOLVERSION);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELSCAN, ROBOTV_CHANNEL_STATUS);
+    resp->setProtocolVersion(ROBOTV_PROTOCOLVERSION);
 
     resp->put_U8((uint8_t)status.status);
     resp->put_U16(status.progress);
@@ -2235,7 +2234,7 @@ void cXVDRClient::SendScannerStatus() {
     QueueMessage(resp);
 }
 
-void cXVDRClient::QueueMessage(MsgPacket* p) {
+void cRoboTVClient::QueueMessage(MsgPacket* p) {
     cMutexLock lock(&m_queueLock);
     m_queue.push(p);
 }

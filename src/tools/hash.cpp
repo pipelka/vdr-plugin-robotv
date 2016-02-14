@@ -1,10 +1,10 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
  *      Copyright (C) 1986 Gary S. Brown (CRC32 code)
- *      Copyright (C) 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -100,8 +100,8 @@ uint32_t CreateChannelUID(const cChannel* channel) {
 
 const cChannel* FindChannelByUID(uint32_t channelUID) {
     cChannel* result = NULL;
-    XVDRChannels.Lock(false);
-    cChannels* channels = XVDRChannels.Get();
+    RoboTVChannels.Lock(false);
+    cChannels* channels = RoboTVChannels.Get();
 
     // maybe we need to use a lookup table
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
@@ -113,7 +113,7 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
         }
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
     return result;
 }
 

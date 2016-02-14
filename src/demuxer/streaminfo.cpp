@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2012 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,8 +50,9 @@ cStreamInfo::cStreamInfo(int pid, Type type, const char* lang) {
         strncpy(m_language, lang, 4);
     }
 
-    memchr(m_sps, 0, sizeof(m_sps));
-    memchr(m_pps, 0, sizeof(m_pps));
+    memset(m_sps, 0, sizeof(m_sps));
+    memset(m_pps, 0, sizeof(m_pps));
+    memset(m_vps, 0, sizeof(m_vps));
 
     SetContent();
 }
@@ -118,6 +119,9 @@ bool cStreamInfo::operator ==(const cStreamInfo& rhs) const {
 
         case scTELETEXT:
             return true;
+        
+        case scSTREAMINFO:
+            return false;
     }
 
     return false;
@@ -295,7 +299,6 @@ MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
     rhs.m_parsed = lhs.get_U8();
 
     // read specific data
-    int at = 0;
     std::string lang;
 
     switch(rhs.m_content) {

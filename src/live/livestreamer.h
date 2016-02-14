@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_RECEIVER_H
-#define XVDR_RECEIVER_H
+#ifndef ROBOTV_RECEIVER_H
+#define ROBOTV_RECEIVER_H
 
 #include <vdr/channels.h>
 #include <vdr/device.h>
@@ -44,7 +43,7 @@ class cChannel;
 class cTSDemuxer;
 class MsgPacket;
 class cLiveQueue;
-class cXVDRClient;
+class cRoboTVClient;
 
 class cLiveStreamer : public cThread
     , public cRingBufferLinear
@@ -78,7 +77,7 @@ private:
     bool              m_ready;
     uint32_t          m_protocolVersion;
     bool              m_waitforiframe;
-    cXVDRClient*      m_parent;
+    cRoboTVClient*      m_parent;
     bool              m_rawPTS;
 
     std::mutex m_mutex;
@@ -102,7 +101,7 @@ private:
     void CreateDemuxers(cStreamBundle* bundle);
 
 public:
-    cLiveStreamer(cXVDRClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
+    cLiveStreamer(cRoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
     virtual ~cLiveStreamer();
 
     bool IsReady();
@@ -127,4 +126,4 @@ public:
 
 };
 
-#endif  // XVDR_RECEIVER_H
+#endif  // ROBOTV_RECEIVER_H

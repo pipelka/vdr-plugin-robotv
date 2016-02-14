@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_CONFIG_H
-#define XVDR_CONFIG_H
+#ifndef ROBOTV_CONFIG_H
+#define ROBOTV_CONFIG_H
 
 #include <string.h>
 #include <stdint.h>
@@ -34,19 +33,19 @@
 // log output configuration
 
 #ifdef CONSOLEDEBUG
-#define DEBUGLOG(format, ...) printf("XVDR: " format, ##__VA_ARGS__)
+#define DEBUGLOG(format, ...) printf("RoboTV: " format, ##__VA_ARGS__)
 #elif defined  DEBUG
-#define DEBUGLOG(format, ...) dsyslog("XVDR: " format, ##__VA_ARGS__)
+#define DEBUGLOG(format, ...) dsyslog("RoboTV: " format, ##__VA_ARGS__)
 #else
 #define DEBUGLOG(format, ...)
 #endif
 
 #ifdef CONSOLEDEBUG
-#define INFOLOG(format, ...) printf("XVDR: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) printf("XVDR-Error: " format, ##__VA_ARGS__)
+#define INFOLOG(format, ...) printf("RoboTV: " format, ##__VA_ARGS__)
+#define ERRORLOG(format, ...) printf("RoboTV-Error: " format, ##__VA_ARGS__)
 #else
-#define INFOLOG(format, ...) isyslog("XVDR: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) esyslog("XVDR-Error: " format, ##__VA_ARGS__)
+#define INFOLOG(format, ...) isyslog("RoboTV: " format, ##__VA_ARGS__)
+#define ERRORLOG(format, ...) esyslog("RoboTV-Error: " format, ##__VA_ARGS__)
 #endif
 
 // default settings
@@ -69,9 +68,9 @@
 #endif
 
 
-class cXVDRServerConfig : public cConfig<cSetupLine> {
+class cRoboTVServerConfig : public cConfig<cSetupLine> {
 public:
-    cXVDRServerConfig();
+    cRoboTVServerConfig();
 
     void Load();
 
@@ -91,6 +90,6 @@ public:
 };
 
 // Global instance
-extern cXVDRServerConfig XVDRServerConfig;
+extern cRoboTVServerConfig RoboTVServerConfig;
 
-#endif // XVDR_CONFIG_H
+#endif // ROBOTV_CONFIG_H

@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XBMC server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_RECORDINGSCACHE_H
-#define XVDR_RECORDINGSCACHE_H
+#ifndef ROBOTV_RECORDINGSCACHE_H
+#define ROBOTV_RECORDINGSCACHE_H
 
 #include <stdint.h>
 #include <map>
@@ -75,8 +75,8 @@ protected:
 
 private:
 
-    XVDR::Storage& m_storage;
+    RoboTV::Storage& m_storage;
 };
 
 
-#endif // XVDR_RECORDINGSCACHE_H
+#endif // ROBOTV_RECORDINGSCACHE_H

@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ cStreamBundle cChannelCache::GetFromCache(uint32_t channeluid) {
 }
 
 void cChannelCache::SaveChannelCacheData() {
-    cString filename = AddDirectory(XVDRServerConfig.CacheDirectory, CHANNEL_CACHE_FILE".bak");
+    cString filename = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE".bak");
 
     int fd = open(*filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 
@@ -110,7 +110,7 @@ void cChannelCache::SaveChannelCacheData() {
     delete p;
     close(fd);
 
-    cString filenamenew = AddDirectory(XVDRServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
+    cString filenamenew = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
 
     rename(filename, filenamenew);
 }
@@ -123,8 +123,8 @@ void cChannelCache::gc() {
     INFOLOG("before: %zu channels in cache", m_cache.size());
 
     // remove orphaned cache entries
-    XVDRChannels.Lock(false);
-    cChannels* channels = XVDRChannels.Get();
+    RoboTVChannels.Lock(false);
+    cChannels* channels = RoboTVChannels.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         uint32_t uid = CreateChannelUID(channel);
@@ -145,7 +145,7 @@ void cChannelCache::gc() {
         m_newcache[uid] = i->second;
     }
 
-    XVDRChannels.Unlock();
+    RoboTVChannels.Unlock();
 
     // regenerate cache
     m_cache.clear();
@@ -161,7 +161,7 @@ void cChannelCache::LoadChannelCacheData() {
     m_cache.clear();
 
     // load cache
-    cString filename = AddDirectory(XVDRServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
+    cString filename = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
 
     int fd = open(*filename, O_RDONLY);
 

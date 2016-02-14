@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2010, 2011 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_CLIENT_H
-#define XVDR_CLIENT_H
+#ifndef ROBOTV_CLIENT_H
+#define ROBOTV_CLIENT_H
 
 #include <map>
 #include <list>
@@ -48,7 +47,7 @@ class MsgPacket;
 class cPacketPlayer;
 class cCmdControl;
 
-class cXVDRClient : public cThread
+class cRoboTVClient : public cThread
         , public cStatus {
 private:
 
@@ -93,8 +92,8 @@ protected:
 
 public:
 
-    cXVDRClient(int fd, unsigned int id);
-    virtual ~cXVDRClient();
+    cRoboTVClient(int fd, unsigned int id);
+    virtual ~cRoboTVClient();
 
     void ChannelsChanged();
     void RecordingsChange();
@@ -203,4 +202,4 @@ private:
     void SendScannerStatus();
 };
 
-#endif // XVDR_CLIENT_H
+#endif // ROBOTV_CLIENT_H

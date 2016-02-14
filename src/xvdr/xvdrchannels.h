@@ -2,12 +2,12 @@
  * VDR Channels proxy.
  */
 
-#ifndef XVDRCHANNELS_H_
-#define XVDRCHANNELS_H_
+#ifndef RoboTVCHANNELS_H_
+#define RoboTVCHANNELS_H_
 
 #include <vdr/channels.h>
 
-class cXVDRChannels: public cRwLock {
+class cRoboTVChannels: public cRwLock {
 private:
     cChannels* channels;
     uint64_t channelsHash;
@@ -16,7 +16,7 @@ private:
     bool Write(FILE* f, cChannels* channels);
     uint64_t ChannelsHash(cChannels* channels);
 public:
-    cXVDRChannels();
+    cRoboTVChannels();
 
     /**
      * Calculates the VDR Channels hash and compares with the cached value
@@ -54,6 +54,6 @@ public:
     void Unlock(void);
 };
 
-extern cXVDRChannels XVDRChannels;
+extern cRoboTVChannels RoboTVChannels;
 
-#endif /* XVDRCHANNELS_H_ */
+#endif /* RoboTVCHANNELS_H_ */

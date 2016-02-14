@@ -1,10 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
- *      Copyright (C) 2010 Alwin Esch (Team XBMC)
- *      Copyright (C) 2012 Alexander Pipelka
+ *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_AC3_COMMON_H
-#define XVDR_AC3_COMMON_H
+#ifndef ROBOTV_AC3_COMMON_H
+#define ROBOTV_AC3_COMMON_H
 
 #define AC3_HEADER_SIZE 7
 
@@ -107,4 +106,4 @@ typedef enum {
     EAC3_FRAME_TYPE_RESERVED
 } EAC3FrameType;
 
-#endif // XVDR_AC3_COMMON_H
+#endif // ROBOTV_AC3_COMMON_H

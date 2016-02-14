@@ -1,9 +1,9 @@
 /*
- *      vdr-plugin-xvdr - XVDR server plugin for VDR
+ *      vdr-plugin-robotv - RoboTV server plugin for VDR
  *
  *      Copyright (C) 2015 Alexander Pipelka
  *
- *      https://github.com/pipelka/vdr-plugin-xvdr
+ *      https://github.com/pipelka/vdr-plugin-robotv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef XVDR_STREAMBUNDLE_H
-#define XVDR_STREAMBUNDLE_H
+#ifndef ROBOTV_STREAMBUNDLE_H
+#define ROBOTV_STREAMBUNDLE_H
 
 #include "demuxer/streaminfo.h"
 #include "vdr/channels.h"
@@ -62,4 +62,4 @@ private:
 MsgPacket& operator<< (MsgPacket& lhs, const cStreamBundle& rhs);
 MsgPacket& operator>> (MsgPacket& lhs, cStreamBundle& rhs);
 
-#endif // XVDR_STREAMBUNDLE_H
+#endif // ROBOTV_STREAMBUNDLE_H
