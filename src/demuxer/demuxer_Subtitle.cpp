@@ -24,10 +24,10 @@
 
 #include "demuxer_Subtitle.h"
 
-cParserSubtitle::cParserSubtitle(cTSDemuxer* demuxer) : cParserPES(demuxer, 64 * 1024) {
+ParserSubtitle::ParserSubtitle(TsDemuxer* demuxer) : ParserPes(demuxer, 64 * 1024) {
 }
 
-void cParserSubtitle::SendPayload(unsigned char* payload, int length) {
+void ParserSubtitle::SendPayload(unsigned char* payload, int length) {
 
     if(length < 3 || payload[0] != 0x20 || payload[1] != 0x00) {
         return;
@@ -40,5 +40,5 @@ void cParserSubtitle::SendPayload(unsigned char* payload, int length) {
         return;
     }
 
-    cParser::SendPayload(payload, length);
+    Parser::SendPayload(payload, length);
 }

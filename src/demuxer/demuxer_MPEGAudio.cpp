@@ -50,11 +50,11 @@ static const int Coefficients[2][3] = {
 const int SlotSizes[3] = { 4, 1, 1 };
 
 
-cParserMPEG2Audio::cParserMPEG2Audio(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 2048) {
+ParserMpeg2Audio::ParserMpeg2Audio(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 2048) {
     m_headersize = 4;
 }
 
-bool cParserMPEG2Audio::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& bitrate, int& framesize) {
+bool ParserMpeg2Audio::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& bitrate, int& framesize) {
     uint32_t header = ((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] <<  8) | buffer[3]);
 
     // syncword FFE
@@ -108,12 +108,12 @@ bool cParserMPEG2Audio::ParseAudioHeader(uint8_t* buffer, int& channels, int& sa
     return true;
 }
 
-bool cParserMPEG2Audio::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserMpeg2Audio::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     int channels, samplerate, bitrate;
     return ParseAudioHeader(buffer, channels, samplerate, bitrate, framesize);
 }
 
-int cParserMPEG2Audio::ParsePayload(unsigned char* payload, int length) {
+int ParserMpeg2Audio::ParsePayload(unsigned char* payload, int length) {
     int framesize = 0;
 
     if(!ParseAudioHeader(payload, m_channels, m_samplerate, m_bitrate, framesize)) {

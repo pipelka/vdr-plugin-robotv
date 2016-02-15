@@ -31,14 +31,14 @@
 
 class MsgPacket;
 
-class cLiveQueue : public cThread, protected std::queue<MsgPacket*> {
+class LiveQueue : public cThread, protected std::queue<MsgPacket*> {
 public:
 
-    cLiveQueue(int s);
+    LiveQueue(int s);
 
-    virtual ~cLiveQueue();
+    virtual ~LiveQueue();
 
-    bool Add(MsgPacket* p, cStreamInfo::Content content);
+    bool Add(MsgPacket* p, StreamInfo::Content content);
 
     void Request();
 

@@ -27,10 +27,10 @@
 
 #include "demuxer_PES.h"
 
-class cParserSubtitle : public cParserPES {
+class ParserSubtitle : public ParserPes {
 public:
 
-    cParserSubtitle(cTSDemuxer* demuxer);
+    ParserSubtitle(TsDemuxer* demuxer);
 
 protected:
 

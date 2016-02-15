@@ -37,15 +37,15 @@
 #define PREFIX_SEI_NUT 39
 #define SUFFIX_SEI_NUT 40
 
-cParserH265::cParserH265(cTSDemuxer* demuxer) : cParserH264(demuxer) {
+ParserH265::ParserH265(TsDemuxer* demuxer) : ParserH264(demuxer) {
 }
 
-int cParserH265::ParsePayload(unsigned char* data, int length) {
+int ParserH265::ParsePayload(unsigned char* data, int length) {
     int o = 0;
     int sps_start = -1;
     int nal_len = 0;
 
-    m_frametype = cStreamInfo::ftUNKNOWN;
+    m_frametype = StreamInfo::ftUNKNOWN;
 
     if(length < 4) {
         return length;
@@ -63,7 +63,7 @@ int cParserH265::ParsePayload(unsigned char* data, int length) {
 
         // key frame ?
         if(nal_type >= BLA_W_LP && nal_type <= CRA_NUT) {
-            m_frametype = cStreamInfo::ftIFRAME;
+            m_frametype = StreamInfo::ftIFRAME;
         }
 
         // PPS_NUT
@@ -131,7 +131,7 @@ int cParserH265::ParsePayload(unsigned char* data, int length) {
     return length;
 }
 
-void cParserH265::skipScalingList(cBitStream& bs) {
+void ParserH265::skipScalingList(cBitStream& bs) {
     for(int sizeId = 0; sizeId < 4; sizeId++) {
         for(int matrixId = 0; matrixId < 6; matrixId += sizeId == 3 ? 3 : 1) {
             if(!bs.GetBit()) {  // scaling_list_pred_mode_flag[sizeId][matrixId]
@@ -154,7 +154,7 @@ void cParserH265::skipScalingList(cBitStream& bs) {
     }
 }
 
-void cParserH265::skipShortTermRefPicSets(cBitStream& bs) {
+void ParserH265::skipShortTermRefPicSets(cBitStream& bs) {
     int numShortTermRefPicSets = read_golomb_ue(&bs);
     bool interRefPicSetPredictionFlag = false;
     int numNegativePics = 0;
@@ -194,7 +194,7 @@ void cParserH265::skipShortTermRefPicSets(cBitStream& bs) {
     }
 }
 
-bool cParserH265::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
+bool ParserH265::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
     cBitStream bs(buf, len * 8);
     bs.SkipBits(8 + 4); // NAL header, sps_video_parameter_set_id
     int maxSubLayersMinus1 = bs.GetBits(3);

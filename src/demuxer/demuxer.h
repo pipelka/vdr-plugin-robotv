@@ -29,20 +29,20 @@
 #include <list>
 #include "streaminfo.h"
 
-class cParser;
+class Parser;
 
 #define DVD_NOPTS_VALUE    (-1LL<<52) // should be possible to represent in both double and __int64
 
-struct sStreamPacket {
-    sStreamPacket() {
-        type = cStreamInfo::stNONE;
-        content = cStreamInfo::scNONE;
-        frametype = cStreamInfo::ftUNKNOWN;
+struct StreamPacket {
+    StreamPacket() {
+        type = StreamInfo::stNONE;
+        content = StreamInfo::scNONE;
+        frametype = StreamInfo::ftUNKNOWN;
     }
 
-    cStreamInfo::FrameType frametype;
-    cStreamInfo::Type type;
-    cStreamInfo::Content content;
+    StreamInfo::FrameType frametype;
+    StreamInfo::Type type;
+    StreamInfo::Content content;
 
     int64_t   pid;
     int64_t   dts;
@@ -55,7 +55,7 @@ struct sStreamPacket {
     int       size;
 };
 
-class cTSDemuxer : public cStreamInfo {
+class TsDemuxer : public StreamInfo {
 public:
 
     class Listener {
@@ -63,26 +63,26 @@ public:
 
         virtual ~Listener() {};
 
-        virtual void sendStreamPacket(sStreamPacket* p) = 0;
+        virtual void sendStreamPacket(StreamPacket* p) = 0;
 
-        virtual void RequestStreamChange() = 0;
+        virtual void requestStreamChange() = 0;
 
     };
 
 private:
 
     Listener* m_Streamer;
-    cParser* m_pesParser;
+    Parser* m_pesParser;
 
     int64_t Rescale(int64_t a);
 
 public:
-    cTSDemuxer(Listener* streamer, cStreamInfo::Type type, int pid);
-    cTSDemuxer(Listener* streamer, const cStreamInfo& info);
-    virtual ~cTSDemuxer();
+    TsDemuxer(Listener* streamer, StreamInfo::Type type, int pid);
+    TsDemuxer(Listener* streamer, const StreamInfo& info);
+    virtual ~TsDemuxer();
 
     bool ProcessTSPacket(unsigned char* data);
-    void SendPacket(sStreamPacket* pkt);
+    void SendPacket(StreamPacket* pkt);
 
     void SetLanguageDescriptor(const char* language, uint8_t atype);
     const char* GetLanguage() {
@@ -150,7 +150,7 @@ public:
 
 private:
 
-    cParser* CreateParser(cStreamInfo::Type type);
+    Parser* CreateParser(StreamInfo::Type type);
 
 };
 

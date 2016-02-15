@@ -28,12 +28,12 @@
 #include "db/storage.h"
 #include <string>
 
-class cArtwork {
+class Artwork {
 public:
 
-    cArtwork();
+    Artwork();
 
-    virtual ~cArtwork();
+    virtual ~Artwork();
 
     bool get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl);
 

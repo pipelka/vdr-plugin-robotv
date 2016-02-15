@@ -45,10 +45,10 @@ static void putBits(uint8_t* buffer, int& offset, int val, int num) {
     }
 }
 
-cParserLATM::cParserLATM(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
+ParserLatm::ParserLatm(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
 }
 
-bool cParserLATM::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserLatm::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     cBitStream bs(buffer, 24 * 8);
 
     // read sync
@@ -64,10 +64,10 @@ bool cParserLATM::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
 }
 
 // dummy - handled in ParsePayload
-void cParserLATM::SendPayload(unsigned char* payload, int length) {
+void ParserLatm::SendPayload(unsigned char* payload, int length) {
 }
 
-int cParserLATM::ParsePayload(unsigned char* data, int len) {
+int ParserLatm::ParsePayload(unsigned char* data, int len) {
     cBitStream bs(data, len * 8);
 
     bs.SkipBits(24); // skip header
@@ -123,7 +123,7 @@ int cParserLATM::ParsePayload(unsigned char* data, int len) {
     }
 
     // send converted payload packet
-    cParser::SendPayload(payload, payloadlength);
+    Parser::SendPayload(payload, payloadlength);
 
     // free payload buffer
     free(payload);
@@ -131,7 +131,7 @@ int cParserLATM::ParsePayload(unsigned char* data, int len) {
     return len;
 }
 
-void cParserLATM::ReadStreamMuxConfig(cBitStream* bs) {
+void ParserLatm::ReadStreamMuxConfig(cBitStream* bs) {
     int AudioMuxVersion = bs->GetBits(1);
     int AudioMuxVersion_A = 0;
 
@@ -207,7 +207,7 @@ void cParserLATM::ReadStreamMuxConfig(cBitStream* bs) {
     }
 }
 
-void cParserLATM::ReadAudioSpecificConfig(cBitStream* bs) {
+void ParserLatm::ReadAudioSpecificConfig(cBitStream* bs) {
     bs->GetBits(5); // audio object type
 
     m_samplerateindex = bs->GetBits(4);

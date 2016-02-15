@@ -40,7 +40,7 @@
 #define O_NOATIME 0
 #endif
 
-cRecPlayer::cRecPlayer(cRecording* rec) {
+RecPlayer::RecPlayer(cRecording* rec) {
     m_file = -1;
     m_fileOpen = -1;
     m_rescanInterval = 2000; // 2000 ms rescan interval
@@ -58,13 +58,13 @@ cRecPlayer::cRecPlayer(cRecording* rec) {
     m_rescanTime.Set(0);
 }
 
-cRecPlayer::~cRecPlayer() {
+RecPlayer::~RecPlayer() {
     cleanup();
     closeFile();
     free(m_recordingFilename);
 }
 
-void cRecPlayer::cleanup() {
+void RecPlayer::cleanup() {
     for(int i = 0; i != m_segments.Size(); i++) {
         delete m_segments[i];
     }
@@ -72,7 +72,7 @@ void cRecPlayer::cleanup() {
     m_segments.Clear();
 }
 
-void cRecPlayer::scan() {
+void RecPlayer::scan() {
     struct stat s;
     uint64_t len = m_totalLength;
     m_totalLength = 0;
@@ -86,7 +86,7 @@ void cRecPlayer::scan() {
             break;
         }
 
-        cSegment* segment = new cSegment();
+        Segment* segment = new Segment();
         segment->start = m_totalLength;
         segment->end = segment->start + s.st_size;
 
@@ -96,11 +96,11 @@ void cRecPlayer::scan() {
     }
 
     if(len != m_totalLength) {
-        INFOLOG("recording scan: %llu bytes", m_totalLength);
+        INFOLOG("recording scan: %lu bytes", m_totalLength);
     }
 }
 
-void cRecPlayer::update() {
+void RecPlayer::update() {
     // do not rescan too often
     if(m_rescanTime.Elapsed() < m_rescanInterval) {
         return;
@@ -112,7 +112,7 @@ void cRecPlayer::update() {
     scan();
 }
 
-char* cRecPlayer::fileNameFromIndex(int index) {
+char* RecPlayer::fileNameFromIndex(int index) {
     if(m_pesrecording) {
         snprintf(m_fileName, sizeof(m_fileName), "%s/%03i.vdr", m_recordingFilename, index + 1);
     }
@@ -123,7 +123,7 @@ char* cRecPlayer::fileNameFromIndex(int index) {
     return m_fileName;
 }
 
-bool cRecPlayer::openFile(int index) {
+bool RecPlayer::openFile(int index) {
     if(index == m_fileOpen) {
         return true;
     }
@@ -152,7 +152,7 @@ bool cRecPlayer::openFile(int index) {
     return true;
 }
 
-void cRecPlayer::closeFile() {
+void RecPlayer::closeFile() {
     if(m_file == -1) {
         return;
     }
@@ -164,11 +164,11 @@ void cRecPlayer::closeFile() {
     m_fileOpen = -1;
 }
 
-uint64_t cRecPlayer::getLengthBytes() {
+uint64_t RecPlayer::getLengthBytes() {
     return m_totalLength;
 }
 
-int cRecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
+int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
     // dont let the block be larger than 256 kb
     if(amount > 256 * 1024) {
         amount = 256 * 1024;

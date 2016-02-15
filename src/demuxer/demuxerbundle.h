@@ -32,22 +32,22 @@
 
 #include <list>
 
-class cDemuxerBundle : public std::list<cTSDemuxer*> {
+class DemuxerBundle : public std::list<TsDemuxer*> {
 public:
 
-    cDemuxerBundle(cTSDemuxer::Listener* listener);
+    DemuxerBundle(TsDemuxer::Listener* listener);
 
-    virtual ~cDemuxerBundle();
+    virtual ~DemuxerBundle();
 
     void clear();
 
-    cTSDemuxer* findDemuxer(int pid);
+    TsDemuxer* findDemuxer(int pid);
 
-    void reorderStreams(int lang, cStreamInfo::Type type);
+    void reorderStreams(int lang, StreamInfo::Type type);
 
     bool isReady();
 
-    void updateFrom(cStreamBundle* bundle);
+    void updateFrom(StreamBundle* bundle);
 
     bool processTsPacket(uint8_t* packet);
 
@@ -55,7 +55,7 @@ public:
 
 protected:
 
-    cTSDemuxer::Listener* m_listener = NULL;
+    TsDemuxer::Listener* m_listener = NULL;
 
 };
 

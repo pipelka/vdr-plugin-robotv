@@ -29,13 +29,13 @@
 static const char* VERSION        = "1.0.0";
 static const char* DESCRIPTION    = "RoboTV Server";
 
-class cPluginRoboTVServer : public cPlugin {
+class PluginRoboTVServer : public cPlugin {
 private:
-    cRoboTVServer* Server;
+    RoboTVServer* Server;
 
 public:
-    cPluginRoboTVServer(void);
-    virtual ~cPluginRoboTVServer();
+    PluginRoboTVServer(void);
+    virtual ~PluginRoboTVServer();
     virtual const char* Version(void) {
         return VERSION;
     }

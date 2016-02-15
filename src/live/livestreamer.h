@@ -40,45 +40,61 @@
 #include <mutex>
 
 class cChannel;
-class cTSDemuxer;
+class TsDemuxer;
 class MsgPacket;
-class cLiveQueue;
-class cRoboTVClient;
+class LiveQueue;
+class RoboTVClient;
 
-class cLiveStreamer : public cThread
-    , public cRingBufferLinear
-    , public cReceiver
-        , public cTSDemuxer::Listener {
+class LiveStreamer : public cThread, public cRingBufferLinear, public cReceiver, public TsDemuxer::Listener {
 private:
-    friend class cTSDemuxer;
-    friend class cChannelCache;
+    friend class TsDemuxer;
+    friend class ChannelCache;
 
-    void Detach(void);
-    bool Attach(void);
-    cTSDemuxer* FindStreamDemuxer(int Pid);
+    void detach(void);
+    
+    bool attach(void);
+    
+    TsDemuxer* findDemuxer(int Pid);
 
-    void reorderStreams(int lang, cStreamInfo::Type type);
+    void reorderStreams(int lang, StreamInfo::Type type);
 
     void sendStreamChange();
+    
     void sendStatus(int status);
+    
     void sendDetach();
 
-    cDevice*          m_Device;                       /*!> The receiving device the channel depents to */
-    cDemuxerBundle    m_Demuxers;
-    bool              m_startup;
-    bool              m_requestStreamChange;
-    uint32_t          m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
-    cTimeMs           m_last_tick;
-    bool              m_SignalLost;
-    int               m_LanguageIndex;
-    cStreamInfo::Type m_LangStreamType;
-    cLiveQueue*       m_Queue;
-    uint32_t          m_uid;
-    bool              m_ready;
-    uint32_t          m_protocolVersion;
-    bool              m_waitforiframe;
-    cRoboTVClient*      m_parent;
-    bool              m_rawPTS;
+    cDevice* m_device;              /*!> The receiving device the channel depents to */
+    
+    DemuxerBundle m_demuxers;
+    
+    bool m_startup;
+    
+    bool m_requestStreamChange;
+    
+    uint32_t m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
+    
+    cTimeMs m_lastTick;
+    
+    bool m_signalLost;
+    
+    int m_languageIndex;
+    
+    StreamInfo::Type m_langStreamType;
+    
+    LiveQueue* m_queue;
+    
+    uint32_t m_uid;
+    
+    bool m_ready;
+    
+    uint32_t m_protocolVersion;
+    
+    bool m_waitForKeyFrame;
+    
+    RoboTVClient* m_parent;
+    
+    bool m_rawPTS;
 
     std::mutex m_mutex;
 
@@ -92,37 +108,49 @@ protected:
     void Receive(const uchar* Data, int Length);
 #endif
 
-    int SwitchChannel(const cChannel* channel);
-
 private:
 
-    void TryChannelSwitch();
+    int switchChannel(const cChannel* channel);
 
-    void CreateDemuxers(cStreamBundle* bundle);
+    void tryChannelSwitch();
+
+    void createDemuxers(StreamBundle* bundle);
 
 public:
-    cLiveStreamer(cRoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
-    virtual ~cLiveStreamer();
+  
+    LiveStreamer(RoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
+    
+    virtual ~LiveStreamer();
 
-    bool IsReady();
-    bool IsStarting() {
+    bool isReady();
+    
+    bool isStarting() {
         return m_startup;
     }
-    bool IsPaused();
-    bool TimeShiftMode();
+    
+    void channelChange(const cChannel* Channel);
+    
+    bool isPaused();
+    
+    bool getTimeShiftMode();
 
-    void SetLanguage(int lang, cStreamInfo::Type streamtype = cStreamInfo::stAC3);
-    void SetTimeout(uint32_t timeout);
-    void SetProtocolVersion(uint32_t protocolVersion);
-    void SetWaitForIFrame(bool waitforiframe);
+    void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
+    
+    void setTimeout(uint32_t timeout);
+    
+    void setProtocolVersion(uint32_t protocolVersion);
+    
+    void setWaitForKeyFrame(bool waitForKeyFrame);
 
-    void Pause(bool on);
-    void RequestPacket();
-    void RequestSignalInfo();
+    void pause(bool on);
+    
+    void requestPacket();
+    
+    void requestSignalInfo();
 
-    void ChannelChange(const cChannel* Channel);
-    void sendStreamPacket(sStreamPacket* pkt);
-    void RequestStreamChange();
+    void sendStreamPacket(StreamPacket* pkt);
+    
+    void requestStreamChange();
 
 };
 

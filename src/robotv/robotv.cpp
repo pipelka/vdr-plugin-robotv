@@ -26,19 +26,19 @@
 #include <vdr/plugin.h>
 #include "robotv.h"
 
-cPluginRoboTVServer::cPluginRoboTVServer(void) {
+PluginRoboTVServer::PluginRoboTVServer(void) {
     Server = NULL;
 }
 
-cPluginRoboTVServer::~cPluginRoboTVServer() {
+PluginRoboTVServer::~PluginRoboTVServer() {
     // Clean up after yourself!
 }
 
-const char* cPluginRoboTVServer::CommandLineHelp(void) {
-    return "  -t n, --timeout=n      stream data timeout in seconds (default: 10)\n";
+const char* PluginRoboTVServer::CommandLineHelp(void) {
+    return "  -t n, --timeout=n      stream data timeout in seconds (default: 3)\n";
 }
 
-bool cPluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
+bool PluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
     // Implement command line argument processing here if applicable.
     static struct option long_options[] = {
         { "timeout",  required_argument, NULL, 't' },
@@ -51,7 +51,7 @@ bool cPluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
         switch(c) {
             case 't':
                 if(optarg != NULL) {
-                    RoboTVServerConfig.stream_timeout = atoi(optarg);
+                    RoboTVServerConfig::instance().stream_timeout = atoi(optarg);
                 }
 
                 break;
@@ -64,71 +64,70 @@ bool cPluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
     return true;
 }
 
-bool cPluginRoboTVServer::Initialize(void) {
+bool PluginRoboTVServer::Initialize(void) {
     // Initialize any background activities the plugin shall perform.
-    RoboTVServerConfig.ConfigDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
-#if VDRVERSNUM >= 10730
-    RoboTVServerConfig.CacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
-#else
-    RoboTVServerConfig.CacheDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
-#endif
-    RoboTVServerConfig.Load();
-    return true;
-}
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-bool cPluginRoboTVServer::Start(void) {
-    Server = new cRoboTVServer(RoboTVServerConfig.listen_port);
+    config.ConfigDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
+    config.CacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
+    config.Load();
 
     return true;
 }
 
-void cPluginRoboTVServer::Stop(void) {
+bool PluginRoboTVServer::Start(void) {
+    Server = new RoboTVServer(RoboTVServerConfig::instance().listen_port);
+
+    return true;
+}
+
+void PluginRoboTVServer::Stop(void) {
     delete Server;
     Server = NULL;
 }
 
-void cPluginRoboTVServer::Housekeeping(void) {
+void PluginRoboTVServer::Housekeeping(void) {
     // Perform any cleanup or other regular tasks.
 }
 
-void cPluginRoboTVServer::MainThreadHook(void) {
+void PluginRoboTVServer::MainThreadHook(void) {
     // Perform actions in the context of the main program thread.
     // WARNING: Use with great care - see PLUGINS.html!
 }
 
-cString cPluginRoboTVServer::Active(void) {
+cString PluginRoboTVServer::Active(void) {
     // Return a message string if shutdown should be postponed
     return NULL;
 }
 
-time_t cPluginRoboTVServer::WakeupTime(void) {
+time_t PluginRoboTVServer::WakeupTime(void) {
     // Return custom wakeup time for shutdown script
     return 0;
 }
 
-cMenuSetupPage* cPluginRoboTVServer::SetupMenu(void) {
+cMenuSetupPage* PluginRoboTVServer::SetupMenu(void) {
     // Return a setup menu in case the plugin supports one.
     return NULL;
 }
 
-bool cPluginRoboTVServer::SetupParse(const char* Name, const char* Value) {
+bool PluginRoboTVServer::SetupParse(const char* Name, const char* Value) {
     // Parse your own setup parameters and store their values.
     return false;
 }
 
-bool cPluginRoboTVServer::Service(const char* Id, void* Data) {
+bool PluginRoboTVServer::Service(const char* Id, void* Data) {
     // Handle custom service requests from other plugins
     return false;
 }
 
-const char** cPluginRoboTVServer::SVDRPHelpPages(void) {
+const char** PluginRoboTVServer::SVDRPHelpPages(void) {
     // Return help text for SVDRP commands this plugin implements
     return NULL;
 }
 
-cString cPluginRoboTVServer::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
+cString PluginRoboTVServer::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
     // Process SVDRP commands this plugin implements
     return NULL;
 }
 
-VDRPLUGINCREATOR(cPluginRoboTVServer); // Don't touch this!
+VDRPLUGINCREATOR(PluginRoboTVServer); // Don't touch this!

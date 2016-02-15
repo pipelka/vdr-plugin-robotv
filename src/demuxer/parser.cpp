@@ -27,13 +27,13 @@
 #include "vdr/tools.h"
 #include "pes.h"
 
-cParser::cParser(cTSDemuxer* demuxer, int buffersize, int packetsize) : cRingBufferLinear(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
+Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : cRingBufferLinear(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
     m_samplerate = 0;
     m_bitrate = 0;
     m_channels = 0;
     m_duration = 0;
     m_headersize = 0;
-    m_frametype = cStreamInfo::ftUNKNOWN;
+    m_frametype = StreamInfo::ftUNKNOWN;
 
     m_curPTS = DVD_NOPTS_VALUE;
     m_curDTS = DVD_NOPTS_VALUE;
@@ -42,10 +42,10 @@ cParser::cParser(cTSDemuxer* demuxer, int buffersize, int packetsize) : cRingBuf
     m_lastDTS = DVD_NOPTS_VALUE;
 }
 
-cParser::~cParser() {
+Parser::~Parser() {
 }
 
-int cParser::ParsePESHeader(uint8_t* buf, size_t len) {
+int Parser::ParsePESHeader(uint8_t* buf, size_t len) {
     // parse PES header
     unsigned int hdr_len = PesPayloadOffset(buf);
 
@@ -68,8 +68,8 @@ int cParser::ParsePESHeader(uint8_t* buf, size_t len) {
     return hdr_len;
 }
 
-void cParser::SendPayload(unsigned char* payload, int length) {
-    sStreamPacket pkt;
+void Parser::SendPayload(unsigned char* payload, int length) {
+    StreamPacket pkt;
     pkt.data      = payload;
     pkt.size      = length;
     pkt.duration  = m_duration;
@@ -80,7 +80,7 @@ void cParser::SendPayload(unsigned char* payload, int length) {
     m_demuxer->SendPacket(&pkt);
 }
 
-void cParser::PutData(unsigned char* data, int length, bool pusi) {
+void Parser::PutData(unsigned char* data, int length, bool pusi) {
     // get PTS / DTS on PES start
     if(pusi) {
         int offset = ParsePESHeader(data, length);
@@ -102,7 +102,7 @@ void cParser::PutData(unsigned char* data, int length, bool pusi) {
     }
 }
 
-void cParser::Parse(unsigned char* data, int datasize, bool pusi) {
+void Parser::Parse(unsigned char* data, int datasize, bool pusi) {
     // get available data
     int length = 0;
     uint8_t* buffer = Get(length);
@@ -163,11 +163,11 @@ void cParser::Parse(unsigned char* data, int datasize, bool pusi) {
     PutData(data, datasize, pusi);
 }
 
-int cParser::ParsePayload(unsigned char* payload, int length) {
+int Parser::ParsePayload(unsigned char* payload, int length) {
     return length;
 }
 
-int cParser::FindAlignmentOffset(unsigned char* buffer, int buffersize, int o, int& framesize) {
+int Parser::FindAlignmentOffset(unsigned char* buffer, int buffersize, int o, int& framesize) {
     framesize = 0;
 
     // seek sync
@@ -183,12 +183,12 @@ int cParser::FindAlignmentOffset(unsigned char* buffer, int buffersize, int o, i
     return o;
 }
 
-bool cParser::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool Parser::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     framesize = 0;
     return true;
 }
 
-int cParser::FindStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask) {
+int Parser::FindStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask) {
     uint32_t sc = 0xFFFFFFFF;
 
     while(offset < buffersize) {

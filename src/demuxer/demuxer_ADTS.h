@@ -27,10 +27,10 @@
 
 #include "parser.h"
 
-class cParserADTS : public cParser {
+class ParserAdts : public Parser {
 public:
 
-    cParserADTS(cTSDemuxer* demuxer);
+    ParserAdts(TsDemuxer* demuxer);
 
 protected:
 

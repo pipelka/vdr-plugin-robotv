@@ -28,15 +28,15 @@
 #include <map>
 #include <vdr/remux.h>
 
-cDemuxerBundle::cDemuxerBundle(cTSDemuxer::Listener* listener) : m_listener(listener) {
+DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
 }
 
-cDemuxerBundle::~cDemuxerBundle() {
+DemuxerBundle::~DemuxerBundle() {
     clear();
 }
 
 
-void cDemuxerBundle::clear() {
+void DemuxerBundle::clear() {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL) {
             DEBUGLOG("Deleting stream demuxer for pid=%i and type=%i", (*i)->GetPID(), (*i)->GetType());
@@ -44,10 +44,10 @@ void cDemuxerBundle::clear() {
         }
     }
 
-    std::list<cTSDemuxer*>::clear();
+    std::list<TsDemuxer*>::clear();
 }
 
-cTSDemuxer* cDemuxerBundle::findDemuxer(int Pid) {
+TsDemuxer* DemuxerBundle::findDemuxer(int Pid) {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL && (*i)->GetPID() == Pid) {
             return (*i);
@@ -57,14 +57,14 @@ cTSDemuxer* cDemuxerBundle::findDemuxer(int Pid) {
     return NULL;
 }
 
-void cDemuxerBundle::reorderStreams(int lang, cStreamInfo::Type type) {
-    std::map<uint32_t, cTSDemuxer*> weight;
+void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
+    std::map<uint32_t, TsDemuxer*> weight;
 
     // compute weights
     int i = 0;
 
     for(auto idx = begin(); idx != end(); idx++, i++) {
-        cTSDemuxer* stream = (*idx);
+        TsDemuxer* stream = (*idx);
 
         if(stream == NULL) {
             continue;
@@ -94,11 +94,11 @@ void cDemuxerBundle::reorderStreams(int lang, cStreamInfo::Type type) {
 
         // stream type weights
         switch(stream->GetContent()) {
-            case cStreamInfo::scVIDEO:
+            case StreamInfo::scVIDEO:
                 w |= VIDEO_MASK;
                 break;
 
-            case cStreamInfo::scAUDIO:
+            case StreamInfo::scAUDIO:
                 w |= AUDIO_MASK;
 
                 // weight of audio stream type
@@ -108,7 +108,7 @@ void cDemuxerBundle::reorderStreams(int lang, cStreamInfo::Type type) {
                 w |= ((4 - stream->GetAudioType()) << 16) & AUDIOTYPE_MASK;
                 break;
 
-            case cStreamInfo::scSUBTITLE:
+            case StreamInfo::scSUBTITLE:
                 w |= SUBTITLE_MASK;
                 break;
 
@@ -126,16 +126,16 @@ void cDemuxerBundle::reorderStreams(int lang, cStreamInfo::Type type) {
 
     // reorder streams on weight
     int idx = 0;
-    std::list<cTSDemuxer*>::clear();
+    std::list<TsDemuxer*>::clear();
 
-    for(std::map<uint32_t, cTSDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
-        cTSDemuxer* stream = i->second;
+    for(std::map<uint32_t, TsDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
+        TsDemuxer* stream = i->second;
         DEBUGLOG("Stream : Type %s / %s Weight: %08X", stream->TypeName(), stream->GetLanguage(), i->first);
         push_back(stream);
     }
 }
 
-bool cDemuxerBundle::isReady() {
+bool DemuxerBundle::isReady() {
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->IsParsed()) {
             DEBUGLOG("Stream with PID %i not parsed", (*i)->GetPID());
@@ -146,8 +146,8 @@ bool cDemuxerBundle::isReady() {
     return true;
 }
 
-void cDemuxerBundle::updateFrom(cStreamBundle* bundle) {
-    cStreamBundle old;
+void DemuxerBundle::updateFrom(StreamBundle* bundle) {
+    StreamBundle old;
 
     // remove old demuxers
     for(auto i = begin(); i != end(); i++) {
@@ -155,19 +155,19 @@ void cDemuxerBundle::updateFrom(cStreamBundle* bundle) {
         delete *i;
     }
 
-    std::list<cTSDemuxer*>::clear();
+    std::list<TsDemuxer*>::clear();
 
     // create new stream demuxers
     for(auto i = bundle->begin(); i != bundle->end(); i++) {
-        cStreamInfo& infonew = i->second;
-        cStreamInfo& infoold = old[i->first];
+        StreamInfo& infonew = i->second;
+        StreamInfo& infoold = old[i->first];
 
         // reuse previous stream information
         if(infonew.GetPID() == infoold.GetPID() && infonew.GetType() == infoold.GetType()) {
             infonew = infoold;
         }
 
-        cTSDemuxer* dmx = new cTSDemuxer(m_listener, infonew);
+        TsDemuxer* dmx = new TsDemuxer(m_listener, infonew);
 
         if(dmx != NULL) {
             push_back(dmx);
@@ -176,9 +176,9 @@ void cDemuxerBundle::updateFrom(cStreamBundle* bundle) {
     }
 }
 
-bool cDemuxerBundle::processTsPacket(uint8_t* packet) {
+bool DemuxerBundle::processTsPacket(uint8_t* packet) {
     unsigned int ts_pid = TsPid(packet);
-    cTSDemuxer* demuxer = findDemuxer(ts_pid);
+    TsDemuxer* demuxer = findDemuxer(ts_pid);
 
     if(demuxer == NULL) {
         return false;
@@ -187,11 +187,11 @@ bool cDemuxerBundle::processTsPacket(uint8_t* packet) {
     return demuxer->ProcessTSPacket(packet);
 }
 
-MsgPacket* cDemuxerBundle::createStreamChangePacket(int protocolVersion) {
+MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
 
     for(auto idx = begin(); idx != end(); idx++) {
-        cTSDemuxer* stream = (*idx);
+        TsDemuxer* stream = (*idx);
 
         if(stream == NULL) {
             continue;
@@ -201,7 +201,7 @@ MsgPacket* cDemuxerBundle::createStreamChangePacket(int protocolVersion) {
         resp->put_U32(streamid);
 
         switch(stream->GetContent()) {
-            case cStreamInfo::scAUDIO:
+            case StreamInfo::scAUDIO:
                 resp->put_String(stream->TypeName());
                 resp->put_String(stream->GetLanguage());
 
@@ -215,7 +215,7 @@ MsgPacket* cDemuxerBundle::createStreamChangePacket(int protocolVersion) {
 
                 break;
 
-            case cStreamInfo::scVIDEO:
+            case StreamInfo::scVIDEO:
                 // H265 is supported on protocol version 6 or higher, ...
                 resp->put_String(stream->TypeName());
                 resp->put_U32(stream->GetFpsScale());
@@ -255,14 +255,14 @@ MsgPacket* cDemuxerBundle::createStreamChangePacket(int protocolVersion) {
 
                 break;
 
-            case cStreamInfo::scSUBTITLE:
+            case StreamInfo::scSUBTITLE:
                 resp->put_String(stream->TypeName());
                 resp->put_String(stream->GetLanguage());
                 resp->put_U32(stream->CompositionPageId());
                 resp->put_U32(stream->AncillaryPageId());
                 break;
 
-            case cStreamInfo::scTELETEXT:
+            case StreamInfo::scTELETEXT:
                 resp->put_String(stream->TypeName());
                 break;
 

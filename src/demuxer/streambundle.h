@@ -30,18 +30,18 @@
 #include "vdr/remux.h"
 #include <map>
 
-class cStreamBundle : public std::map<int, cStreamInfo> {
+class StreamBundle : public std::map<int, StreamInfo> {
 public:
 
-    cStreamBundle();
+    StreamBundle();
 
-    void AddStream(const cStreamInfo& s);
+    void AddStream(const StreamInfo& s);
 
-    bool operator ==(const cStreamBundle& c) const;
+    bool operator ==(const StreamBundle& c) const;
 
-    bool ismetaof(const cStreamBundle& c) const;
+    bool ismetaof(const StreamBundle& c) const;
 
-    bool contains(const cStreamInfo& s) const;
+    bool contains(const StreamInfo& s) const;
 
     bool changed() const {
         return m_bChanged;
@@ -49,9 +49,9 @@ public:
 
     bool IsParsed();
 
-    static cStreamBundle FromChannel(const cChannel* channel);
+    static StreamBundle FromChannel(const cChannel* channel);
 
-    static cStreamBundle FromPatPmt(const cPatPmtParser* patpmt);
+    static StreamBundle FromPatPmt(const cPatPmtParser* patpmt);
 
 private:
 
@@ -59,7 +59,7 @@ private:
 
 };
 
-MsgPacket& operator<< (MsgPacket& lhs, const cStreamBundle& rhs);
-MsgPacket& operator>> (MsgPacket& lhs, cStreamBundle& rhs);
+MsgPacket& operator<< (MsgPacket& lhs, const StreamBundle& rhs);
+MsgPacket& operator>> (MsgPacket& lhs, StreamBundle& rhs);
 
 #endif // ROBOTV_STREAMBUNDLE_H

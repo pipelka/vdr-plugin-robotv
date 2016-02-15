@@ -34,21 +34,13 @@
 #include "live/channelcache.h"
 #include "live/livequeue.h"
 
-cRoboTVServerConfig::cRoboTVServerConfig() {
-    listen_port         = LISTEN_PORT;
-    ConfigDirectory     = NULL;
-    stream_timeout      = 3;
-    ReorderCmd          = NULL;
+RoboTVServerConfig::RoboTVServerConfig() : listen_port(LISTEN_PORT), stream_timeout(3) {
 }
 
-void cRoboTVServerConfig::Load() {
-#if VDRVERSNUM >= 20102
-    cLiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
-#else
-    cLiveQueue::SetTimeShiftDir(VideoDirectory);
-#endif
+void RoboTVServerConfig::Load() {
+    LiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
 
-    if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory, GENERAL_CONFIG_FILE), true, false)) {
+    if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory.c_str(), GENERAL_CONFIG_FILE), true, false)) {
         return;
     }
 
@@ -58,16 +50,16 @@ void cRoboTVServerConfig::Load() {
         }
     }
 
-    cLiveQueue::RemoveTimeShiftFiles();
-    cChannelCache::LoadChannelCacheData();
+    LiveQueue::RemoveTimeShiftFiles();
+    ChannelCache::instance().LoadChannelCacheData();
 }
 
-bool cRoboTVServerConfig::Parse(const char* Name, const char* Value) {
+bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
     if(!strcasecmp(Name, "TimeShiftDir")) {
-        cLiveQueue::SetTimeShiftDir(Value);
+        LiveQueue::SetTimeShiftDir(Value);
     }
     else if(!strcasecmp(Name, "MaxTimeShiftSize")) {
-        cLiveQueue::SetBufferSize(strtoull(Value, NULL, 10));
+        LiveQueue::SetBufferSize(strtoull(Value, NULL, 10));
     }
     else if(!strcasecmp(Name, "PiconsURL")) {
         PiconsURL = Value;
@@ -82,5 +74,7 @@ bool cRoboTVServerConfig::Parse(const char* Name, const char* Value) {
     return true;
 }
 
-/* Global instance */
-cRoboTVServerConfig RoboTVServerConfig;
+RoboTVServerConfig& RoboTVServerConfig::instance() {
+    static RoboTVServerConfig config;
+    return config;
+}

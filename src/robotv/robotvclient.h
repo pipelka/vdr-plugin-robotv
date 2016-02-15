@@ -42,21 +42,20 @@
 
 class cChannel;
 class cDevice;
-class cLiveStreamer;
+class LiveStreamer;
 class MsgPacket;
-class cPacketPlayer;
+class PacketPlayer;
 class cCmdControl;
 
-class cRoboTVClient : public cThread
-        , public cStatus {
+class RoboTVClient : public cThread, public cStatus {
 private:
 
     unsigned int      m_Id;
     int               m_socket;
     bool              m_loggedIn;
     bool              m_StatusInterfaceEnabled;
-    cLiveStreamer*    m_Streamer;
-    cPacketPlayer*    m_RecPlayer;
+    LiveStreamer*    m_Streamer;
+    PacketPlayer*    m_RecPlayer;
     MsgPacket*        m_req;
     MsgPacket*        m_resp;
     cCharSetConv      m_toUTF8;
@@ -65,7 +64,7 @@ private:
     cMutex            m_streamerLock;
     int               m_compressionLevel;
     int               m_LanguageIndex;
-    cStreamInfo::Type m_LangStreamType;
+    StreamInfo::Type m_LangStreamType;
     std::list<int>    m_caids;
     bool              m_wantfta;
     bool              m_filterlanguage;
@@ -74,7 +73,7 @@ private:
     cWirbelScan       m_scanner;
     bool              m_scanSupported;
     std::string       m_clientName;
-    cArtwork          m_artwork;
+    Artwork          m_artwork;
 
     std::queue<MsgPacket*> m_queue;
     cMutex                 m_queueLock;
@@ -92,8 +91,8 @@ protected:
 
 public:
 
-    cRoboTVClient(int fd, unsigned int id);
-    virtual ~cRoboTVClient();
+    RoboTVClient(int fd, unsigned int id);
+    virtual ~RoboTVClient();
 
     void ChannelsChanged();
     void RecordingsChange();

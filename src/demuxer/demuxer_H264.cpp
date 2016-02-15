@@ -41,13 +41,13 @@
 #define NAL_SPS 0x07
 #define NAL_PPS 0x08
 
-const cParserH264::pixel_aspect_t cParserH264::m_aspect_ratios[17] = {
+const ParserH264::pixel_aspect_t ParserH264::m_aspect_ratios[17] = {
     {0, 1}, { 1,  1}, {12, 11}, {10, 11}, {16, 11}, { 40, 33}, {24, 11}, {20, 11}, {32, 11},
     {80, 33}, {18, 11}, {15, 11}, {64, 33}, {160, 99}, { 4,  3}, { 3,  2}, { 2,  1}
 };
 
 // golomb decoding
-uint32_t cParserH264::read_golomb_ue(cBitStream* bs) {
+uint32_t ParserH264::read_golomb_ue(cBitStream* bs) {
     int leadingZeroBits = -1;
 
     for(uint32_t b = 0; !b; ++leadingZeroBits) {
@@ -57,7 +57,7 @@ uint32_t cParserH264::read_golomb_ue(cBitStream* bs) {
     return ((1 << leadingZeroBits) - 1) + bs->GetBits(leadingZeroBits);
 }
 
-int32_t cParserH264::read_golomb_se(cBitStream* bs) {
+int32_t ParserH264::read_golomb_se(cBitStream* bs) {
     int32_t v = read_golomb_ue(bs);
 
     if(v == 0) {
@@ -71,12 +71,12 @@ int32_t cParserH264::read_golomb_se(cBitStream* bs) {
 }
 
 
-cParserH264::cParserH264(cTSDemuxer* demuxer) : cParserPES(demuxer, 512 * 1024) {
+ParserH264::ParserH264(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024) {
     m_scale = 0;
     m_rate = 0;
 }
 
-uint8_t* cParserH264::ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len) {
+uint8_t* ParserH264::ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len) {
     int e = FindStartCode(packet, length, nal_offset, 0x00000001);
 
     if(e == -1) {
@@ -99,7 +99,7 @@ uint8_t* cParserH264::ExtractNAL(uint8_t* packet, int length, int nal_offset, in
     return nal_data;
 }
 
-int cParserH264::ParsePayload(unsigned char* data, int length) {
+int ParserH264::ParsePayload(unsigned char* data, int length) {
     int o = 0;
     int sps_start = -1;
     int pps_start = -1;
@@ -192,7 +192,7 @@ int cParserH264::ParsePayload(unsigned char* data, int length) {
     return length;
 }
 
-int cParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
+int ParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
     int s = 0, d = 0;
 
     while(s < len) {
@@ -209,7 +209,7 @@ int cParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
     return d;
 }
 
-void cParserH264::Parse_SLH(uint8_t* buf, int len) {
+void ParserH264::Parse_SLH(uint8_t* buf, int len) {
     cBitStream bs(buf, len * 8);
 
     read_golomb_ue(&bs); // first_mb_in_slice
@@ -221,26 +221,26 @@ void cParserH264::Parse_SLH(uint8_t* buf, int len) {
 
     switch(type) {
         case 0:
-            m_frametype = cStreamInfo::ftPFRAME;
+            m_frametype = StreamInfo::ftPFRAME;
             break;
 
         case 1:
-            m_frametype = cStreamInfo::ftBFRAME;
+            m_frametype = StreamInfo::ftBFRAME;
             break;
 
         case 2:
-            m_frametype = cStreamInfo::ftIFRAME;
+            m_frametype = StreamInfo::ftIFRAME;
             break;
 
         default:
-            m_frametype = cStreamInfo::ftUNKNOWN;
+            m_frametype = StreamInfo::ftUNKNOWN;
             break;
     }
 
     return;
 }
 
-bool cParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
+bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
     bool seq_scaling_matrix_present = false;
     cBitStream bs(buf, len * 8);
 

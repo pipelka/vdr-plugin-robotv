@@ -25,14 +25,14 @@
 #include "recordings/artwork.h"
 #include "config/config.h"
 
-cArtwork::cArtwork() : m_storage(RoboTV::Storage::getInstance()) {
+Artwork::Artwork() : m_storage(RoboTV::Storage::getInstance()) {
     CreateDB();
 }
 
-cArtwork::~cArtwork() {
+Artwork::~Artwork() {
 }
 
-void cArtwork::CreateDB() {
+void Artwork::CreateDB() {
     std::string schema =
         "CREATE TABLE IF NOT EXISTS artwork (\n"
         "  id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
@@ -51,7 +51,7 @@ void cArtwork::CreateDB() {
     }
 }
 
-bool cArtwork::get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl) {
+bool Artwork::get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl) {
     sqlite3_stmt* s = m_storage.Query(
                           "SELECT posterurl, backgroundurl FROM artwork WHERE contenttype=%i AND title=%Q;",
                           contentType,
@@ -73,7 +73,7 @@ bool cArtwork::get(int contentType, const std::string& title, std::string& poste
     return true;
 }
 
-bool cArtwork::set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId = 0) {
+bool Artwork::set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId = 0) {
     // try to insert new record
     if(m_storage.Exec(
                 "INSERT OR IGNORE INTO artwork(contenttype, title, posterurl, backgroundurl, externalId) VALUES(%i, %Q, %Q, %Q, %i);",
@@ -94,7 +94,7 @@ bool cArtwork::set(int contentType, const std::string& title, const std::string&
                title.c_str()) == SQLITE_OK;
 }
 
-void cArtwork::cleanup(int afterDays) {
+void Artwork::cleanup(int afterDays) {
     m_storage.Exec(
         "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > %i AND backgroundurl=''",
         afterDays

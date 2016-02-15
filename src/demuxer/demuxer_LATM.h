@@ -29,10 +29,10 @@
 
 class cBitStream;
 
-class cParserLATM : public cParser {
+class ParserLatm : public Parser {
 public:
 
-    cParserLATM(cTSDemuxer* demuxer);
+    ParserLatm(TsDemuxer* demuxer);
 
 protected:
 

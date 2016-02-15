@@ -30,14 +30,14 @@
 #include "net/msgpacket.h"
 #include "livequeue.h"
 
-cString cLiveQueue::TimeShiftDir = "/video";
-uint64_t cLiveQueue::BufferSize = 1024 * 1024 * 1024;
+cString LiveQueue::TimeShiftDir = "/video";
+uint64_t LiveQueue::BufferSize = 1024 * 1024 * 1024;
 
-cLiveQueue::cLiveQueue(int sock) : m_socket(sock), m_readfd(-1), m_writefd(-1), m_queuesize(400) {
+LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readfd(-1), m_writefd(-1), m_queuesize(400) {
     m_pause = false;
 }
 
-cLiveQueue::~cLiveQueue() {
+LiveQueue::~LiveQueue() {
     DEBUGLOG("Deleting LiveQueue");
     m_cond.Signal();
     Cancel(3);
@@ -45,7 +45,7 @@ cLiveQueue::~cLiveQueue() {
     CloseTimeShift();
 }
 
-void cLiveQueue::Cleanup() {
+void LiveQueue::Cleanup() {
     cMutexLock lock(&m_lock);
 
     while(!empty()) {
@@ -54,7 +54,7 @@ void cLiveQueue::Cleanup() {
     }
 }
 
-void cLiveQueue::Request() {
+void LiveQueue::Request() {
     cMutexLock lock(&m_lock);
 
     // read packet from storage
@@ -84,17 +84,17 @@ void cLiveQueue::Request() {
     m_cond.Signal();
 }
 
-bool cLiveQueue::IsPaused() {
+bool LiveQueue::IsPaused() {
     cMutexLock lock(&m_lock);
     return m_pause;
 }
 
-bool cLiveQueue::TimeShiftMode() {
+bool LiveQueue::TimeShiftMode() {
     cMutexLock lock(&m_lock);
     return (m_pause || (!m_pause && m_writefd != -1));
 }
 
-bool cLiveQueue::Add(MsgPacket* p, cStreamInfo::Content content) {
+bool LiveQueue::Add(MsgPacket* p, StreamInfo::Content content) {
     cMutexLock lock(&m_lock);
 
     // in timeshift mode ?
@@ -122,7 +122,7 @@ bool cLiveQueue::Add(MsgPacket* p, cStreamInfo::Content content) {
 
     // discard teletext / signalinfo packets if the buffer fills up, ...
     if(size() > (m_queuesize / 2)) {
-        if(content == cStreamInfo::scTELETEXT || content == cStreamInfo::scNONE) {
+        if(content == StreamInfo::scTELETEXT || content == StreamInfo::scNONE) {
             delete p;
             m_cond.Signal();
             return true;
@@ -143,7 +143,7 @@ bool cLiveQueue::Add(MsgPacket* p, cStreamInfo::Content content) {
     return true;
 }
 
-void cLiveQueue::Action() {
+void LiveQueue::Action() {
     INFOLOG("LiveQueue started");
 
     // wait for first packet
@@ -184,7 +184,7 @@ void cLiveQueue::Action() {
     INFOLOG("LiveQueue stopped");
 }
 
-void cLiveQueue::CloseTimeShift() {
+void LiveQueue::CloseTimeShift() {
     close(m_readfd);
     m_readfd = -1;
     close(m_writefd);
@@ -195,7 +195,7 @@ void cLiveQueue::CloseTimeShift() {
     }
 }
 
-bool cLiveQueue::Pause(bool on) {
+bool LiveQueue::Pause(bool on) {
     cMutexLock lock(&m_lock);
 
     // deactivate timeshift
@@ -241,17 +241,17 @@ bool cLiveQueue::Pause(bool on) {
     return true;
 }
 
-void cLiveQueue::SetTimeShiftDir(const cString& dir) {
+void LiveQueue::SetTimeShiftDir(const cString& dir) {
     TimeShiftDir = dir;
     DEBUGLOG("TIMESHIFTDIR: %s", (const char*)TimeShiftDir);
 }
 
-void cLiveQueue::SetBufferSize(uint64_t s) {
+void LiveQueue::SetBufferSize(uint64_t s) {
     BufferSize = s;
     DEBUGLOG("BUFFSERIZE: %llu bytes", BufferSize);
 }
 
-void cLiveQueue::RemoveTimeShiftFiles() {
+void LiveQueue::RemoveTimeShiftFiles() {
     DIR* dir = opendir((const char*)TimeShiftDir);
 
     if(dir == NULL) {

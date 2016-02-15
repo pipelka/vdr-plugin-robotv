@@ -41,45 +41,45 @@
 
 #define DVD_TIME_BASE 1000000
 
-cTSDemuxer::cTSDemuxer(cTSDemuxer::Listener* streamer, const cStreamInfo& info) : cStreamInfo(info), m_Streamer(streamer) {
+TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, const StreamInfo& info) : StreamInfo(info), m_Streamer(streamer) {
     m_pesParser = CreateParser(m_type);
     SetContent();
 }
 
-cTSDemuxer::cTSDemuxer(cTSDemuxer::Listener* streamer, cStreamInfo::Type type, int pid) : cStreamInfo(pid, type), m_Streamer(streamer) {
+TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, StreamInfo::Type type, int pid) : StreamInfo(pid, type), m_Streamer(streamer) {
     m_pesParser = CreateParser(m_type);
 }
 
-cParser* cTSDemuxer::CreateParser(cStreamInfo::Type type) {
+Parser* TsDemuxer::CreateParser(StreamInfo::Type type) {
     switch(type) {
         case stMPEG2VIDEO:
-            return new cParserMPEG2Video(this);
+            return new ParserMpeg2Video(this);
 
         case stH264:
-            return new cParserH264(this);
+            return new ParserH264(this);
 
         case stH265:
-            return new cParserH265(this);
+            return new ParserH265(this);
 
         case stMPEG2AUDIO:
-            return new cParserMPEG2Audio(this);
+            return new ParserMpeg2Audio(this);
 
         case stAAC:
-            return new cParserADTS(this);
+            return new ParserAdts(this);
 
         case stLATM:
-            return new cParserLATM(this);
+            return new ParserLatm(this);
 
         case stAC3:
         case stEAC3:
-            return new cParserAC3(this);
+            return new ParserAc3(this);
 
         case stTELETEXT:
             m_parsed = true;
-            return new cParserPES(this);
+            return new ParserPes(this);
 
         case stDVBSUB:
-            return new cParserSubtitle(this);
+            return new ParserSubtitle(this);
 
         default:
             ERRORLOG("Unrecognized type %i", m_type);
@@ -91,18 +91,18 @@ cParser* cTSDemuxer::CreateParser(cStreamInfo::Type type) {
     return NULL;
 }
 
-cTSDemuxer::~cTSDemuxer() {
+TsDemuxer::~TsDemuxer() {
     delete m_pesParser;
 }
 
-int64_t cTSDemuxer::Rescale(int64_t a) {
+int64_t TsDemuxer::Rescale(int64_t a) {
     uint64_t b = DVD_TIME_BASE;
     uint64_t c = 90000;
 
     return (a * b) / c;
 }
 
-void cTSDemuxer::SendPacket(sStreamPacket* pkt) {
+void TsDemuxer::SendPacket(StreamPacket* pkt) {
     // raw pts/dts
     pkt->rawdts = pkt->dts;
     pkt->rawpts = pkt->pts;
@@ -121,7 +121,7 @@ void cTSDemuxer::SendPacket(sStreamPacket* pkt) {
     m_Streamer->sendStreamPacket(pkt);
 }
 
-bool cTSDemuxer::ProcessTSPacket(unsigned char* data) {
+bool TsDemuxer::ProcessTSPacket(unsigned char* data) {
     if(data == NULL) {
         return false;
     }
@@ -164,7 +164,7 @@ bool cTSDemuxer::ProcessTSPacket(unsigned char* data) {
     return true;
 }
 
-void cTSDemuxer::SetLanguageDescriptor(const char* language, uint8_t atype) {
+void TsDemuxer::SetLanguageDescriptor(const char* language, uint8_t atype) {
     m_language[0] = language[0];
     m_language[1] = language[1];
     m_language[2] = language[2];
@@ -172,7 +172,7 @@ void cTSDemuxer::SetLanguageDescriptor(const char* language, uint8_t atype) {
     m_audiotype = atype;
 }
 
-void cTSDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
+void TsDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
     // check for sane picture information
     if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0) {
         return;
@@ -212,10 +212,10 @@ void cTSDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int 
     m_aspect   = Aspect;
     m_parsed   = true;
 
-    m_Streamer->RequestStreamChange();
+    m_Streamer->requestStreamChange();
 }
 
-void cTSDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
+void TsDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
     // only register changed audio information
     if(Channels == m_channels && SampleRate == m_samplerate && BitRate == m_bitrate) {
         return;
@@ -239,10 +239,10 @@ void cTSDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, 
     m_bitspersample = BitsPerSample;
     m_parsed        = true;
 
-    m_Streamer->RequestStreamChange();
+    m_Streamer->requestStreamChange();
 }
 
-void cTSDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
+void TsDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
     if(sps != NULL) {
         m_spsLength = spsLength;
         memcpy(m_sps, sps, spsLength);
@@ -259,17 +259,17 @@ void cTSDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, 
     }
 }
 
-uint8_t* cTSDemuxer::GetVideoDecoderSPS(int& length) {
+uint8_t* TsDemuxer::GetVideoDecoderSPS(int& length) {
     length = m_spsLength;
     return m_spsLength == 0 ? NULL : m_sps;
 }
 
-uint8_t* cTSDemuxer::GetVideoDecoderPPS(int& length) {
+uint8_t* TsDemuxer::GetVideoDecoderPPS(int& length) {
     length = m_ppsLength;
     return m_ppsLength == 0 ? NULL : m_pps;
 }
 
-uint8_t* cTSDemuxer::GetVideoDecoderVPS(int& length) {
+uint8_t* TsDemuxer::GetVideoDecoderVPS(int& length) {
     length = m_vpsLength;
     return m_vpsLength == 0 ? NULL : m_vps;
 }

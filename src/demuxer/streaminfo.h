@@ -31,7 +31,7 @@
 
 #include "net/msgpacket.h"
 
-class cStreamInfo {
+class StreamInfo {
 public:
 
     enum Content {
@@ -67,17 +67,17 @@ public:
 
 public:
 
-    cStreamInfo();
+    StreamInfo();
 
-    cStreamInfo(int pid, Type type, const char* lang = NULL);
+    StreamInfo(int pid, Type type, const char* lang = NULL);
 
-    virtual ~cStreamInfo();
+    virtual ~StreamInfo();
 
-    bool operator ==(const cStreamInfo& rhs) const;
+    bool operator ==(const StreamInfo& rhs) const;
 
-    bool ismetaof(const cStreamInfo& rhs) const;
+    bool ismetaof(const StreamInfo& rhs) const;
 
-    bool operator !=(const cStreamInfo& rhs) const;
+    bool operator !=(const StreamInfo& rhs) const;
 
     const int GetPID() const {
         return m_pid;
@@ -97,9 +97,9 @@ public:
 
     const char* TypeName();
 
-    static const char* TypeName(const cStreamInfo::Type& type);
+    static const char* TypeName(const StreamInfo::Type& type);
 
-    static const char* ContentName(const cStreamInfo::Content& content);
+    static const char* ContentName(const StreamInfo::Content& content);
 
     void info() const;
 
@@ -145,8 +145,8 @@ protected:
     int m_ppsLength;     // PPS length
     int m_vpsLength;     // VPS length
 
-    friend MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs);
-    friend MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs);
+    friend MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs);
+    friend MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs);
 
 private:
 
@@ -154,7 +154,7 @@ private:
 
 };
 
-MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs);
-MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs);
+MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs);
+MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs);
 
 #endif // ROBOTV_STREAMINFO_H

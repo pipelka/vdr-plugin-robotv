@@ -25,7 +25,7 @@
 #ifndef ROBOTV_CONFIG_H
 #define ROBOTV_CONFIG_H
 
-#include <string.h>
+#include <string>
 #include <stdint.h>
 
 #include <vdr/config.h>
@@ -68,28 +68,26 @@
 #endif
 
 
-class cRoboTVServerConfig : public cConfig<cSetupLine> {
-public:
-    cRoboTVServerConfig();
-
-    void Load();
-
+class RoboTVServerConfig : public cConfig<cSetupLine> {
 protected:
+
+    RoboTVServerConfig();
 
     bool Parse(const char* Name, const char* Value);
 
 public:
 
+    void Load();
+
+    static RoboTVServerConfig& instance();
+
     // Remote server settings
-    cString ConfigDirectory;      // config directory path
-    cString CacheDirectory;       // cache directory path
+    std::string ConfigDirectory;      // config directory path
+    std::string CacheDirectory;       // cache directory path
     uint16_t listen_port;         // Port of remote server
     uint16_t stream_timeout;      // timeout in seconds for stream data
-    cString PiconsURL;
-    cString ReorderCmd;
+    std::string PiconsURL;
+    std::string ReorderCmd;
 };
-
-// Global instance
-extern cRoboTVServerConfig RoboTVServerConfig;
 
 #endif // ROBOTV_CONFIG_H

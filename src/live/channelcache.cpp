@@ -27,10 +27,15 @@
 #include "tools/hash.h"
 #include "robotv/robotvchannels.h"
 
-cMutex cChannelCache::m_access;
-std::map<uint32_t, cStreamBundle> cChannelCache::m_cache;
+ChannelCache::ChannelCache() : m_config(RoboTVServerConfig::instance()) {
+}
 
-void cChannelCache::AddToCache(uint32_t channeluid, const cStreamBundle& channel) {
+ChannelCache& ChannelCache::instance() {
+    static ChannelCache cache;
+    return cache;
+}
+
+void ChannelCache::AddToCache(uint32_t channeluid, const StreamBundle& channel) {
     Lock();
 
     if(channeluid != 0) {
@@ -40,7 +45,7 @@ void cChannelCache::AddToCache(uint32_t channeluid, const cStreamBundle& channel
     Unlock();
 }
 
-void cChannelCache::AddToCache(const cChannel* channel) {
+void ChannelCache::AddToCache(const cChannel* channel) {
     cMutexLock lock(&m_access);
 
     uint32_t uid = CreateChannelUID(channel);
@@ -60,13 +65,13 @@ void cChannelCache::AddToCache(const cChannel* channel) {
     }
 
     // create new cache item
-    cStreamBundle item = cStreamBundle::FromChannel(channel);
+    StreamBundle item = StreamBundle::FromChannel(channel);
 
     AddToCache(uid, item);
 }
 
-cStreamBundle cChannelCache::GetFromCache(uint32_t channeluid) {
-    static cStreamBundle empty;
+StreamBundle ChannelCache::GetFromCache(uint32_t channeluid) {
+    static StreamBundle empty;
 
     Lock();
 
@@ -77,14 +82,14 @@ cStreamBundle cChannelCache::GetFromCache(uint32_t channeluid) {
         return empty;
     }
 
-    cStreamBundle result = m_cache[channeluid];
+    StreamBundle result = m_cache[channeluid];
     Unlock();
 
     return result;
 }
 
-void cChannelCache::SaveChannelCacheData() {
-    cString filename = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE".bak");
+void ChannelCache::SaveChannelCacheData() {
+    cString filename = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE".bak");
 
     int fd = open(*filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 
@@ -99,7 +104,7 @@ void cChannelCache::SaveChannelCacheData() {
     p->put_String("V2");
     p->put_U32(m_cache.size());
 
-    for(std::map<uint32_t, cStreamBundle>::iterator i = m_cache.begin(); i != m_cache.end(); i++) {
+    for(std::map<uint32_t, StreamBundle>::iterator i = m_cache.begin(); i != m_cache.end(); i++) {
         p->put_U32(i->first);
         *p << i->second;
     }
@@ -110,21 +115,22 @@ void cChannelCache::SaveChannelCacheData() {
     delete p;
     close(fd);
 
-    cString filenamenew = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
+    cString filenamenew = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE);
 
     rename(filename, filenamenew);
 }
 
-void cChannelCache::gc() {
+void ChannelCache::gc() {
     cMutexLock lock(&m_access);
-    std::map<uint32_t, cStreamBundle> m_newcache;
+    std::map<uint32_t, StreamBundle> m_newcache;
 
     INFOLOG("channel cache garbage collection ...");
     INFOLOG("before: %zu channels in cache", m_cache.size());
 
     // remove orphaned cache entries
-    RoboTVChannels.Lock(false);
-    cChannels* channels = RoboTVChannels.Get();
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
+    cChannels* channels = c.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         uint32_t uid = CreateChannelUID(channel);
@@ -135,7 +141,7 @@ void cChannelCache::gc() {
         }
 
         // lookup channel in current cache
-        std::map<uint32_t, cStreamBundle>::iterator i = m_cache.find(uid);
+        std::map<uint32_t, StreamBundle>::iterator i = m_cache.find(uid);
 
         if(i == m_cache.end()) {
             continue;
@@ -145,7 +151,7 @@ void cChannelCache::gc() {
         m_newcache[uid] = i->second;
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     // regenerate cache
     m_cache.clear();
@@ -157,11 +163,11 @@ void cChannelCache::gc() {
     INFOLOG("after: %zu channels in cache", m_cache.size());
 }
 
-void cChannelCache::LoadChannelCacheData() {
+void ChannelCache::LoadChannelCacheData() {
     m_cache.clear();
 
     // load cache
-    cString filename = AddDirectory(RoboTVServerConfig.CacheDirectory, CHANNEL_CACHE_FILE);
+    cString filename = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE);
 
     int fd = open(*filename, O_RDONLY);
 
@@ -199,7 +205,7 @@ void cChannelCache::LoadChannelCacheData() {
     for(uint32_t i = 0; i < c; i++) {
         uint32_t uid = p->get_U32();
 
-        cStreamBundle bundle;
+        StreamBundle bundle;
         *p >> bundle;
 
         if(uid != 0) {

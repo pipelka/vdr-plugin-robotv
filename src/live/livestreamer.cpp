@@ -48,39 +48,39 @@
 #include "livequeue.h"
 #include "channelcache.h"
 
-cLiveStreamer::cLiveStreamer(cRoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS)
-    : cThread("cLiveStreamer stream processor")
+LiveStreamer::LiveStreamer(RoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS)
+    : cThread("LiveStreamer stream processor")
     , cRingBufferLinear(MEGABYTE(10), TS_SIZE, true)
     , cReceiver(NULL, priority)
-    , m_Demuxers(this)
+    , m_demuxers(this)
     , m_scanTimeout(10)
     , m_parent(parent) {
-    m_Device          = NULL;
-    m_Queue           = NULL;
+    m_device          = NULL;
+    m_queue           = NULL;
     m_startup         = true;
-    m_SignalLost      = false;
-    m_LangStreamType  = cStreamInfo::stMPEG2AUDIO;
-    m_LanguageIndex   = -1;
+    m_signalLost      = false;
+    m_langStreamType  = StreamInfo::stMPEG2AUDIO;
+    m_languageIndex   = -1;
     m_uid             = CreateChannelUID(channel);
     m_protocolVersion = ROBOTV_PROTOCOLVERSION;
-    m_waitforiframe   = false;
+    m_waitForKeyFrame   = false;
     m_rawPTS          = rawPTS;
 
     m_requestStreamChange = false;
 
     if(m_scanTimeout == 0) {
-        m_scanTimeout = RoboTVServerConfig.stream_timeout;
+        m_scanTimeout = RoboTVServerConfig::instance().stream_timeout;
     }
 
     // create send queue
-    m_Queue = new cLiveQueue(m_parent->GetSocket());
-    m_Queue->Start();
+    m_queue = new LiveQueue(m_parent->GetSocket());
+    m_queue->Start();
 
     SetTimeouts(0, 10);
     Start();
 }
 
-cLiveStreamer::~cLiveStreamer() {
+LiveStreamer::~LiveStreamer() {
     DEBUGLOG("Started to delete live streamer");
 
     cTimeMs t;
@@ -92,36 +92,36 @@ cLiveStreamer::~cLiveStreamer() {
     DEBUGLOG("Detaching");
 
     if(IsAttached()) {
-        Detach();
+        detach();
     }
 
-    m_Demuxers.clear();
+    m_demuxers.clear();
 
-    delete m_Queue;
+    delete m_queue;
 
     m_uid = 0;
-    m_Device = NULL;
+    m_device = NULL;
 
     DEBUGLOG("Finished to delete live streamer (took %llu ms)", t.Elapsed());
 }
 
-void cLiveStreamer::SetTimeout(uint32_t timeout) {
+void LiveStreamer::setTimeout(uint32_t timeout) {
     m_scanTimeout = timeout;
 }
 
-void cLiveStreamer::SetProtocolVersion(uint32_t protocolVersion) {
+void LiveStreamer::setProtocolVersion(uint32_t protocolVersion) {
     m_protocolVersion = protocolVersion;
 }
 
-void cLiveStreamer::SetWaitForIFrame(bool waitforiframe) {
-    m_waitforiframe = waitforiframe;
+void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
+    m_waitForKeyFrame = waitforiframe;
 }
 
-void cLiveStreamer::RequestStreamChange() {
+void LiveStreamer::requestStreamChange() {
     m_requestStreamChange = true;
 }
 
-void cLiveStreamer::TryChannelSwitch() {
+void LiveStreamer::tryChannelSwitch() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     // we're already attached to receiver ?  
@@ -133,7 +133,7 @@ void cLiveStreamer::TryChannelSwitch() {
     const cChannel* channel = FindChannelByUID(m_uid);
 
     // try to switch channel
-    int rc = SwitchChannel(channel);
+    int rc = switchChannel(channel);
 
     // succeeded -> exit
     if(rc == ROBOTV_RET_OK) {
@@ -141,7 +141,7 @@ void cLiveStreamer::TryChannelSwitch() {
     }
 
     // time limit not exceeded -> relax & exit
-    if(m_last_tick.Elapsed() < (uint64_t)(m_scanTimeout * 1000)) {
+    if(m_lastTick.Elapsed() < (uint64_t)(m_scanTimeout * 1000)) {
         cCondWait::SleepMs(10);
         return;
     }
@@ -169,16 +169,16 @@ void cLiveStreamer::TryChannelSwitch() {
             break;
     }
 
-    m_last_tick.Set(0);
+    m_lastTick.Set(0);
 }
 
-void cLiveStreamer::Action(void) {
+void LiveStreamer::Action(void) {
     int size = 0;
     unsigned char* buf = NULL;
     m_startup = true;
 
     // reset timer
-    m_last_tick.Set(0);
+    m_lastTick.Set(0);
 
     INFOLOG("streamer thread started.");
 
@@ -187,12 +187,18 @@ void cLiveStreamer::Action(void) {
         buf = Get(size);
 
         // try to switch channel if we aren't attached yet
+<<<<<<< HEAD
         TryChannelSwitch();
+=======
+        if(!IsAttached()) {
+            tryChannelSwitch();
+        }
+>>>>>>> [transition] XVDR -> RoboTV - Part 4
 
-        if(!IsStarting() && (m_last_tick.Elapsed() > (uint64_t)(m_scanTimeout * 1000)) && !m_SignalLost) {
+        if(!isStarting() && (m_lastTick.Elapsed() > (uint64_t)(m_scanTimeout * 1000)) && !m_signalLost) {
             INFOLOG("timeout. signal lost!");
             sendStatus(ROBOTV_STREAM_STATUS_SIGNALLOST);
-            m_SignalLost = true;
+            m_signalLost = true;
         }
 
         // not enough data
@@ -205,7 +211,7 @@ void cLiveStreamer::Action(void) {
                 break;
             }
 
-            m_Demuxers.processTsPacket(buf);
+            m_demuxers.processTsPacket(buf);
 
             buf += TS_SIZE;
             size -= TS_SIZE;
@@ -216,7 +222,7 @@ void cLiveStreamer::Action(void) {
     INFOLOG("streamer thread ended.");
 }
 
-int cLiveStreamer::SwitchChannel(const cChannel* channel) {
+int LiveStreamer::switchChannel(const cChannel* channel) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if(channel == NULL) {
@@ -224,7 +230,7 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
     }
 
     if(IsAttached()) {
-        Detach();
+        detach();
     }
 
     // check if any device is able to decrypt the channel - code taken from VDR
@@ -247,9 +253,9 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
     }
 
     // get device for this channel
-    m_Device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
+    m_device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
 
-    if(m_Device == NULL) {
+    if(m_device == NULL) {
         // return status "recording running" if there is an active timer
         time_t now = time(NULL);
 
@@ -262,15 +268,16 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
         return ROBOTV_RET_DATALOCKED;
     }
 
-    INFOLOG("Found available device %d", m_Device->DeviceNumber() + 1);
+    INFOLOG("Found available device %d", m_device->DeviceNumber() + 1);
 
-    if(!m_Device->SwitchChannel(channel, false)) {
+    if(!m_device->SwitchChannel(channel, false)) {
         ERRORLOG("Can't switch to channel %i - %s", channel->Number(), channel->Name());
         return ROBOTV_RET_ERROR;
     }
 
     // get cached demuxer data
-    cStreamBundle bundle = cChannelCache::GetFromCache(m_uid);
+    ChannelCache& cache = ChannelCache::instance();
+    StreamBundle bundle = cache.GetFromCache(m_uid);
 
     // channel already in cache
     if(bundle.size() != 0) {
@@ -279,39 +286,39 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
     // channel not found in cache -> add it from vdr
     else {
         INFOLOG("adding channel to cache");
-        cChannelCache::AddToCache(channel);
-        bundle = cChannelCache::GetFromCache(m_uid);
+        cache.AddToCache(channel);
+        bundle = cache.GetFromCache(m_uid);
     }
 
     // recheck cache item
-    cStreamBundle currentitem = cStreamBundle::FromChannel(channel);
+    StreamBundle currentitem = StreamBundle::FromChannel(channel);
 
     if(!currentitem.ismetaof(bundle)) {
         INFOLOG("current channel differs from cache item - updating");
         bundle = currentitem;
-        cChannelCache::AddToCache(m_uid, bundle);
+        cache.AddToCache(m_uid, bundle);
     }
 
     if(bundle.size() != 0) {
         INFOLOG("Creating demuxers");
-        CreateDemuxers(&bundle);
+        createDemuxers(&bundle);
     }
 
-    RequestStreamChange();
+    requestStreamChange();
 
     INFOLOG("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
 
-    if(m_waitforiframe) {
+    if(m_waitForKeyFrame) {
         INFOLOG("Will wait for first I-Frame ...");
     }
 
     // clear cached data
     Clear();
-    m_Queue->Cleanup();
+    m_queue->Cleanup();
 
     m_uid = CreateChannelUID(channel);
 
-    if(!Attach()) {
+    if(!attach()) {
         INFOLOG("Unable to attach receiver !");
         return ROBOTV_RET_DATALOCKED;
     }
@@ -320,36 +327,36 @@ int cLiveStreamer::SwitchChannel(const cChannel* channel) {
     return ROBOTV_RET_OK;
 }
 
-bool cLiveStreamer::Attach(void) {
-    if(m_Device == NULL) {
+bool LiveStreamer::attach(void) {
+    if(m_device == NULL) {
         return false;
     }
 
-    return m_Device->AttachReceiver(this);
+    return m_device->AttachReceiver(this);
 }
 
-void cLiveStreamer::Detach(void) {
-    if(m_Device) {
-        m_Device->Detach(this);
+void LiveStreamer::detach(void) {
+    if(m_device) {
+        m_device->Detach(this);
     }
 }
 
-void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
-    bool bReady = m_Demuxers.isReady();
+void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
+    bool bReady = m_demuxers.isReady();
 
     if(!bReady || pkt == NULL || pkt->size == 0) {
         return;
     }
 
     // Send stream information as the first packet on startup
-    if(IsStarting() && bReady) {
+    if(isStarting() && bReady) {
         // wait for AV frames (we start with an audio or video packet)
-        if(!(pkt->content == cStreamInfo::scAUDIO || pkt->content == cStreamInfo::scVIDEO)) {
+        if(!(pkt->content == StreamInfo::scAUDIO || pkt->content == StreamInfo::scVIDEO)) {
             return;
         }
 
         INFOLOG("streaming of channel started");
-        m_last_tick.Set(0);
+        m_lastTick.Set(0);
         m_requestStreamChange = true;
         m_startup = false;
     }
@@ -360,23 +367,23 @@ void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
     }
 
     // wait for first I-Frame (if enabled)
-    if(m_waitforiframe && pkt->frametype != cStreamInfo::ftIFRAME) {
+    if(m_waitForKeyFrame && pkt->frametype != StreamInfo::ftIFRAME) {
         return;
     }
 
-    m_waitforiframe = false;
+    m_waitForKeyFrame = false;
 
     // if a audio or video packet was sent, the signal is restored
-    if(m_SignalLost && (pkt->content == cStreamInfo::scVIDEO || pkt->content == cStreamInfo::scAUDIO)) {
+    if(m_signalLost && (pkt->content == StreamInfo::scVIDEO || pkt->content == StreamInfo::scAUDIO)) {
         INFOLOG("signal restored");
         sendStatus(ROBOTV_STREAM_STATUS_SIGNALRESTORED);
-        m_SignalLost = false;
+        m_signalLost = false;
         m_requestStreamChange = true;
-        m_last_tick.Set(0);
+        m_lastTick.Set(0);
         return;
     }
 
-    if(m_SignalLost) {
+    if(m_signalLost) {
         return;
     }
 
@@ -407,64 +414,64 @@ void cLiveStreamer::sendStreamPacket(sStreamPacket* pkt) {
     packet->put_U32(pkt->size);
     packet->put_Blob(pkt->data, pkt->size);
 
-    m_Queue->Add(packet, pkt->content);
-    m_last_tick.Set(0);
+    m_queue->Add(packet, pkt->content);
+    m_lastTick.Set(0);
 }
 
-void cLiveStreamer::sendDetach() {
+void LiveStreamer::sendDetach() {
     INFOLOG("sending detach message");
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
     m_parent->QueueMessage(resp);
 }
 
-void cLiveStreamer::sendStreamChange() {
+void LiveStreamer::sendStreamChange() {
     DEBUGLOG("sendStreamChange");
 
-    cStreamBundle cache;
+    StreamBundle cache;
     INFOLOG("Stored channel information in cache:");
 
-    for(auto i = m_Demuxers.begin(); i != m_Demuxers.end(); i++) {
+    for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
         cache.AddStream(*(*i));
         (*i)->info();
     }
 
-    cChannelCache::AddToCache(m_uid, cache);
+    ChannelCache::instance().AddToCache(m_uid, cache);
 
     // reorder streams as preferred
-    m_Demuxers.reorderStreams(m_LanguageIndex, m_LangStreamType);
+    m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
-    MsgPacket* resp = m_Demuxers.createStreamChangePacket(m_protocolVersion);
-    m_Queue->Add(resp, cStreamInfo::scSTREAMINFO);
+    MsgPacket* resp = m_demuxers.createStreamChangePacket(m_protocolVersion);
+    m_queue->Add(resp, StreamInfo::scSTREAMINFO);
 
     m_requestStreamChange = false;
 }
 
-void cLiveStreamer::sendStatus(int status) {
+void LiveStreamer::sendStatus(int status) {
     MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_STATUS, ROBOTV_CHANNEL_STREAM);
     packet->put_U32(status);
     m_parent->QueueMessage(packet);
 }
 
-void cLiveStreamer::RequestSignalInfo() {
-    if(!Running() || m_Device == NULL) {
+void LiveStreamer::requestSignalInfo() {
+    if(!Running() || m_device == NULL) {
         return;
     }
 
     // do not send (and pollute the client with) signal information
     // if we are paused
-    if(IsPaused()) {
+    if(isPaused()) {
         return;
     }
 
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_SIGNALINFO, ROBOTV_CHANNEL_STREAM);
 
-    int DeviceNumber = m_Device->DeviceNumber() + 1;
+    int DeviceNumber = m_device->DeviceNumber() + 1;
     int Strength = 0;
     int Quality = 0;
 
-    if(!TimeShiftMode()) {
-        Strength = m_Device->SignalStrength();
-        Quality = m_Device->SignalQuality();
+    if(!getTimeShiftMode()) {
+        Strength = m_device->SignalStrength();
+        Quality = m_device->SignalQuality();
     }
 
     resp->put_String(*cString::sprintf("%s #%d - %s",
@@ -474,9 +481,9 @@ void cLiveStreamer::RequestSignalInfo() {
                                        DeviceNumber,
                                        "Unknown"));
 #else
-                                       (const char*)m_Device->DeviceType(),
+                                       (const char*)m_device->DeviceType(),
                                        DeviceNumber,
-                                       (const char*)m_Device->DeviceName()));
+                                       (const char*)m_device->DeviceName()));
 #endif
 
     // Quality:
@@ -486,7 +493,7 @@ void cLiveStreamer::RequestSignalInfo() {
     // 1 - NO CARRIER
     // 0 - NO SIGNAL
 
-    if(TimeShiftMode()) {
+    if(getTimeShiftMode()) {
         resp->put_String("TIMESHIFT");
     }
     else if(Quality == -1) {
@@ -523,54 +530,54 @@ void cLiveStreamer::RequestSignalInfo() {
     }
 
     DEBUGLOG("RequestSignalInfo");
-    m_Queue->Add(resp, cStreamInfo::scNONE);
+    m_queue->Add(resp, StreamInfo::scNONE);
 }
 
-void cLiveStreamer::SetLanguage(int lang, cStreamInfo::Type streamtype) {
+void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {
     if(lang == -1) {
         return;
     }
 
-    m_LanguageIndex = lang;
-    m_LangStreamType = streamtype;
+    m_languageIndex = lang;
+    m_langStreamType = streamtype;
 }
 
-bool cLiveStreamer::IsPaused() {
-    if(m_Queue == NULL) {
+bool LiveStreamer::isPaused() {
+    if(m_queue == NULL) {
         return false;
     }
 
-    return m_Queue->IsPaused();
+    return m_queue->IsPaused();
 }
 
-bool cLiveStreamer::TimeShiftMode() {
-    if(m_Queue == NULL) {
+bool LiveStreamer::getTimeShiftMode() {
+    if(m_queue == NULL) {
         return false;
     }
 
-    return m_Queue->TimeShiftMode();
+    return m_queue->TimeShiftMode();
 }
 
-void cLiveStreamer::Pause(bool on) {
-    if(m_Queue == NULL) {
+void LiveStreamer::pause(bool on) {
+    if(m_queue == NULL) {
         return;
     }
 
-    m_Queue->Pause(on);
+    m_queue->Pause(on);
 }
 
-void cLiveStreamer::RequestPacket() {
-    if(m_Queue == NULL) {
+void LiveStreamer::requestPacket() {
+    if(m_queue == NULL) {
         return;
     }
 
-    m_Queue->Request();
+    m_queue->Request();
 }
 
 #if VDRVERSNUM < 20300
-void cLiveStreamer::Receive(uchar* Data, int Length)
+void LiveStreamer::Receive(uchar* Data, int Length)
 #else
-void cLiveStreamer::Receive(const uchar* Data, int Length)
+void LiveStreamer::Receive(const uchar* Data, int Length)
 #endif
 {
     int p = Put(Data, Length);
@@ -580,26 +587,30 @@ void cLiveStreamer::Receive(const uchar* Data, int Length)
     }
 }
 
+<<<<<<< HEAD
 void cLiveStreamer::ChannelChange(const cChannel* channel) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
+=======
+void LiveStreamer::channelChange(const cChannel* channel) {
+>>>>>>> [transition] XVDR -> RoboTV - Part 4
     if(CreateChannelUID(channel) != m_uid || !Running()) {
         return;
     }
 
     INFOLOG("ChannelChange()");
-    SwitchChannel(channel);
+    switchChannel(channel);
 }
 
-void cLiveStreamer::CreateDemuxers(cStreamBundle* bundle) {
+void LiveStreamer::createDemuxers(StreamBundle* bundle) {
     // update demuxers
-    m_Demuxers.updateFrom(bundle);
+    m_demuxers.updateFrom(bundle);
 
     // update pids
     SetPids(NULL);
 
-    for(auto i = m_Demuxers.begin(); i != m_Demuxers.end(); i++) {
-        cTSDemuxer* dmx = *i;
+    for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
+        TsDemuxer* dmx = *i;
         dmx->info();
         AddPid(dmx->GetPID());
     }

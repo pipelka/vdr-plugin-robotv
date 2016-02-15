@@ -33,12 +33,12 @@
 #include "vdr/remux.h"
 #include <deque>
 
-class cPacketPlayer : public cRecPlayer, protected cTSDemuxer::Listener {
+class PacketPlayer : public RecPlayer, protected TsDemuxer::Listener {
 public:
 
-    cPacketPlayer(cRecording* rec);
+    PacketPlayer(cRecording* rec);
 
-    virtual ~cPacketPlayer();
+    virtual ~PacketPlayer();
 
     MsgPacket* getPacket();
 
@@ -48,9 +48,9 @@ protected:
 
     MsgPacket* getNextPacket();
 
-    void sendStreamPacket(sStreamPacket* p);
+    void sendStreamPacket(StreamPacket* p);
 
-    void RequestStreamChange();
+    void requestStreamChange();
 
     void clearQueue();
 
@@ -60,7 +60,7 @@ private:
 
     cPatPmtParser m_parser;
 
-    cDemuxerBundle m_demuxers;
+    DemuxerBundle m_demuxers;
 
     uint64_t m_position = 0;
 

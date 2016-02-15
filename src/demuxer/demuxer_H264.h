@@ -28,10 +28,10 @@
 #include "demuxer_PES.h"
 #include "vdr/tools.h"
 
-class cParserH264 : public cParserPES {
+class ParserH264 : public ParserPes {
 public:
 
-    cParserH264(cTSDemuxer* demuxer);
+    ParserH264(TsDemuxer* demuxer);
 
     int ParsePayload(unsigned char* data, int length);
 

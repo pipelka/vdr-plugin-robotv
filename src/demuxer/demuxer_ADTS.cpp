@@ -26,11 +26,11 @@
 #include "vdr/tools.h"
 #include "aaccommon.h"
 
-cParserADTS::cParserADTS(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 8192) {
+ParserAdts::ParserAdts(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) {
     m_headersize = 9; // header is 9 bytes long (with CRC)
 }
 
-bool cParserADTS::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize) {
+bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize) {
     cBitStream bs(buffer, m_headersize * 8);
 
     // sync
@@ -72,12 +72,12 @@ bool cParserADTS::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplera
     return true;
 }
 
-bool cParserADTS::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserAdts::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     int channels, samplerate;
     return ParseAudioHeader(buffer, channels, samplerate, framesize);
 }
 
-int cParserADTS::ParsePayload(unsigned char* payload, int length) {
+int ParserAdts::ParsePayload(unsigned char* payload, int length) {
     int framesize = 0;
 
     if(!ParseAudioHeader(payload, m_channels, m_samplerate, framesize)) {

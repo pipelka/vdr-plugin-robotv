@@ -32,16 +32,16 @@
 #include <vdr/recording.h>
 #include "db/storage.h"
 
-class cRecordingsCache {
+class RecordingsCache {
 protected:
 
-    cRecordingsCache();
+    RecordingsCache();
 
-    virtual ~cRecordingsCache();
+    virtual ~RecordingsCache();
 
 public:
 
-    static cRecordingsCache& GetInstance();
+    static RecordingsCache& GetInstance();
 
     uint32_t Register(cRecording* recording);
 

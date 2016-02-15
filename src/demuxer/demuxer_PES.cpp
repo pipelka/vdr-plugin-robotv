@@ -25,11 +25,11 @@
 #include "demuxer_PES.h"
 #include "vdr/remux.h"
 
-cParserPES::cParserPES(cTSDemuxer* demuxer, int buffersize) : cParser(demuxer, buffersize, 0), m_length(0) {
+ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffersize, 0), m_length(0) {
     m_startup = true;
 }
 
-void cParserPES::Parse(unsigned char* data, int size, bool pusi) {
+void ParserPes::Parse(unsigned char* data, int size, bool pusi) {
 
     // packet completely assembled ?
     if(!m_startup) {

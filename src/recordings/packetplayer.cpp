@@ -25,18 +25,18 @@
 #include "config/config.h"
 #include "packetplayer.h"
 
-cPacketPlayer::cPacketPlayer(cRecording* rec) : cRecPlayer(rec), m_demuxers(this) {
+PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_requestStreamChange = true;
     m_firstKeyFrameSeen = false;
 }
 
-cPacketPlayer::~cPacketPlayer() {
+PacketPlayer::~PacketPlayer() {
     clearQueue();
 }
 
-void cPacketPlayer::sendStreamPacket(sStreamPacket* p) {
+void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // check if we've got a key frame
-    if(p->content == cStreamInfo::scVIDEO && p->frametype == cStreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
+    if(p->content == StreamInfo::scVIDEO && p->frametype == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
         INFOLOG("got first key frame");
         m_firstKeyFrameSeen = true;
     }
@@ -69,12 +69,12 @@ void cPacketPlayer::sendStreamPacket(sStreamPacket* p) {
     m_queue.push_back(packet);
 }
 
-void cPacketPlayer::RequestStreamChange() {
+void PacketPlayer::requestStreamChange() {
     INFOLOG("stream change requested");
     m_requestStreamChange = true;
 }
 
-MsgPacket* cPacketPlayer::getNextPacket() {
+MsgPacket* PacketPlayer::getNextPacket() {
     int pmtVersion = 0;
     int patVersion = 0;
 
@@ -101,7 +101,7 @@ MsgPacket* cPacketPlayer::getNextPacket() {
 
             // update demuxers from new PMT
             INFOLOG("updating demuxers");
-            cStreamBundle streamBundle = cStreamBundle::FromPatPmt(&m_parser);
+            StreamBundle streamBundle = StreamBundle::FromPatPmt(&m_parser);
             m_demuxers.updateFrom(&streamBundle);
 
             m_requestStreamChange = true;
@@ -150,7 +150,7 @@ MsgPacket* cPacketPlayer::getNextPacket() {
     return packet;
 }
 
-MsgPacket* cPacketPlayer::getPacket() {
+MsgPacket* PacketPlayer::getPacket() {
     MsgPacket* p = NULL;
 
     // process data until the next packet drops out
@@ -161,7 +161,7 @@ MsgPacket* cPacketPlayer::getPacket() {
     return p;
 }
 
-void cPacketPlayer::clearQueue() {
+void PacketPlayer::clearQueue() {
     MsgPacket* p = NULL;
 
     while(m_queue.size() > 0) {
@@ -171,7 +171,7 @@ void cPacketPlayer::clearQueue() {
     }
 }
 
-void cPacketPlayer::reset() {
+void PacketPlayer::reset() {
     // reset parser
     m_parser.Reset();
     m_demuxers.clear();
@@ -184,7 +184,7 @@ void cPacketPlayer::reset() {
     clearQueue();
 }
 
-int64_t cPacketPlayer::seek(uint64_t position) {
+int64_t PacketPlayer::seek(uint64_t position) {
     // adujst position to TS packet borders
     m_position = (position / TS_SIZE) * TS_SIZE;
 
@@ -193,7 +193,7 @@ int64_t cPacketPlayer::seek(uint64_t position) {
         return -1;
     }
 
-    INFOLOG("seek: %llu / %llu", m_position, m_totalLength);
+    INFOLOG("seek: %lu / %lu", m_position, m_totalLength);
 
     // reset parser
     reset();

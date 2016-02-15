@@ -61,7 +61,6 @@ bool Database::Open(const std::string& db) {
         }
     }
 
-    Exec("SELECT icu_load_collation('utf-8', 'unicode');");
     return (Exec("PRAGMA journal_mode = WAL;") == SQLITE_OK);
 }
 

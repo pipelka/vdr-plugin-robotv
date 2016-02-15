@@ -29,18 +29,18 @@
 #include <vdr/tools.h>
 #include <vdr/recording.h>
 
-class cSegment {
+class Segment {
 public:
     uint64_t start;
     uint64_t end;
 };
 
-class cRecPlayer {
+class RecPlayer {
 public:
 
-    cRecPlayer(cRecording* rec);
+    RecPlayer(cRecording* rec);
 
-    ~cRecPlayer();
+    ~RecPlayer();
 
     uint64_t getLengthBytes();
 
@@ -74,7 +74,7 @@ private:
 
     int m_fileOpen;
 
-    cVector<cSegment*> m_segments;
+    cVector<Segment*> m_segments;
 
     char* m_recordingFilename;
 

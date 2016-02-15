@@ -78,7 +78,7 @@ static uint32_t recid2uid(const char* recid) {
     return uid;
 }
 
-void cRoboTVClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
+void RoboTVClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
     p->put_U32(channel->Number());
     p->put_String(m_toUTF8.Convert(channel->Name()));
     p->put_U32(CreateChannelUID(channel));
@@ -93,7 +93,7 @@ void cRoboTVClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
     }
 }
 
-cString cRoboTVClient::CreateServiceReference(const cChannel* channel) {
+cString RoboTVClient::CreateServiceReference(const cChannel* channel) {
     int hash = 0;
 
     if(cSource::IsSat(channel->Source())) {
@@ -136,24 +136,24 @@ cString cRoboTVClient::CreateServiceReference(const cChannel* channel) {
     return serviceref;
 }
 
-cString cRoboTVClient::CreateLogoURL(const cChannel* channel) {
-    const char* url = (const char*)RoboTVServerConfig.PiconsURL;
+cString RoboTVClient::CreateLogoURL(const cChannel* channel) {
+    std::string url = RoboTVServerConfig::instance().PiconsURL;
 
-    if(url == NULL || strlen(url) == 0) {
+    if(url.empty()) {
         return "";
     }
 
     std::string filename = (const char*)CreateServiceReference(channel);
 
-    if(strlen(url) > 4 && strncmp(url, "http", 4) == 0) {
+    if(url.size() > 4 && url.substr(0, 4) == "http") {
         filename = url_encode(filename);
     }
 
-    cString piconurl = AddDirectory(RoboTVServerConfig.PiconsURL, filename.c_str());
+    cString piconurl = AddDirectory(url.c_str(), filename.c_str());
     return cString::sprintf("%s.png", (const char*)piconurl);
 }
 
-void cRoboTVClient::PutTimer(cTimer* timer, MsgPacket* p) {
+void RoboTVClient::PutTimer(cTimer* timer, MsgPacket* p) {
     int flags = CheckTimerConflicts(timer);
 
     p->put_U32(CreateTimerUID(timer));
@@ -168,7 +168,7 @@ void cRoboTVClient::PutTimer(cTimer* timer, MsgPacket* p) {
     p->put_String(m_toUTF8.Convert(timer->File()));
 }
 
-cRoboTVClient::cRoboTVClient(int fd, unsigned int id) {
+RoboTVClient::RoboTVClient(int fd, unsigned int id) {
     m_Id                      = id;
     m_loggedIn                = false;
     m_Streamer                = NULL;
@@ -178,7 +178,7 @@ cRoboTVClient::cRoboTVClient(int fd, unsigned int id) {
     m_resp                    = NULL;
     m_compressionLevel        = 0;
     m_LanguageIndex           = -1;
-    m_LangStreamType          = cStreamInfo::stMPEG2AUDIO;
+    m_LangStreamType          = StreamInfo::stMPEG2AUDIO;
     m_channelCount            = 0;
     m_timeout                 = 3000;
     m_scanSupported           = false;
@@ -192,7 +192,7 @@ cRoboTVClient::cRoboTVClient(int fd, unsigned int id) {
     m_scanSupported = m_scanner.Connect();
 }
 
-cRoboTVClient::~cRoboTVClient() {
+RoboTVClient::~RoboTVClient() {
     DEBUGLOG("%s", __FUNCTION__);
     StopChannelStreaming();
 
@@ -220,7 +220,7 @@ cRoboTVClient::~cRoboTVClient() {
     DEBUGLOG("done");
 }
 
-void cRoboTVClient::Action(void) {
+void RoboTVClient::Action(void) {
     bool bClosed(false);
 
     // only root may change the priority
@@ -268,26 +268,26 @@ void cRoboTVClient::Action(void) {
     StopChannelStreaming();
 }
 
-int cRoboTVClient::StartChannelStreaming(const cChannel* channel, uint32_t timeout, int32_t priority, bool waitforiframe, bool rawPTS) {
+int RoboTVClient::StartChannelStreaming(const cChannel* channel, uint32_t timeout, int32_t priority, bool waitforiframe, bool rawPTS) {
     cMutexLock lock(&m_streamerLock);
 
-    m_Streamer = new cLiveStreamer(this, channel, priority, rawPTS);
-    m_Streamer->SetLanguage(m_LanguageIndex, m_LangStreamType);
-    m_Streamer->SetTimeout(timeout);
-    m_Streamer->SetProtocolVersion(m_protocolVersion);
-    m_Streamer->SetWaitForIFrame(waitforiframe);
+    m_Streamer = new LiveStreamer(this, channel, priority, rawPTS);
+    m_Streamer->setLanguage(m_LanguageIndex, m_LangStreamType);
+    m_Streamer->setTimeout(timeout);
+    m_Streamer->setProtocolVersion(m_protocolVersion);
+    m_Streamer->setWaitForKeyFrame(waitforiframe);
 
     return ROBOTV_RET_OK;
 }
 
-void cRoboTVClient::StopChannelStreaming() {
+void RoboTVClient::StopChannelStreaming() {
     cMutexLock lock(&m_streamerLock);
 
     delete m_Streamer;
     m_Streamer = NULL;
 }
 
-void cRoboTVClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
+void RoboTVClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     // ignore invalid timers
     if(Timer == NULL) {
         return;
@@ -296,13 +296,13 @@ void cRoboTVClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     TimerChange();
 }
 
-void cRoboTVClient::ChannelChange(const cChannel* Channel) {
+void RoboTVClient::ChannelChange(const cChannel* Channel) {
     cMutexLock lock(&m_streamerLock);
 
     INFOLOG("ChannelChange: %i - %s", Channel->Number(), Channel->ShortName());
 
     if(m_Streamer != NULL) {
-        m_Streamer->ChannelChange(Channel);
+        m_Streamer->channelChange(Channel);
     }
 
     cMutexLock msgLock(&m_msgLock);
@@ -314,7 +314,7 @@ void cRoboTVClient::ChannelChange(const cChannel* Channel) {
     }
 }
 
-void cRoboTVClient::TimerChange() {
+void RoboTVClient::TimerChange() {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled) {
@@ -324,7 +324,7 @@ void cRoboTVClient::TimerChange() {
     }
 }
 
-void cRoboTVClient::ChannelsChanged() {
+void RoboTVClient::ChannelsChanged() {
     cMutexLock lock(&m_msgLock);
 
     if(!m_StatusInterfaceEnabled) {
@@ -349,7 +349,7 @@ void cRoboTVClient::ChannelsChanged() {
     QueueMessage(resp);
 }
 
-void cRoboTVClient::RecordingsChange() {
+void RoboTVClient::RecordingsChange() {
     cMutexLock lock(&m_msgLock);
 
     if(!m_StatusInterfaceEnabled) {
@@ -360,7 +360,7 @@ void cRoboTVClient::RecordingsChange() {
     QueueMessage(resp);
 }
 
-void cRoboTVClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
+void RoboTVClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled) {
@@ -387,7 +387,7 @@ void cRoboTVClient::Recording(const cDevice* Device, const char* Name, const cha
     }
 }
 
-void cRoboTVClient::OsdStatusMessage(const char* Message) {
+void RoboTVClient::OsdStatusMessage(const char* Message) {
     cMutexLock lock(&m_msgLock);
 
     if(m_StatusInterfaceEnabled && Message) {
@@ -457,7 +457,7 @@ void cRoboTVClient::OsdStatusMessage(const char* Message) {
     }
 }
 
-void cRoboTVClient::StatusMessage(const char* Message) {
+void RoboTVClient::StatusMessage(const char* Message) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_MESSAGE, ROBOTV_CHANNEL_STATUS);
 
     resp->put_U32(0);
@@ -466,7 +466,7 @@ void cRoboTVClient::StatusMessage(const char* Message) {
     QueueMessage(resp);
 }
 
-bool cRoboTVClient::IsChannelWanted(cChannel* channel, int type) {
+bool RoboTVClient::IsChannelWanted(cChannel* channel, int type) {
     // dismiss invalid channels
     if(channel == NULL) {
         return false;
@@ -556,7 +556,7 @@ bool cRoboTVClient::IsChannelWanted(cChannel* channel, int type) {
     return false;
 }
 
-bool cRoboTVClient::processRequest() {
+bool RoboTVClient::processRequest() {
     cMutexLock lock(&m_msgLock);
 
     m_resp = new MsgPacket(m_req->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, m_req->getUID());
@@ -776,7 +776,7 @@ bool cRoboTVClient::processRequest() {
 
 /** OPCODE 1 - 19: RoboTV network functions for general purpose */
 
-bool cRoboTVClient::process_Login() { /* OPCODE 1 */
+bool RoboTVClient::process_Login() { /* OPCODE 1 */
     m_protocolVersion = m_req->getProtocolVersion();
     m_compressionLevel = m_req->get_U8();
     m_clientName = m_req->get_String();
@@ -786,7 +786,7 @@ bool cRoboTVClient::process_Login() { /* OPCODE 1 */
     if(!m_req->eop()) {
         language = m_req->get_String();
         m_LanguageIndex = I18nLanguageIndex(language);
-        m_LangStreamType = (cStreamInfo::Type)m_req->get_U8();
+        m_LangStreamType = (StreamInfo::Type)m_req->get_U8();
     }
 
     if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 4) {
@@ -815,7 +815,7 @@ bool cRoboTVClient::process_Login() { /* OPCODE 1 */
     return true;
 }
 
-bool cRoboTVClient::process_GetTime() { /* OPCODE 2 */
+bool RoboTVClient::process_GetTime() { /* OPCODE 2 */
     time_t timeNow        = time(NULL);
     struct tm* timeStruct = localtime(&timeNow);
     int timeOffset        = timeStruct->tm_gmtoff;
@@ -826,7 +826,7 @@ bool cRoboTVClient::process_GetTime() { /* OPCODE 2 */
     return true;
 }
 
-bool cRoboTVClient::process_EnableStatusInterface() {
+bool RoboTVClient::process_EnableStatusInterface() {
     bool enabled = m_req->get_U8();
 
     SetStatusInterface(enabled);
@@ -836,7 +836,7 @@ bool cRoboTVClient::process_EnableStatusInterface() {
     return true;
 }
 
-bool cRoboTVClient::process_UpdateChannels() {
+bool RoboTVClient::process_UpdateChannels() {
     uint8_t updatechannels = m_req->get_U8();
 
     if(updatechannels <= 5) {
@@ -851,7 +851,7 @@ bool cRoboTVClient::process_UpdateChannels() {
     return true;
 }
 
-bool cRoboTVClient::process_ChannelFilter() {
+bool RoboTVClient::process_ChannelFilter() {
     INFOLOG("Channellist filter:");
 
     // do we want fta channels ?
@@ -887,7 +887,7 @@ bool cRoboTVClient::process_ChannelFilter() {
 
 /** OPCODE 20 - 39: RoboTV network functions for live streaming */
 
-bool cRoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
+bool RoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
     // only root may change the priority
     if(geteuid() == 0) {
         SetPriority(-15);
@@ -910,11 +910,12 @@ bool cRoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
         rawPTS = m_req->get_U8();
     }
 
-    uint32_t timeout = RoboTVServerConfig.stream_timeout;
+    uint32_t timeout = RoboTVServerConfig::instance().stream_timeout;
 
     StopChannelStreaming();
 
-    RoboTVChannels.Lock(false);
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
     const cChannel* channel = NULL;
 
     // try to find channel by uid first
@@ -922,10 +923,10 @@ bool cRoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
 
     // try channelnumber
     if(channel == NULL) {
-        channel = RoboTVChannels.Get()->GetByNumber(uid);
+        channel = c.Get()->GetByNumber(uid);
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     if(channel == NULL) {
         ERRORLOG("Can't find channel %08x", uid);
@@ -948,41 +949,41 @@ bool cRoboTVClient::processChannelStream_Open() { /* OPCODE 20 */
     return true;
 }
 
-bool cRoboTVClient::processChannelStream_Close() { /* OPCODE 21 */
+bool RoboTVClient::processChannelStream_Close() { /* OPCODE 21 */
     StopChannelStreaming();
     return true;
 }
 
-bool cRoboTVClient::processChannelStream_Request() { /* OPCODE 22 */
+bool RoboTVClient::processChannelStream_Request() { /* OPCODE 22 */
     if(m_Streamer != NULL) {
-        m_Streamer->RequestPacket();
+        m_Streamer->requestPacket();
     }
 
     // no response needed for the request
     return false;
 }
 
-bool cRoboTVClient::processChannelStream_Pause() { /* OPCODE 23 */
+bool RoboTVClient::processChannelStream_Pause() { /* OPCODE 23 */
     bool on = m_req->get_U32();
     INFOLOG("LIVESTREAM: %s", on ? "PAUSED" : "TIMESHIFT");
 
-    m_Streamer->Pause(on);
+    m_Streamer->pause(on);
 
     return true;
 }
 
-bool cRoboTVClient::processChannelStream_Signal() { /* OPCODE 24 */
+bool RoboTVClient::processChannelStream_Signal() { /* OPCODE 24 */
     if(m_Streamer == NULL) {
         return false;
     }
 
-    m_Streamer->RequestSignalInfo();
+    m_Streamer->requestSignalInfo();
     return false;
 }
 
 /** OPCODE 40 - 59: RoboTV network functions for recording streaming */
 
-bool cRoboTVClient::processRecStream_Open() { /* OPCODE 40 */
+bool RoboTVClient::processRecStream_Open() { /* OPCODE 40 */
     cRecording* recording = NULL;
 
     // only root may change the priority
@@ -993,10 +994,10 @@ bool cRoboTVClient::processRecStream_Open() { /* OPCODE 40 */
     const char* recid = m_req->get_String();
     unsigned int uid = recid2uid(recid);
     DEBUGLOG("lookup recid: %s (uid: %u)", recid, uid);
-    recording = cRecordingsCache::GetInstance().Lookup(uid);
+    recording = RecordingsCache::GetInstance().Lookup(uid);
 
     if(recording && m_RecPlayer == NULL) {
-        m_RecPlayer = new cPacketPlayer(recording);
+        m_RecPlayer = new PacketPlayer(recording);
 
         m_resp->put_U32(ROBOTV_RET_OK);
         m_resp->put_U32(0);
@@ -1016,7 +1017,7 @@ bool cRoboTVClient::processRecStream_Open() { /* OPCODE 40 */
     return true;
 }
 
-bool cRoboTVClient::processRecStream_Close() { /* OPCODE 41 */
+bool RoboTVClient::processRecStream_Close() { /* OPCODE 41 */
     if(m_RecPlayer) {
         delete m_RecPlayer;
         m_RecPlayer = NULL;
@@ -1027,7 +1028,7 @@ bool cRoboTVClient::processRecStream_Close() { /* OPCODE 41 */
     return true;
 }
 
-bool cRoboTVClient::processRecStream_Update() { /* OPCODE 46 */
+bool RoboTVClient::processRecStream_Update() { /* OPCODE 46 */
     if(m_RecPlayer == NULL) {
         return false;
     }
@@ -1039,7 +1040,7 @@ bool cRoboTVClient::processRecStream_Update() { /* OPCODE 46 */
     return true;
 }
 
-bool cRoboTVClient::processRecStream_GetBlock() { /* OPCODE 42 */
+bool RoboTVClient::processRecStream_GetBlock() { /* OPCODE 42 */
     if(!m_RecPlayer) {
         ERRORLOG("Get block called when no recording open");
         return false;
@@ -1059,7 +1060,7 @@ bool cRoboTVClient::processRecStream_GetBlock() { /* OPCODE 42 */
     return true;
 }
 
-bool cRoboTVClient::processRecStream_GetPacket() {
+bool RoboTVClient::processRecStream_GetPacket() {
     if(!m_RecPlayer) {
         return false;
     }
@@ -1084,7 +1085,7 @@ bool cRoboTVClient::processRecStream_GetPacket() {
     return true;
 }
 
-bool cRoboTVClient::processRecStream_Seek() {
+bool RoboTVClient::processRecStream_Seek() {
     if(!m_RecPlayer) {
         return false;
     }
@@ -1097,9 +1098,10 @@ bool cRoboTVClient::processRecStream_Seek() {
     return true;
 }
 
-int cRoboTVClient::ChannelsCount() {
-    RoboTVChannels.Lock(false);
-    cChannels* channels = RoboTVChannels.Get();
+int RoboTVClient::ChannelsCount() {
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
+    cChannels* channels = c.Get();
     int count = 0;
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
@@ -1112,29 +1114,30 @@ int cRoboTVClient::ChannelsCount() {
         }
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
     return count;
 }
 
 /** OPCODE 60 - 79: RoboTV network functions for channel access */
 
-bool cRoboTVClient::processCHANNELS_ChannelsCount() { /* OPCODE 61 */
+bool RoboTVClient::processCHANNELS_ChannelsCount() { /* OPCODE 61 */
     m_channelCount = ChannelsCount();
     m_resp->put_U32(m_channelCount);
 
     return true;
 }
 
-bool cRoboTVClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
+bool RoboTVClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
     int type = m_req->get_U32();
 
+    RoboTVChannels& c = RoboTVChannels::instance();
     m_channelCount = ChannelsCount();
 
-    if(!RoboTVChannels.Lock(false)) {
+    if(!c.Lock(false)) {
         return true;
     }
 
-    cChannels* channels = RoboTVChannels.Get();
+    cChannels* channels = c.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         if(!IsChannelWanted(channel, type)) {
@@ -1155,17 +1158,18 @@ bool cRoboTVClient::processCHANNELS_GetChannels() { /* OPCODE 63 */
         }
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     m_resp->compress(m_compressionLevel);
 
     return true;
 }
 
-bool cRoboTVClient::processCHANNELS_GroupsCount() {
+bool RoboTVClient::processCHANNELS_GroupsCount() {
     uint32_t type = m_req->get_U32();
+    RoboTVChannels& c = RoboTVChannels::instance();
 
-    RoboTVChannels.Lock(false);
+    c.Lock(false);
 
     m_channelgroups[0].clear();
     m_channelgroups[1].clear();
@@ -1183,7 +1187,7 @@ bool cRoboTVClient::processCHANNELS_GroupsCount() {
             break;
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     uint32_t count = m_channelgroups[0].size() + m_channelgroups[1].size();
 
@@ -1192,7 +1196,7 @@ bool cRoboTVClient::processCHANNELS_GroupsCount() {
     return true;
 }
 
-bool cRoboTVClient::processCHANNELS_GroupList() {
+bool RoboTVClient::processCHANNELS_GroupList() {
     uint32_t radio = m_req->get_U8();
     std::map<std::string, ChannelGroup>::iterator i;
 
@@ -1204,7 +1208,7 @@ bool cRoboTVClient::processCHANNELS_GroupList() {
     return true;
 }
 
-bool cRoboTVClient::processCHANNELS_GetGroupMembers() {
+bool RoboTVClient::processCHANNELS_GetGroupMembers() {
     const char* groupname = m_req->get_String();
     uint32_t radio = m_req->get_U8();
     int index = 0;
@@ -1219,8 +1223,9 @@ bool cRoboTVClient::processCHANNELS_GetGroupMembers() {
 
     m_channelCount = ChannelsCount();
 
-    RoboTVChannels.Lock(false);
-    cChannels* channels = RoboTVChannels.Get();
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
+    cChannels* channels = c.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
 
@@ -1248,13 +1253,14 @@ bool cRoboTVClient::processCHANNELS_GetGroupMembers() {
         }
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
     return true;
 }
 
-void cRoboTVClient::CreateChannelGroups(bool automatic) {
+void RoboTVClient::CreateChannelGroups(bool automatic) {
     std::string groupname;
-    cChannels* channels = RoboTVChannels.Get();
+    RoboTVChannels& c = RoboTVChannels::instance();
+    cChannels* channels = c.Get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         bool isRadio = IsRadio(channel);
@@ -1286,7 +1292,7 @@ void cRoboTVClient::CreateChannelGroups(bool automatic) {
 
 /** OPCODE 80 - 99: RoboTV network functions for timer access */
 
-bool cRoboTVClient::processTIMER_GetCount() { /* OPCODE 80 */
+bool RoboTVClient::processTIMER_GetCount() { /* OPCODE 80 */
     int count = Timers.Count();
 
     m_resp->put_U32(count);
@@ -1294,7 +1300,7 @@ bool cRoboTVClient::processTIMER_GetCount() { /* OPCODE 80 */
     return true;
 }
 
-bool cRoboTVClient::processTIMER_Get() { /* OPCODE 81 */
+bool RoboTVClient::processTIMER_Get() { /* OPCODE 81 */
     uint32_t number = m_req->get_U32();
 
     if(Timers.Count() == 0) {
@@ -1315,7 +1321,7 @@ bool cRoboTVClient::processTIMER_Get() { /* OPCODE 81 */
     return true;
 }
 
-bool cRoboTVClient::processTIMER_GetList() { /* OPCODE 82 */
+bool RoboTVClient::processTIMER_GetList() { /* OPCODE 82 */
     if(Timers.BeingEdited()) {
         ERRORLOG("Unable to delete timer - timers being edited at VDR");
         m_resp->put_U32(ROBOTV_RET_DATALOCKED);
@@ -1340,7 +1346,7 @@ bool cRoboTVClient::processTIMER_GetList() { /* OPCODE 82 */
     return true;
 }
 
-bool cRoboTVClient::processTIMER_Add() { /* OPCODE 83 */
+bool RoboTVClient::processTIMER_Add() { /* OPCODE 83 */
     if(Timers.BeingEdited()) {
         ERRORLOG("Unable to add timer - timers being edited at VDR");
         m_resp->put_U32(ROBOTV_RET_DATALOCKED);
@@ -1377,14 +1383,16 @@ bool cRoboTVClient::processTIMER_Add() { /* OPCODE 83 */
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    RoboTVChannels.Lock(false);
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
+
     const cChannel* channel = FindChannelByUID(channelid);
 
     if(channel != NULL) {
         buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     cTimer* timer = new cTimer;
 
@@ -1413,7 +1421,7 @@ bool cRoboTVClient::processTIMER_Add() { /* OPCODE 83 */
     return true;
 }
 
-bool cRoboTVClient::processTIMER_Delete() { /* OPCODE 84 */
+bool RoboTVClient::processTIMER_Delete() { /* OPCODE 84 */
     uint32_t uid = m_req->get_U32();
     bool     force  = m_req->get_U32();
 
@@ -1448,7 +1456,7 @@ bool cRoboTVClient::processTIMER_Delete() { /* OPCODE 84 */
     return true;
 }
 
-bool cRoboTVClient::processTIMER_Update() { /* OPCODE 85 */
+bool RoboTVClient::processTIMER_Update() { /* OPCODE 85 */
     uint32_t uid = m_req->get_U32();
     bool active = m_req->get_U32();
 
@@ -1491,14 +1499,16 @@ bool cRoboTVClient::processTIMER_Update() { /* OPCODE 85 */
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    RoboTVChannels.Lock(false);
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
+
     const cChannel* channel = FindChannelByUID(channelid);
 
     if(channel != NULL) {
         buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
 
     if(!t.Parse(buffer)) {
         ERRORLOG("Error in timer settings");
@@ -1518,7 +1528,7 @@ bool cRoboTVClient::processTIMER_Update() { /* OPCODE 85 */
 
 /** OPCODE 100 - 119: RoboTV network functions for recording access */
 
-bool cRoboTVClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
+bool RoboTVClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
     int FreeMB;
 #if VDRVERSNUM >= 20102
     int Percent = cVideoDirectory::VideoDiskSpace(&FreeMB);
@@ -1534,14 +1544,14 @@ bool cRoboTVClient::processRECORDINGS_GetDiskSpace() { /* OPCODE 100 */
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_GetCount() { /* OPCODE 101 */
+bool RoboTVClient::processRECORDINGS_GetCount() { /* OPCODE 101 */
     m_resp->put_U32(Recordings.Count());
 
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_GetList() { /* OPCODE 102 */
-    cRecordingsCache& reccache = cRecordingsCache::GetInstance();
+bool RoboTVClient::processRECORDINGS_GetList() { /* OPCODE 102 */
+    RecordingsCache& reccache = RecordingsCache::GetInstance();
 
     for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
 #if APIVERSNUM >= 10705
@@ -1658,7 +1668,7 @@ bool cRoboTVClient::processRECORDINGS_GetList() { /* OPCODE 102 */
         m_resp->put_String((isempty(directory)) ? "" : m_toUTF8.Convert(directory));
 
         // filename / uid of recording
-        uint32_t uid = cRecordingsCache::GetInstance().Register(recording);
+        uint32_t uid = RecordingsCache::GetInstance().Register(recording);
         char recid[9];
         snprintf(recid, sizeof(recid), "%08x", uid);
         m_resp->put_String(recid);
@@ -1688,13 +1698,13 @@ bool cRoboTVClient::processRECORDINGS_GetList() { /* OPCODE 102 */
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_Rename() { /* OPCODE 103 */
+bool RoboTVClient::processRECORDINGS_Rename() { /* OPCODE 103 */
     uint32_t uid = 0;
     const char* recid = m_req->get_String();
     uid = recid2uid(recid);
 
     const char* newtitle     = m_req->get_String();
-    cRecording* recording    = cRecordingsCache::GetInstance().Lookup(uid);
+    cRecording* recording    = RecordingsCache::GetInstance().Lookup(uid);
     int         r            = ROBOTV_RET_DATAINVALID;
 
     if(recording != NULL) {
@@ -1731,10 +1741,10 @@ bool cRoboTVClient::processRECORDINGS_Rename() { /* OPCODE 103 */
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_Delete() { /* OPCODE 104 */
+bool RoboTVClient::processRECORDINGS_Delete() { /* OPCODE 104 */
     const char* recid = m_req->get_String();
     uint32_t uid = recid2uid(recid);
-    cRecording* recording = cRecordingsCache::GetInstance().Lookup(uid);
+    cRecording* recording = RecordingsCache::GetInstance().Lookup(uid);
 
     if(recording == NULL) {
         ERRORLOG("Recording not found !");
@@ -1765,41 +1775,41 @@ bool cRoboTVClient::processRECORDINGS_Delete() { /* OPCODE 104 */
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_SetPlayCount() {
+bool RoboTVClient::processRECORDINGS_SetPlayCount() {
     const char* recid = m_req->get_String();
     uint32_t count = m_req->get_U32();
 
     uint32_t uid = recid2uid(recid);
-    cRecordingsCache::GetInstance().SetPlayCount(uid, count);
+    RecordingsCache::GetInstance().SetPlayCount(uid, count);
 
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_SetPosition() {
+bool RoboTVClient::processRECORDINGS_SetPosition() {
     const char* recid = m_req->get_String();
     uint64_t position = m_req->get_U64();
 
     uint32_t uid = recid2uid(recid);
-    cRecordingsCache::GetInstance().SetLastPlayedPosition(uid, position);
+    RecordingsCache::GetInstance().SetLastPlayedPosition(uid, position);
 
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_SetUrls() {
+bool RoboTVClient::processRECORDINGS_SetUrls() {
     const char* recid = m_req->get_String();
     const char* poster = m_req->get_String();
     const char* background = m_req->get_String();
     uint32_t id = m_req->get_U32();
 
     uint32_t uid = recid2uid(recid);
-    cRecordingsCache::GetInstance().SetPosterUrl(uid, poster);
-    cRecordingsCache::GetInstance().SetBackgroundUrl(uid, background);
-    cRecordingsCache::GetInstance().SetMovieID(uid, id);
+    RecordingsCache::GetInstance().SetPosterUrl(uid, poster);
+    RecordingsCache::GetInstance().SetBackgroundUrl(uid, background);
+    RecordingsCache::GetInstance().SetMovieID(uid, id);
 
     return true;
 }
 
-bool cRoboTVClient::processArtwork_Get() {
+bool RoboTVClient::processArtwork_Get() {
     const char* title = m_req->get_String();
     uint32_t content = m_req->get_U32();
 
@@ -1818,7 +1828,7 @@ bool cRoboTVClient::processArtwork_Get() {
     return true;
 }
 
-bool cRoboTVClient::processArtwork_Set() {
+bool RoboTVClient::processArtwork_Set() {
     const char* title = m_req->get_String();
     uint32_t content = m_req->get_U32();
     const char* poster = m_req->get_String();
@@ -1830,17 +1840,17 @@ bool cRoboTVClient::processArtwork_Set() {
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_GetPosition() {
+bool RoboTVClient::processRECORDINGS_GetPosition() {
     const char* recid = m_req->get_String();
 
     uint32_t uid = recid2uid(recid);
-    uint64_t position = cRecordingsCache::GetInstance().GetLastPlayedPosition(uid);
+    uint64_t position = RecordingsCache::GetInstance().GetLastPlayedPosition(uid);
 
     m_resp->put_U64(position);
     return true;
 }
 
-bool cRoboTVClient::processRECORDINGS_GetMarks() {
+bool RoboTVClient::processRECORDINGS_GetMarks() {
 #if VDRVERSNUM < 10732
     m_resp->put_U32(ROBOTV_RET_NOTSUPPORTED);
     return true;
@@ -1849,7 +1859,7 @@ bool cRoboTVClient::processRECORDINGS_GetMarks() {
     const char* recid = m_req->get_String();
     uint32_t uid = recid2uid(recid);
 
-    cRecording* recording = cRecordingsCache::GetInstance().Lookup(uid);
+    cRecording* recording = RecordingsCache::GetInstance().Lookup(uid);
 
     if(recording == NULL) {
         ERRORLOG("GetMarks: recording not found !");
@@ -1893,12 +1903,13 @@ bool cRoboTVClient::processRECORDINGS_GetMarks() {
 
 /** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
 
-bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
+bool RoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
     uint32_t channelUID = m_req->get_U32();
     uint32_t startTime  = m_req->get_U32();
     uint32_t duration   = m_req->get_U32();
 
-    RoboTVChannels.Lock(false);
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
 
     const cChannel* channel = NULL;
 
@@ -1910,7 +1921,7 @@ bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!channel) {
         m_resp->put_U32(0);
-        RoboTVChannels.Unlock();
+        c.Unlock();
 
         ERRORLOG("written 0 because channel = NULL");
         return true;
@@ -1921,7 +1932,7 @@ bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!Schedules) {
         m_resp->put_U32(0);
-        RoboTVChannels.Unlock();
+        c.Unlock();
 
         DEBUGLOG("written 0 because Schedule!s! = NULL");
         return true;
@@ -1931,7 +1942,7 @@ bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
     if(!Schedule) {
         m_resp->put_U32(0);
-        RoboTVChannels.Unlock();
+        c.Unlock();
 
         DEBUGLOG("written 0 because Schedule = NULL");
         return true;
@@ -2021,7 +2032,7 @@ bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
         atLeastOneEvent = true;
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
     DEBUGLOG("Got all event data");
 
     if(!atLeastOneEvent) {
@@ -2037,7 +2048,7 @@ bool cRoboTVClient::processEPG_GetForChannel() { /* OPCODE 120 */
 
 /** OPCODE 140 - 169: RoboTV network functions for channel scanning */
 
-bool cRoboTVClient::processSCAN_ScanSupported() { /* OPCODE 140 */
+bool RoboTVClient::processSCAN_ScanSupported() { /* OPCODE 140 */
     if(m_scanSupported) {
         m_resp->put_U32(ROBOTV_RET_OK);
     }
@@ -2048,7 +2059,7 @@ bool cRoboTVClient::processSCAN_ScanSupported() { /* OPCODE 140 */
     return true;
 }
 
-bool cRoboTVClient::processSCAN_GetSetup() { /* OPCODE 141 */
+bool RoboTVClient::processSCAN_GetSetup() { /* OPCODE 141 */
     // get setup
     WIRBELSCAN_SERVICE::cWirbelscanScanSetup setup;
 
@@ -2116,7 +2127,7 @@ bool cRoboTVClient::processSCAN_GetSetup() { /* OPCODE 141 */
     return true;
 }
 
-bool cRoboTVClient::processSCAN_SetSetup() { /* OPCODE 141 */
+bool RoboTVClient::processSCAN_SetSetup() { /* OPCODE 141 */
     WIRBELSCAN_SERVICE::cWirbelscanScanSetup setup;
 
     // read setup
@@ -2157,7 +2168,7 @@ bool cRoboTVClient::processSCAN_SetSetup() { /* OPCODE 141 */
     return true;
 }
 
-bool cRoboTVClient::processSCAN_Start() {
+bool RoboTVClient::processSCAN_Start() {
     WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
     cmd.cmd = WIRBELSCAN_SERVICE::CmdStartScan;
 
@@ -2173,7 +2184,7 @@ bool cRoboTVClient::processSCAN_Start() {
     return true;
 }
 
-bool cRoboTVClient::processSCAN_Stop() {
+bool RoboTVClient::processSCAN_Stop() {
     WIRBELSCAN_SERVICE::cWirbelscanCmd cmd;
     cmd.cmd = WIRBELSCAN_SERVICE::CmdStopScan;
 
@@ -2189,7 +2200,7 @@ bool cRoboTVClient::processSCAN_Stop() {
     return true;
 }
 
-bool cRoboTVClient::processSCAN_GetStatus() {
+bool RoboTVClient::processSCAN_GetStatus() {
     WIRBELSCAN_SERVICE::cWirbelscanStatus status;
 
     if(!m_scanner.GetStatus(status)) {
@@ -2211,7 +2222,7 @@ bool cRoboTVClient::processSCAN_GetStatus() {
     return true;
 }
 
-void cRoboTVClient::SendScannerStatus() {
+void RoboTVClient::SendScannerStatus() {
     WIRBELSCAN_SERVICE::cWirbelscanStatus status;
 
     if(!m_scanner.GetStatus(status)) {
@@ -2234,7 +2245,7 @@ void cRoboTVClient::SendScannerStatus() {
     QueueMessage(resp);
 }
 
-void cRoboTVClient::QueueMessage(MsgPacket* p) {
+void RoboTVClient::QueueMessage(MsgPacket* p) {
     cMutexLock lock(&m_queueLock);
     m_queue.push(p);
 }

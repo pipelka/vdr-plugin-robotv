@@ -26,36 +26,45 @@
 #define ROBOTV_CHANNELCACHE_H
 
 #include "vdr/thread.h"
+#include "config/config.h"
 #include "demuxer/streambundle.h"
 
-class cChannelCache {
+class ChannelCache {
 public:
 
-    static void LoadChannelCacheData();
+    void LoadChannelCacheData();
 
-    static void SaveChannelCacheData();
+    void SaveChannelCacheData();
 
-    static void AddToCache(uint32_t channeluid, const cStreamBundle& channel);
+    void AddToCache(uint32_t channeluid, const StreamBundle& channel);
 
-    static void AddToCache(const cChannel* channel);
+    void AddToCache(const cChannel* channel);
 
-    static cStreamBundle GetFromCache(uint32_t channeluid);
+    StreamBundle GetFromCache(uint32_t channeluid);
 
-    static void gc();
+    void gc();
+
+    static ChannelCache& instance();
+
+protected:
+
+    ChannelCache();
 
 private:
 
-    static void Lock() {
+    RoboTVServerConfig& m_config;
+
+    void Lock() {
         m_access.Lock();
     }
 
-    static void Unlock() {
+    void Unlock() {
         m_access.Unlock();
     }
 
-    static std::map<uint32_t, cStreamBundle> m_cache;
+    std::map<uint32_t, StreamBundle> m_cache;
 
-    static cMutex m_access;
+    cMutex m_access;
 
 };
 

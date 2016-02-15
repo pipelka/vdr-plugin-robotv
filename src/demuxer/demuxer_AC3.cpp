@@ -26,12 +26,12 @@
 #include "vdr/tools.h"
 #include "ac3common.h"
 
-cParserAC3::cParserAC3(cTSDemuxer* demuxer) : cParser(demuxer, 64 * 1024, 4096) {
+ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {
     m_headersize = AC3_HEADER_SIZE;
     m_enhanced = false;
 }
 
-bool cParserAC3::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserAc3::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     cBitStream bs(buffer, AC3_HEADER_SIZE * 8);
 
     if(bs.GetBits(16) != 0x0B77) {
@@ -66,7 +66,7 @@ bool cParserAC3::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     return true;
 }
 
-int cParserAC3::ParsePayload(unsigned char* payload, int length) {
+int ParserAc3::ParsePayload(unsigned char* payload, int length) {
     cBitStream bs(payload, AC3_HEADER_SIZE * 8);
 
     if(bs.GetBits(16) != 0x0B77) {

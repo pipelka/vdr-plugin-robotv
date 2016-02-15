@@ -31,7 +31,7 @@
 #include "tools/hash.h"
 #include <string>
 
-cRecordingsCache::cRecordingsCache() : m_storage(RoboTV::Storage::getInstance()) {
+RecordingsCache::RecordingsCache() : m_storage(RoboTV::Storage::getInstance()) {
     // create db schema
     CreateDB();
 
@@ -39,21 +39,21 @@ cRecordingsCache::cRecordingsCache() : m_storage(RoboTV::Storage::getInstance())
     Update();
 }
 
-void cRecordingsCache::Update() {
+void RecordingsCache::Update() {
     for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
         Register(recording);
     }
 }
 
-cRecordingsCache::~cRecordingsCache() {
+RecordingsCache::~RecordingsCache() {
 }
 
-cRecordingsCache& cRecordingsCache::GetInstance() {
-    static cRecordingsCache singleton;
+RecordingsCache& RecordingsCache::GetInstance() {
+    static RecordingsCache singleton;
     return singleton;
 }
 
-uint32_t cRecordingsCache::Register(cRecording* recording) {
+uint32_t RecordingsCache::Register(cRecording* recording) {
     cString filename = recording->FileName();
     uint32_t uid = CreateStringHash(filename);
 
@@ -66,7 +66,7 @@ uint32_t cRecordingsCache::Register(cRecording* recording) {
     return uid;
 }
 
-cRecording* cRecordingsCache::Lookup(uint32_t uid) {
+cRecording* RecordingsCache::Lookup(uint32_t uid) {
     DEBUGLOG("%s - lookup uid: %08x", __FUNCTION__, uid);
 
     sqlite3_stmt* s = m_storage.Query("SELECT filename FROM recordings WHERE recid=%u;", uid);
@@ -97,42 +97,42 @@ cRecording* cRecordingsCache::Lookup(uint32_t uid) {
     return r;
 }
 
-void cRecordingsCache::SetPlayCount(uint32_t uid, int count) {
+void RecordingsCache::SetPlayCount(uint32_t uid, int count) {
     m_storage.Exec(
         "UPDATE recordings SET playcount=%i WHERE recid=%u;",
         count,
         uid);
 }
 
-void cRecordingsCache::SetLastPlayedPosition(uint32_t uid, uint64_t position) {
+void RecordingsCache::SetLastPlayedPosition(uint32_t uid, uint64_t position) {
     m_storage.Exec(
         "UPDATE recordings SET position=%llu WHERE recid=%u;",
         position,
         uid);
 }
 
-void cRecordingsCache::SetPosterUrl(uint32_t uid, const char* url) {
+void RecordingsCache::SetPosterUrl(uint32_t uid, const char* url) {
     m_storage.Exec(
         "UPDATE recordings SET posterurl=%Q WHERE recid=%u;",
         url,
         uid);
 }
 
-void cRecordingsCache::SetBackgroundUrl(uint32_t uid, const char* url) {
+void RecordingsCache::SetBackgroundUrl(uint32_t uid, const char* url) {
     m_storage.Exec(
         "UPDATE recordings SET backgroundurl=%Q WHERE recid=%u;",
         url,
         uid);
 }
 
-void cRecordingsCache::SetMovieID(uint32_t uid, uint32_t id) {
+void RecordingsCache::SetMovieID(uint32_t uid, uint32_t id) {
     m_storage.Exec(
         "UPDATE recordings SET externalid=%u WHERE recid=%u;",
         id,
         uid);
 }
 
-int cRecordingsCache::GetPlayCount(uint32_t uid) {
+int RecordingsCache::GetPlayCount(uint32_t uid) {
     sqlite3_stmt* s = m_storage.Query("SELECT playcount FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
@@ -149,7 +149,7 @@ int cRecordingsCache::GetPlayCount(uint32_t uid) {
     return count;
 }
 
-cString cRecordingsCache::GetPosterUrl(uint32_t uid) {
+cString RecordingsCache::GetPosterUrl(uint32_t uid) {
     cString url = "";
     sqlite3_stmt* s = m_storage.Query("SELECT posterurl FROM recordings WHERE recid=%u;", uid);
 
@@ -170,7 +170,7 @@ cString cRecordingsCache::GetPosterUrl(uint32_t uid) {
     return url;
 }
 
-cString cRecordingsCache::GetBackgroundUrl(uint32_t uid) {
+cString RecordingsCache::GetBackgroundUrl(uint32_t uid) {
     cString url = "";
     sqlite3_stmt* s = m_storage.Query("SELECT backgroundurl FROM recordings WHERE recid=%u;", uid);
 
@@ -190,7 +190,7 @@ cString cRecordingsCache::GetBackgroundUrl(uint32_t uid) {
     return url;
 }
 
-uint64_t cRecordingsCache::GetLastPlayedPosition(uint32_t uid) {
+uint64_t RecordingsCache::GetLastPlayedPosition(uint32_t uid) {
     sqlite3_stmt* s = m_storage.Query("SELECT position FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
@@ -207,7 +207,7 @@ uint64_t cRecordingsCache::GetLastPlayedPosition(uint32_t uid) {
     return position;
 }
 
-void cRecordingsCache::gc() {
+void RecordingsCache::gc() {
     Update();
 
     sqlite3_stmt* s = m_storage.Query("SELECT recid, filename FROM recordings;");
@@ -232,7 +232,7 @@ void cRecordingsCache::gc() {
     sqlite3_finalize(s);
 }
 
-void cRecordingsCache::CreateDB() {
+void RecordingsCache::CreateDB() {
     std::string schema =
         "CREATE TABLE IF NOT EXISTS recordings (\n"
         "  recid INTEGER PRIMARY KEY,\n"

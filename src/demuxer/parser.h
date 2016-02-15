@@ -28,12 +28,12 @@
 #include "demuxer.h"
 #include "vdr/ringbuffer.h"
 
-class cParser : public cRingBufferLinear {
+class Parser : public cRingBufferLinear {
 public:
 
-    cParser(cTSDemuxer* demuxer, int buffersize = 64 * 1024, int packetsize = 4096);
+    Parser(TsDemuxer* demuxer, int buffersize = 64 * 1024, int packetsize = 4096);
 
-    virtual ~cParser();
+    virtual ~Parser();
 
     virtual void Parse(unsigned char* data, int size, bool pusi);
 
@@ -49,7 +49,7 @@ protected:
 
     int FindStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask = 0xFFFFFFFF);
 
-    cTSDemuxer* m_demuxer;
+    TsDemuxer* m_demuxer;
 
     int64_t m_curPTS;
     int64_t m_curDTS;
@@ -59,7 +59,7 @@ protected:
     int m_channels;
     int m_duration;
     int m_headersize;
-    cStreamInfo::FrameType m_frametype;
+    StreamInfo::FrameType m_frametype;
 
     bool m_startup;
 

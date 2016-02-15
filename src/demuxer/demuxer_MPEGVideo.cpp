@@ -53,31 +53,31 @@ static int GetFrameType(unsigned char* data, int length) {
     return bs.GetBits(3);
 }
 
-static cStreamInfo::FrameType ConvertFrameType(int frametype) {
+static StreamInfo::FrameType ConvertFrameType(int frametype) {
     switch(frametype) {
         case 1:
-            return cStreamInfo::ftIFRAME;
+            return StreamInfo::ftIFRAME;
 
         case 2:
-            return cStreamInfo::ftPFRAME;
+            return StreamInfo::ftPFRAME;
 
         case 3:
-            return cStreamInfo::ftBFRAME;
+            return StreamInfo::ftBFRAME;
 
         case 4:
-            return cStreamInfo::ftDFRAME;
+            return StreamInfo::ftDFRAME;
 
         default:
             break;
     }
 
-    return cStreamInfo::ftUNKNOWN;
+    return StreamInfo::ftUNKNOWN;
 }
 
-cParserMPEG2Video::cParserMPEG2Video(cTSDemuxer* demuxer) : cParserPES(demuxer, 512 * 1024), m_pdiff(0), m_lastDTS(DVD_NOPTS_VALUE) {
+ParserMpeg2Video::ParserMpeg2Video(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024), m_pdiff(0), m_lastDTS(DVD_NOPTS_VALUE) {
 }
 
-cStreamInfo::FrameType cParserMPEG2Video::ParsePicture(unsigned char* data, int length) {
+StreamInfo::FrameType ParserMpeg2Video::ParsePicture(unsigned char* data, int length) {
     int frametype = GetFrameType(data, length);
 
     // get I,P frames distance
@@ -106,7 +106,7 @@ cStreamInfo::FrameType cParserMPEG2Video::ParsePicture(unsigned char* data, int 
     return ConvertFrameType(frametype);
 }
 
-int cParserMPEG2Video::ParsePayload(unsigned char* data, int length) {
+int ParserMpeg2Video::ParsePayload(unsigned char* data, int length) {
     // lookup sequence start code
     int o = FindStartCode(data, length, 0, MPEG2_SEQUENCE_START);
 
@@ -140,7 +140,7 @@ int cParserMPEG2Video::ParsePayload(unsigned char* data, int length) {
 
         // parse and send payload data
         m_frametype = ParsePicture(data + o, e - o);
-        cParser::SendPayload(data + s, e - s);
+        Parser::SendPayload(data + s, e - s);
 
         // get next picture offsets
         s = e;
@@ -154,15 +154,15 @@ int cParserMPEG2Video::ParsePayload(unsigned char* data, int length) {
 
     // append last part
     m_frametype = ParsePicture(data + o, length - o);
-    cParser::SendPayload(data + s, length - s);
+    Parser::SendPayload(data + s, length - s);
 
     return length;
 }
 
-void cParserMPEG2Video::SendPayload(unsigned char* payload, int length) {
+void ParserMpeg2Video::SendPayload(unsigned char* payload, int length) {
 }
 
-void cParserMPEG2Video::ParseSequenceStart(unsigned char* data, int length) {
+void ParserMpeg2Video::ParseSequenceStart(unsigned char* data, int length) {
     cBitStream bs(data, length * 8);
 
     if(bs.Length() < 32) {

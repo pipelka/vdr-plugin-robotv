@@ -28,8 +28,8 @@
 
 using namespace RoboTV;
 
-Storage::Storage() {
-    cString filename = AddDirectory(RoboTVServerConfig.CacheDirectory, STORAGE_DB_FILE);
+Storage::Storage() : m_config(RoboTVServerConfig::instance()) {
+    cString filename = AddDirectory(m_config.CacheDirectory.c_str(), STORAGE_DB_FILE);
 
     if(!Open((const char*)filename)) {
         ERRORLOG("Unable to open database: '%s' - strange thing will happen !", (const char*)filename);

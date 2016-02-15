@@ -100,8 +100,10 @@ uint32_t CreateChannelUID(const cChannel* channel) {
 
 const cChannel* FindChannelByUID(uint32_t channelUID) {
     cChannel* result = NULL;
-    RoboTVChannels.Lock(false);
-    cChannels* channels = RoboTVChannels.Get();
+    RoboTVChannels& c = RoboTVChannels::instance();
+
+    c.Lock(false);
+    cChannels* channels = c.Get();
 
     // maybe we need to use a lookup table
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
@@ -113,7 +115,7 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
         }
     }
 
-    RoboTVChannels.Unlock();
+    c.Unlock();
     return result;
 }
 

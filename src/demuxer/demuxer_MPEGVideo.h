@@ -29,10 +29,10 @@
 #include "streaminfo.h"
 #include <map>
 
-class cParserMPEG2Video : public cParserPES {
+class ParserMpeg2Video : public ParserPes {
 public:
 
-    cParserMPEG2Video(cTSDemuxer* demuxer);
+    ParserMpeg2Video(TsDemuxer* demuxer);
 
 protected:
 
@@ -44,7 +44,7 @@ private:
 
     void ParseSequenceStart(unsigned char* data, int length);
 
-    cStreamInfo::FrameType ParsePicture(unsigned char* data, int length);
+    StreamInfo::FrameType ParsePicture(unsigned char* data, int length);
 
     int64_t m_pdiff;
 

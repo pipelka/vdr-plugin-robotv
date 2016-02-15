@@ -30,27 +30,34 @@
 
 #include "config/config.h"
 
-class cRoboTVClient;
+class RoboTVClient;
 
-class cRoboTVServer : public cThread {
+class RoboTVServer : public cThread {
 protected:
 
-    typedef std::list<cRoboTVClient*> ClientList;
+    typedef std::list<RoboTVClient*> ClientList;
 
     virtual void Action(void);
+
     void NewClientConnected(int fd);
 
-    int           m_ServerPort;
-    int           m_ServerFD;
-    bool          m_IPv4Fallback;
-    cString       m_AllowedHostsFile;
-    ClientList    m_clients;
+    int m_ServerPort;
+
+    int m_ServerFD;
+
+    bool m_IPv4Fallback;
+
+    cString m_AllowedHostsFile;
+
+    ClientList m_clients;
+
+    RoboTVServerConfig& m_config;
 
     static unsigned int m_IdCnt;
 
 public:
-    cRoboTVServer(int listenPort);
-    virtual ~cRoboTVServer();
+    RoboTVServer(int listenPort);
+    virtual ~RoboTVServer();
 };
 
 #endif // ROBOTV_SERVER_H

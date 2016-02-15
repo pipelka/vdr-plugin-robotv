@@ -32,7 +32,8 @@
 #include "robotvchannels.h"
 
 int CheckTimerConflicts(cTimer* timer) {
-    RoboTVChannels.Lock(false);
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.Lock(false);
 
     // check for timer conflicts
     DEBUGLOG("Checking conflicts for: %s", (const char*)timer->ToText(true));
@@ -127,7 +128,6 @@ int CheckTimerConflicts(cTimer* timer) {
         DEBUGLOG("No conflicts");
     }
 
-    RoboTVChannels.Unlock();
-
+    c.Unlock();
     return cflags;
 }

@@ -35,11 +35,11 @@ static const char* typenames[] = {
 };
 
 
-cStreamInfo::cStreamInfo() {
+StreamInfo::StreamInfo() {
     Initialize();
 }
 
-cStreamInfo::cStreamInfo(int pid, Type type, const char* lang) {
+StreamInfo::StreamInfo(int pid, Type type, const char* lang) {
     Initialize();
 
     m_pid = pid;
@@ -57,10 +57,10 @@ cStreamInfo::cStreamInfo(int pid, Type type, const char* lang) {
     SetContent();
 }
 
-cStreamInfo::~cStreamInfo() {
+StreamInfo::~StreamInfo() {
 }
 
-void cStreamInfo::Initialize() {
+void StreamInfo::Initialize() {
     m_language[0]       = 0;
     m_audiotype         = 0;
     m_fpsscale          = 0;
@@ -85,7 +85,7 @@ void cStreamInfo::Initialize() {
     m_vpsLength         = 0;
 }
 
-bool cStreamInfo::operator ==(const cStreamInfo& rhs) const {
+bool StreamInfo::operator ==(const StreamInfo& rhs) const {
     // general comparison
     if(!ismetaof(rhs)) {
         return false;
@@ -127,7 +127,7 @@ bool cStreamInfo::operator ==(const cStreamInfo& rhs) const {
     return false;
 }
 
-bool cStreamInfo::ismetaof(const cStreamInfo& rhs) const {
+bool StreamInfo::ismetaof(const StreamInfo& rhs) const {
     if(m_content != rhs.m_content) {
         return false;
     }
@@ -139,15 +139,15 @@ bool cStreamInfo::ismetaof(const cStreamInfo& rhs) const {
     return (m_pid == rhs.m_pid);
 }
 
-bool cStreamInfo::operator !=(const cStreamInfo& rhs) const {
+bool StreamInfo::operator !=(const StreamInfo& rhs) const {
     return !((*this) == rhs);
 }
 
-void cStreamInfo::SetContent() {
+void StreamInfo::SetContent() {
     m_content = GetContent(m_type);
 }
 
-const cStreamInfo::Content cStreamInfo::GetContent(Type type) {
+const StreamInfo::Content StreamInfo::GetContent(Type type) {
     if(type == stMPEG2AUDIO || type == stAC3 || type == stEAC3  || type == stAAC || type == stLATM) {
         return scAUDIO;
     }
@@ -164,19 +164,19 @@ const cStreamInfo::Content cStreamInfo::GetContent(Type type) {
     return scNONE;
 }
 
-const char* cStreamInfo::TypeName() {
+const char* StreamInfo::TypeName() {
     return TypeName(m_type);
 }
 
-const char* cStreamInfo::TypeName(const cStreamInfo::Type& type) {
+const char* StreamInfo::TypeName(const StreamInfo::Type& type) {
     return typenames[type];
 }
 
-const char* cStreamInfo::ContentName(const cStreamInfo::Content& content) {
+const char* StreamInfo::ContentName(const StreamInfo::Content& content) {
     return contentnames[content];
 }
 
-void cStreamInfo::info() const {
+void StreamInfo::info() const {
     char buffer[100];
     buffer[0] = 0;
 
@@ -208,14 +208,14 @@ void cStreamInfo::info() const {
     INFOLOG("Stream: %s PID: %i %s (parsed: %s)", TypeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
 }
 
-void cStreamInfo::SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {
+void StreamInfo::SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {
     m_subtitlingtype    = SubtitlingType;
     m_compositionpageid = CompositionPageId;
     m_ancillarypageid   = AncillaryPageId;
     m_parsed            = true;
 }
 
-MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs) {
+MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs) {
     // write item sync
     lhs.put_U32(0xFEFEFEFE);
 
@@ -229,7 +229,7 @@ MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs) {
 
     // write specific data
     switch(rhs.m_content) {
-        case cStreamInfo::scAUDIO:
+        case StreamInfo::scAUDIO:
             lhs.put_String(lang);
             lhs.put_U8(rhs.m_audiotype);
             lhs.put_U8(rhs.m_channels);
@@ -239,7 +239,7 @@ MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs) {
             lhs.put_U32(rhs.m_blockalign);
             break;
 
-        case cStreamInfo::scVIDEO:
+        case StreamInfo::scVIDEO:
             lhs.put_U32(rhs.m_fpsscale);
             lhs.put_U32(rhs.m_fpsrate);
             lhs.put_U16(rhs.m_height);
@@ -265,14 +265,14 @@ MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs) {
 
             break;
 
-        case cStreamInfo::scSUBTITLE:
+        case StreamInfo::scSUBTITLE:
             lhs.put_String(lang);
             lhs.put_U8(rhs.m_subtitlingtype);
             lhs.put_U16(rhs.m_compositionpageid);
             lhs.put_U16(rhs.m_ancillarypageid);
             break;
 
-        case cStreamInfo::scTELETEXT:
+        case StreamInfo::scTELETEXT:
             break;
 
         default:
@@ -282,7 +282,7 @@ MsgPacket& operator<< (MsgPacket& lhs, const cStreamInfo& rhs) {
     return lhs;
 }
 
-MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
+MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs) {
     unsigned int check = 0;
     check = lhs.get_U32();
 
@@ -293,8 +293,8 @@ MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
     rhs.Initialize();
 
     // read general data
-    rhs.m_type = static_cast<cStreamInfo::Type>(lhs.get_U8());
-    rhs.m_content = static_cast<cStreamInfo::Content>(lhs.get_U8());
+    rhs.m_type = static_cast<StreamInfo::Type>(lhs.get_U8());
+    rhs.m_content = static_cast<StreamInfo::Content>(lhs.get_U8());
     rhs.m_pid = lhs.get_U16();
     rhs.m_parsed = lhs.get_U8();
 
@@ -302,7 +302,7 @@ MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
     std::string lang;
 
     switch(rhs.m_content) {
-        case cStreamInfo::scAUDIO:
+        case StreamInfo::scAUDIO:
             lang = lhs.get_String();
             rhs.m_audiotype = lhs.get_U8();
             rhs.m_channels = lhs.get_U8();
@@ -312,7 +312,7 @@ MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
             rhs.m_blockalign = lhs.get_U32();
             break;
 
-        case cStreamInfo::scVIDEO:
+        case StreamInfo::scVIDEO:
             rhs.m_fpsscale = lhs.get_U32();
             rhs.m_fpsrate = lhs.get_U32();
             rhs.m_height = lhs.get_U16();
@@ -338,14 +338,14 @@ MsgPacket& operator>> (MsgPacket& lhs, cStreamInfo& rhs) {
 
             break;
 
-        case cStreamInfo::scSUBTITLE:
+        case StreamInfo::scSUBTITLE:
             lang = lhs.get_String();
             rhs.m_subtitlingtype = lhs.get_U8();
             rhs.m_compositionpageid = lhs.get_U16();
             rhs.m_ancillarypageid = lhs.get_U16();
             break;
 
-        case cStreamInfo::scTELETEXT:
+        case StreamInfo::scTELETEXT:
             break;
 
         default:

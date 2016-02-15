@@ -7,7 +7,7 @@
 
 #include <vdr/channels.h>
 
-class cRoboTVChannels: public cRwLock {
+class RoboTVChannels: public cRwLock {
 private:
     cChannels* channels;
     uint64_t channelsHash;
@@ -15,8 +15,14 @@ private:
     bool Read(FILE* f, cChannels* channels);
     bool Write(FILE* f, cChannels* channels);
     uint64_t ChannelsHash(cChannels* channels);
+
+protected:
+
+    RoboTVChannels();
+
 public:
-    cRoboTVChannels();
+
+    static RoboTVChannels& instance();
 
     /**
      * Calculates the VDR Channels hash and compares with the cached value
@@ -53,7 +59,5 @@ public:
      */
     void Unlock(void);
 };
-
-extern cRoboTVChannels RoboTVChannels;
 
 #endif /* RoboTVCHANNELS_H_ */

@@ -4,16 +4,19 @@
 #include "vdr/tools.h"
 #include "robotvchannels.h"
 
-cRoboTVChannels RoboTVChannels;
-
-cRoboTVChannels::cRoboTVChannels() {
+RoboTVChannels::RoboTVChannels() {
     Channels.Lock(false);
     channels = Reorder(&Channels);
     channelsHash = ChannelsHash(&Channels);
     Channels.Unlock();
 }
 
-uint64_t cRoboTVChannels::CheckUpdates() {
+RoboTVChannels& RoboTVChannels::instance() {
+    static RoboTVChannels channels;
+    return channels;
+}
+
+uint64_t RoboTVChannels::CheckUpdates() {
     cRwLock::Lock(false);
     Channels.Lock(false);
 
@@ -48,12 +51,14 @@ uint64_t cRoboTVChannels::CheckUpdates() {
     return newHash;
 }
 
-cChannels* cRoboTVChannels::Get() {
+cChannels* RoboTVChannels::Get() {
     return channels;
 }
 
-cChannels* cRoboTVChannels::Reorder(cChannels* channels) {
-    if(*RoboTVServerConfig.ReorderCmd == NULL) {
+cChannels* RoboTVChannels::Reorder(cChannels* channels) {
+    std::string reorderCmd = RoboTVServerConfig::instance().ReorderCmd;
+
+    if(reorderCmd.empty()) {
         return channels;
     }
 
@@ -93,12 +98,12 @@ cChannels* cRoboTVChannels::Reorder(cChannels* channels) {
             dup2(output[1], STDOUT_FILENO);
 
             INFOLOG(
-                "Reordering %i channels with command '%s'", channels->Count(), *RoboTVServerConfig.ReorderCmd);
-            status = system(RoboTVServerConfig.ReorderCmd);
+                "Reordering %i channels with command '%s'", channels->Count(), reorderCmd.c_str());
+            status = system(reorderCmd.c_str());
 
             if(status != 0) {
                 ERRORLOG(
-                    "Command: %s failed with exit code %i", *RoboTVServerConfig.ReorderCmd, status);
+                    "Command: %s failed with exit code %i", reorderCmd.c_str(), status);
             }
 
             close(input[0]);
@@ -151,7 +156,7 @@ cChannels* cRoboTVChannels::Reorder(cChannels* channels) {
     }
 }
 
-uint64_t cRoboTVChannels::ChannelsHash(cChannels* channels) {
+uint64_t RoboTVChannels::ChannelsHash(cChannels* channels) {
     uint64_t hash = 0;
     uint64_t count = 0;
 
@@ -163,7 +168,7 @@ uint64_t cRoboTVChannels::ChannelsHash(cChannels* channels) {
     return (count << 32) | hash;
 }
 
-bool cRoboTVChannels::Read(FILE* f, cChannels* channels) {
+bool RoboTVChannels::Read(FILE* f, cChannels* channels) {
     cReadLine ReadLine;
 
     for(char* line = ReadLine.Read(f); line != NULL; line = ReadLine.Read(f)) {
@@ -193,7 +198,7 @@ bool cRoboTVChannels::Read(FILE* f, cChannels* channels) {
     return true;
 }
 
-bool cRoboTVChannels::Write(FILE* f, cChannels* channels) {
+bool RoboTVChannels::Write(FILE* f, cChannels* channels) {
     for(cChannel* c = channels->First(); c != NULL; c = channels->Next(c)) {
         if(!c->Save(f)) {
             return false;
@@ -203,7 +208,7 @@ bool cRoboTVChannels::Write(FILE* f, cChannels* channels) {
     return true;
 }
 
-bool cRoboTVChannels::Lock(bool Write, int TimeoutMs) {
+bool RoboTVChannels::Lock(bool Write, int TimeoutMs) {
     if(cRwLock::Lock(Write, TimeoutMs)) {
         if(Get()->Lock(Write, TimeoutMs)) {
             return true;
@@ -216,7 +221,7 @@ bool cRoboTVChannels::Lock(bool Write, int TimeoutMs) {
     return false;
 }
 
-void cRoboTVChannels::Unlock(void) {
+void RoboTVChannels::Unlock(void) {
     Get()->Unlock();
     cRwLock::Unlock();
 }

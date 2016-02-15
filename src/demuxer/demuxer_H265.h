@@ -27,10 +27,10 @@
 
 #include "demuxer_H264.h"
 
-class cParserH265 : public cParserH264 {
+class ParserH265 : public ParserH264 {
 public:
 
-    cParserH265(cTSDemuxer* demuxer);
+    ParserH265(TsDemuxer* demuxer);
 
     int ParsePayload(unsigned char* data, int length);
 

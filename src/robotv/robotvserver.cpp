@@ -49,14 +49,14 @@
 
 //#define ENABLE_CHANNELTRIGGER 1
 
-unsigned int cRoboTVServer::m_IdCnt = 0;
+unsigned int RoboTVServer::m_IdCnt = 0;
 
 class cAllowedHosts : public cSVDRPhosts {
 public:
     cAllowedHosts(const cString& AllowedHostsFile) {
         if(!Load(AllowedHostsFile, true, true)) {
             ERRORLOG("Invalid or missing '%s'. falling back to 'svdrphosts.conf'.", *AllowedHostsFile);
-            cString Base = cString::sprintf("%s/../svdrphosts.conf", *RoboTVServerConfig.ConfigDirectory);
+            cString Base = cString::sprintf("%s/../svdrphosts.conf", RoboTVServerConfig::instance().ConfigDirectory.c_str());
 
             if(!Load(Base, true, true)) {
                 ERRORLOG("Invalid or missing %s. Adding 127.0.0.1 to list of allowed hosts.", *Base);
@@ -73,15 +73,15 @@ public:
     }
 };
 
-cRoboTVServer::cRoboTVServer(int listenPort) : cThread("VDR RoboTV Server") {
+RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_config(RoboTVServerConfig::instance()) {
     m_IPv4Fallback = false;
     m_ServerPort  = listenPort;
 
-    if(*RoboTVServerConfig.ConfigDirectory) {
-        m_AllowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, *RoboTVServerConfig.ConfigDirectory);
+    if(!m_config.ConfigDirectory.empty()) {
+        m_AllowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.ConfigDirectory.c_str());
     }
     else {
-        ERRORLOG("cRoboTVServer: missing ConfigDirectory!");
+        ERRORLOG("RoboTVServer: missing ConfigDirectory!");
         m_AllowedHostsFile = cString::sprintf("/video/" ALLOWED_HOSTS_FILE);
     }
 
@@ -108,7 +108,7 @@ cRoboTVServer::cRoboTVServer(int listenPort) : cThread("VDR RoboTV Server") {
     int no = 0;
 
     if(!m_IPv4Fallback && setsockopt(m_ServerFD, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&no, sizeof(no)) < 0) {
-        ERRORLOG("cRoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
+        ERRORLOG("RoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
     }
 
     struct sockaddr_storage s;
@@ -138,11 +138,11 @@ cRoboTVServer::cRoboTVServer(int listenPort) : cThread("VDR RoboTV Server") {
     Start();
 
     INFOLOG("RoboTV Server started");
-    INFOLOG("Channel streaming timeout: %i seconds", RoboTVServerConfig.stream_timeout);
+    INFOLOG("Channel streaming timeout: %i seconds", m_config.stream_timeout);
     return;
 }
 
-cRoboTVServer::~cRoboTVServer() {
+RoboTVServer::~RoboTVServer() {
     Cancel(5);
 
     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
@@ -152,7 +152,7 @@ cRoboTVServer::~cRoboTVServer() {
     INFOLOG("RoboTV Server stopped");
 }
 
-void cRoboTVServer::NewClientConnected(int fd) {
+void RoboTVServer::NewClientConnected(int fd) {
     struct sockaddr_storage sin;
     socklen_t len = sizeof(sin);
     in_addr_t* ipv4_addr = NULL;
@@ -214,12 +214,12 @@ void cRoboTVServer::NewClientConnected(int fd) {
         INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_IdCnt);
     }
 
-    cRoboTVClient* connection = new cRoboTVClient(fd, m_IdCnt);
+    RoboTVClient* connection = new RoboTVClient(fd, m_IdCnt);
     m_clients.push_back(connection);
     m_IdCnt++;
 }
 
-void cRoboTVServer::Action(void) {
+void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
     cTimeMs channelReloadTimer;
@@ -233,7 +233,7 @@ void cRoboTVServer::Action(void) {
     SetPriority(19);
 
     // artwork
-    cArtwork artwork;
+    Artwork artwork;
     cTimeMs artworkCleanupTimer;
 
     INFOLOG("removing outdated artwork");
@@ -279,13 +279,14 @@ void cRoboTVServer::Action(void) {
 
             // store channel cache
             if(bChanged) {
-                cChannelCache::SaveChannelCacheData();
+                ChannelCache::instance().SaveChannelCacheData();
             }
 
             // trigger clients to reload the modified channel list
             if(m_clients.size() > 0) {
-                uint64_t hash = RoboTVChannels.CheckUpdates();
-                RoboTVChannels.Lock(false);
+                RoboTVChannels& c = RoboTVChannels::instance();
+                uint64_t hash = c.CheckUpdates();
+                c.Lock(false);
 
                 if(hash != channelsHash) {
                     channelReloadTrigger = true;
@@ -304,7 +305,7 @@ void cRoboTVServer::Action(void) {
                     INFOLOG("Done.");
                 }
 
-                RoboTVChannels.Unlock();
+                c.Unlock();
                 channelsHash = hash;
             }
 
@@ -323,7 +324,7 @@ void cRoboTVServer::Action(void) {
             // store channel cache
             if(m_clients.size() > 0 && channelCacheTimer.Elapsed() >= 60 * 1000) {
                 if(!bChanged) {
-                    cChannelCache::SaveChannelCacheData();
+                    ChannelCache::instance().SaveChannelCacheData();
                 }
 
                 channelCacheTimer.Set(0);
@@ -344,7 +345,7 @@ void cRoboTVServer::Action(void) {
 
                 // start gc
                 INFOLOG("Starting garbage collection in recordings cache");
-                cRecordingsCache::GetInstance().gc();
+                RecordingsCache::GetInstance().gc();
 
                 // request clients to reload recordings
                 if(!m_clients.empty()) {

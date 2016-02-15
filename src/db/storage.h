@@ -25,6 +25,7 @@
 #ifndef ROBOTV_STORAGE_H
 #define ROBOTV_STORAGE_H
 
+#include "config/config.h"
 #include "database.h"
 
 namespace RoboTV {
@@ -33,6 +34,8 @@ class Storage : public Database {
 protected:
 
     Storage();
+
+    RoboTVServerConfig& m_config;
 
 public:
 

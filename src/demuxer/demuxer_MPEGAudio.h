@@ -27,12 +27,12 @@
 
 #include "parser.h"
 
-// --- cParserMPEG2Audio -------------------------------------------------
+// --- ParserMpeg2Audio -------------------------------------------------
 
-class cParserMPEG2Audio : public cParser {
+class ParserMpeg2Audio : public Parser {
 public:
 
-    cParserMPEG2Audio(cTSDemuxer* demuxer);
+    ParserMpeg2Audio(TsDemuxer* demuxer);
 
 protected:
 
