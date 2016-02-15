@@ -36,7 +36,7 @@ PacketPlayer::~PacketPlayer() {
 
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // check if we've got a key frame
-    if(p->content == StreamInfo::scVIDEO && p->frametype == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
+    if(p->content == StreamInfo::scVIDEO && p->frameType == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
         INFOLOG("got first key frame");
         m_firstKeyFrameSeen = true;
     }
@@ -53,12 +53,12 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // write stream data
     packet->put_U16(p->pid);
 
-    packet->put_S64(p->rawpts);
-    packet->put_S64(p->rawdts);
+    packet->put_S64(p->rawPts);
+    packet->put_S64(p->rawDts);
     packet->put_U32(p->duration);
 
     // write frame type into unused header field clientid
-    packet->setClientID((uint16_t)p->frametype);
+    packet->setClientID((uint16_t)p->frameType);
 
     // write payload into stream packet
     packet->put_U32(p->size);
@@ -101,7 +101,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
 
             // update demuxers from new PMT
             INFOLOG("updating demuxers");
-            StreamBundle streamBundle = StreamBundle::FromPatPmt(&m_parser);
+            StreamBundle streamBundle = StreamBundle::createFromPatPmt(&m_parser);
             m_demuxers.updateFrom(&streamBundle);
 
             m_requestStreamChange = true;

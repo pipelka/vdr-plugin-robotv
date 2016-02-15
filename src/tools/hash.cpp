@@ -102,8 +102,8 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
     cChannel* result = NULL;
     RoboTVChannels& c = RoboTVChannels::instance();
 
-    c.Lock(false);
-    cChannels* channels = c.Get();
+    c.lock(false);
+    cChannels* channels = c.get();
 
     // maybe we need to use a lookup table
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
@@ -115,7 +115,7 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
         }
     }
 
-    c.Unlock();
+    c.unlock();
     return result;
 }
 

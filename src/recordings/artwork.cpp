@@ -26,13 +26,13 @@
 #include "config/config.h"
 
 Artwork::Artwork() : m_storage(RoboTV::Storage::getInstance()) {
-    CreateDB();
+    createDb();
 }
 
 Artwork::~Artwork() {
 }
 
-void Artwork::CreateDB() {
+void Artwork::createDb() {
     std::string schema =
         "CREATE TABLE IF NOT EXISTS artwork (\n"
         "  id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
@@ -46,13 +46,13 @@ void Artwork::CreateDB() {
         "CREATE INDEX IF NOT EXISTS artwork_externalid on artwork(externalid);\n"
         "CREATE UNIQUE INDEX IF NOT EXISTS artwork_content on artwork(contenttype, title);\n";
 
-    if(m_storage.Exec(schema) != SQLITE_OK) {
+    if(m_storage.exec(schema) != SQLITE_OK) {
         ERRORLOG("Unable to create database schema for artwork");
     }
 }
 
 bool Artwork::get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl) {
-    sqlite3_stmt* s = m_storage.Query(
+    sqlite3_stmt* s = m_storage.query(
                           "SELECT posterurl, backgroundurl FROM artwork WHERE contenttype=%i AND title=%Q;",
                           contentType,
                           title.c_str());
@@ -75,7 +75,7 @@ bool Artwork::get(int contentType, const std::string& title, std::string& poster
 
 bool Artwork::set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId = 0) {
     // try to insert new record
-    if(m_storage.Exec(
+    if(m_storage.exec(
                 "INSERT OR IGNORE INTO artwork(contenttype, title, posterurl, backgroundurl, externalId) VALUES(%i, %Q, %Q, %Q, %i);",
                 contentType,
                 title.c_str(),
@@ -85,7 +85,7 @@ bool Artwork::set(int contentType, const std::string& title, const std::string& 
         return true;
     }
 
-    return m_storage.Exec(
+    return m_storage.exec(
                "UPDATE artwork SET posterurl=%Q, backgroundurl=%Q, externalId=%i WHERE contenttype=%i AND title=%Q",
                posterUrl.c_str(),
                backdropUrl.c_str(),
@@ -95,7 +95,7 @@ bool Artwork::set(int contentType, const std::string& title, const std::string& 
 }
 
 void Artwork::cleanup(int afterDays) {
-    m_storage.Exec(
+    m_storage.exec(
         "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > %i AND backgroundurl=''",
         afterDays
     );

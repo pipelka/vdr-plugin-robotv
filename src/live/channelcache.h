@@ -32,15 +32,15 @@
 class ChannelCache {
 public:
 
-    void LoadChannelCacheData();
+    void load();
 
-    void SaveChannelCacheData();
+    void save();
 
-    void AddToCache(uint32_t channeluid, const StreamBundle& channel);
+    void add(uint32_t channeluid, const StreamBundle& channel);
 
-    void AddToCache(const cChannel* channel);
+    void add(const cChannel* channel);
 
-    StreamBundle GetFromCache(uint32_t channeluid);
+    StreamBundle lookup(uint32_t channeluid);
 
     void gc();
 
@@ -54,11 +54,11 @@ private:
 
     RoboTVServerConfig& m_config;
 
-    void Lock() {
+    void lock() {
         m_access.Lock();
     }
 
-    void Unlock() {
+    void unlock() {
         m_access.Unlock();
     }
 

@@ -38,35 +38,35 @@ public:
 
     virtual ~LiveQueue();
 
-    bool Add(MsgPacket* p, StreamInfo::Content content);
+    bool add(MsgPacket* p, StreamInfo::Content content);
 
-    void Request();
+    void request();
 
-    bool Pause(bool on = true);
+    bool pause(bool on = true);
 
-    bool IsPaused();
+    bool isPaused();
 
-    bool TimeShiftMode();
+    bool getTimeShiftMode();
 
-    static void SetTimeShiftDir(const cString& dir);
+    static void setTimeShiftDir(const cString& dir);
 
-    static void SetBufferSize(uint64_t s);
+    static void setBufferSize(uint64_t s);
 
-    static void RemoveTimeShiftFiles();
+    static void removeTimeShiftFiles();
 
-    void Cleanup();
+    void cleanup();
 
 protected:
 
     void Action();
 
-    void CloseTimeShift();
+    void close();
 
     int m_socket;
 
-    int m_readfd;
+    int m_readFd;
 
-    int m_writefd;
+    int m_writeFd;
 
     bool m_pause;
 
@@ -76,11 +76,11 @@ protected:
 
     cString m_storage;
 
-    size_type m_queuesize;
+    size_type m_queueSize;
 
-    static cString TimeShiftDir;
+    static cString m_timeShiftDir;
 
-    static uint64_t BufferSize;
+    static uint64_t m_bufferSize;
 };
 
 #endif // ROBOTV_LIVEQUEUE_H

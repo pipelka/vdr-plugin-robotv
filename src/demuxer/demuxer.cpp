@@ -41,16 +41,16 @@
 
 #define DVD_TIME_BASE 1000000
 
-TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, const StreamInfo& info) : StreamInfo(info), m_Streamer(streamer) {
-    m_pesParser = CreateParser(m_type);
-    SetContent();
+TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, const StreamInfo& info) : StreamInfo(info), m_streamer(streamer) {
+    m_pesParser = createParser(m_type);
+    setContent();
 }
 
-TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, StreamInfo::Type type, int pid) : StreamInfo(pid, type), m_Streamer(streamer) {
-    m_pesParser = CreateParser(m_type);
+TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, StreamInfo::Type type, int pid) : StreamInfo(pid, type), m_streamer(streamer) {
+    m_pesParser = createParser(m_type);
 }
 
-Parser* TsDemuxer::CreateParser(StreamInfo::Type type) {
+Parser* TsDemuxer::createParser(StreamInfo::Type type) {
     switch(type) {
         case stMPEG2VIDEO:
             return new ParserMpeg2Video(this);
@@ -95,33 +95,33 @@ TsDemuxer::~TsDemuxer() {
     delete m_pesParser;
 }
 
-int64_t TsDemuxer::Rescale(int64_t a) {
+int64_t TsDemuxer::rescale(int64_t a) {
     uint64_t b = DVD_TIME_BASE;
     uint64_t c = 90000;
 
     return (a * b) / c;
 }
 
-void TsDemuxer::SendPacket(StreamPacket* pkt) {
+void TsDemuxer::sendPacket(StreamPacket* pkt) {
     // raw pts/dts
-    pkt->rawdts = pkt->dts;
-    pkt->rawpts = pkt->pts;
+    pkt->rawDts = pkt->dts;
+    pkt->rawPts = pkt->pts;
 
-    int64_t dts = (pkt->dts == DVD_NOPTS_VALUE) ? pkt->dts : Rescale(pkt->dts);
-    int64_t pts = (pkt->pts == DVD_NOPTS_VALUE) ? pkt->pts : Rescale(pkt->pts);
+    int64_t dts = (pkt->dts == DVD_NOPTS_VALUE) ? pkt->dts : rescale(pkt->dts);
+    int64_t pts = (pkt->pts == DVD_NOPTS_VALUE) ? pkt->pts : rescale(pkt->pts);
 
     // Rescale
     pkt->type     = m_type;
     pkt->content  = m_content;
-    pkt->pid      = GetPID();
+    pkt->pid      = getPid();
     pkt->dts      = dts;
     pkt->pts      = pts;
-    pkt->duration = Rescale(pkt->duration);
+    pkt->duration = rescale(pkt->duration);
 
-    m_Streamer->sendStreamPacket(pkt);
+    m_streamer->sendStreamPacket(pkt);
 }
 
-bool TsDemuxer::ProcessTSPacket(unsigned char* data) {
+bool TsDemuxer::processTsPacket(unsigned char* data) {
     if(data == NULL) {
         return false;
     }
@@ -158,28 +158,28 @@ bool TsDemuxer::ProcessTSPacket(unsigned char* data) {
 
     /* Parse the data */
     if(m_pesParser) {
-        m_pesParser->Parse(data, bytes, pusi);
+        m_pesParser->parse(data, bytes, pusi);
     }
 
     return true;
 }
 
-void TsDemuxer::SetLanguageDescriptor(const char* language, uint8_t atype) {
+void TsDemuxer::setLanguageDescriptor(const char* language, uint8_t atype) {
     m_language[0] = language[0];
     m_language[1] = language[1];
     m_language[2] = language[2];
     m_language[3] = 0;
-    m_audiotype = atype;
+    m_audioType = atype;
 }
 
-void TsDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
+void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
     // check for sane picture information
     if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0) {
         return;
     }
 
     // only register changed video information
-    if(Width == m_width && Height == m_height && Aspect == m_aspect && FpsScale == m_fpsscale && FpsRate == m_fpsrate) {
+    if(Width == m_width && Height == m_height && Aspect == m_aspect && FpsScale == m_fpsScale && FpsRate == m_fpsRate) {
         return;
     }
 
@@ -205,19 +205,19 @@ void TsDemuxer::SetVideoInformation(int FpsScale, int FpsRate, int Height, int W
 
     INFOLOG("--------------------------------------");
 
-    m_fpsscale = FpsScale;
-    m_fpsrate  = FpsRate;
+    m_fpsScale = FpsScale;
+    m_fpsRate  = FpsRate;
     m_height   = Height;
     m_width    = Width;
     m_aspect   = Aspect;
     m_parsed   = true;
 
-    m_Streamer->requestStreamChange();
+    m_streamer->requestStreamChange();
 }
 
-void TsDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
+void TsDemuxer::setAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
     // only register changed audio information
-    if(Channels == m_channels && SampleRate == m_samplerate && BitRate == m_bitrate) {
+    if(Channels == m_channels && SampleRate == m_sampleRate && BitRate == m_bitRate) {
         return;
     }
 
@@ -233,16 +233,16 @@ void TsDemuxer::SetAudioInformation(int Channels, int SampleRate, int BitRate, i
     INFOLOG("--------------------------------------");
 
     m_channels      = Channels;
-    m_samplerate    = SampleRate;
-    m_blockalign    = BlockAlign;
-    m_bitrate       = BitRate;
-    m_bitspersample = BitsPerSample;
+    m_sampleRate    = SampleRate;
+    m_blockAlign    = BlockAlign;
+    m_bitRate       = BitRate;
+    m_bitsPerSample = BitsPerSample;
     m_parsed        = true;
 
-    m_Streamer->requestStreamChange();
+    m_streamer->requestStreamChange();
 }
 
-void TsDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
+void TsDemuxer::setVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
     if(sps != NULL) {
         m_spsLength = spsLength;
         memcpy(m_sps, sps, spsLength);
@@ -259,17 +259,17 @@ void TsDemuxer::SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, i
     }
 }
 
-uint8_t* TsDemuxer::GetVideoDecoderSPS(int& length) {
+uint8_t* TsDemuxer::getVideoDecoderSps(int& length) {
     length = m_spsLength;
     return m_spsLength == 0 ? NULL : m_sps;
 }
 
-uint8_t* TsDemuxer::GetVideoDecoderPPS(int& length) {
+uint8_t* TsDemuxer::getVideoDecoderPps(int& length) {
     length = m_ppsLength;
     return m_ppsLength == 0 ? NULL : m_pps;
 }
 
-uint8_t* TsDemuxer::GetVideoDecoderVPS(int& length) {
+uint8_t* TsDemuxer::getVideoDecoderVps(int& length) {
     length = m_vpsLength;
     return m_vpsLength == 0 ? NULL : m_vps;
 }

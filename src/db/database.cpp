@@ -34,10 +34,10 @@ Database::Database() : m_db(NULL) {
 }
 
 Database::~Database() {
-    Close();
+    close();
 }
 
-bool Database::Open(const std::string& db) {
+bool Database::open(const std::string& db) {
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
@@ -61,10 +61,10 @@ bool Database::Open(const std::string& db) {
         }
     }
 
-    return (Exec("PRAGMA journal_mode = WAL;") == SQLITE_OK);
+    return (exec("PRAGMA journal_mode = WAL;") == SQLITE_OK);
 }
 
-bool Database::Close() {
+bool Database::close() {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -79,20 +79,20 @@ bool Database::Close() {
     return true;
 }
 
-bool Database::IsOpen() {
+bool Database::isOpen() {
     std::lock_guard<std::mutex> lock(m_lock);
     return (m_db != NULL);
 }
 
-char* Database::PrepareQueryBuffer(const std::string& query, va_list ap) {
+char* Database::prepareQueryBuffer(const std::string& query, va_list ap) {
     return sqlite3_vmprintf(query.c_str(), ap);
 }
 
-void Database::ReleaseQueryBuffer(char* querybuffer) {
+void Database::releaseQueryBuffer(char* querybuffer) {
     sqlite3_free(querybuffer);
 }
 
-int Database::Exec(const std::string& query, ...) {
+int Database::exec(const std::string& query, ...) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -101,7 +101,7 @@ int Database::Exec(const std::string& query, ...) {
 
     va_list ap;
     va_start(ap, &query);
-    char* querybuffer = PrepareQueryBuffer(query, ap);
+    char* querybuffer = prepareQueryBuffer(query, ap);
 
     char* errmsg = NULL;
     std::chrono::milliseconds duration(10);
@@ -124,7 +124,7 @@ int Database::Exec(const std::string& query, ...) {
         }
     }
 
-    ReleaseQueryBuffer(querybuffer);
+    releaseQueryBuffer(querybuffer);
 
     if(rc != SQLITE_OK && errmsg != NULL) {
         ERRORLOG("SQLite: %s", errmsg);
@@ -134,7 +134,7 @@ int Database::Exec(const std::string& query, ...) {
     return rc;
 }
 
-sqlite3_stmt* Database::Query(const std::string& query, ...) {
+sqlite3_stmt* Database::query(const std::string& query, ...) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -143,7 +143,7 @@ sqlite3_stmt* Database::Query(const std::string& query, ...) {
 
     va_list ap;
     va_start(ap, &query);
-    char* querybuffer = PrepareQueryBuffer(query, ap);
+    char* querybuffer = prepareQueryBuffer(query, ap);
 
     sqlite3_stmt* stmt = NULL;
     int rc = SQLITE_OK;
@@ -160,7 +160,7 @@ sqlite3_stmt* Database::Query(const std::string& query, ...) {
         }
     }
 
-    ReleaseQueryBuffer(querybuffer);
+    releaseQueryBuffer(querybuffer);
 
     if(rc != SQLITE_OK) {
         ERRORLOG("SQLite: %s", sqlite3_errmsg(m_db));
@@ -175,7 +175,7 @@ sqlite3_stmt* Database::Query(const std::string& query, ...) {
     return stmt;
 }
 
-sqlite3_blob* Database::OpenBlob(const std::string& table, const std::string& column, int64_t rowid, bool write) {
+sqlite3_blob* Database::openBlob(const std::string& table, const std::string& column, int64_t rowid, bool write) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -192,20 +192,20 @@ sqlite3_blob* Database::OpenBlob(const std::string& table, const std::string& co
     return blob;
 }
 
-bool Database::Begin() {
-    return (Exec("BEGIN;") == SQLITE_OK);
+bool Database::begin() {
+    return (exec("BEGIN;") == SQLITE_OK);
 }
 
-bool Database::Commit() {
-    return (Exec("COMMIT;") == SQLITE_OK);
+bool Database::commit() {
+    return (exec("COMMIT;") == SQLITE_OK);
 }
 
-bool Database::Rollback() {
-    return (Exec("ROLLBACK;") == SQLITE_OK);
+bool Database::rollback() {
+    return (exec("ROLLBACK;") == SQLITE_OK);
 }
 
-bool Database::TableHasColumn(const std::string& table, const std::string& column) {
-    sqlite3_stmt* s = Query("PRAGMA table_info(%s);", table.c_str());
+bool Database::tableHasColumn(const std::string& table, const std::string& column) {
+    sqlite3_stmt* s = query("PRAGMA table_info(%s);", table.c_str());
 
     if(s == NULL) {
         return false;

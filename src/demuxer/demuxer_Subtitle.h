@@ -34,7 +34,7 @@ public:
 
 protected:
 
-    void SendPayload(unsigned char* payload, int length);
+    void sendPayload(unsigned char* payload, int length);
 
 };
 

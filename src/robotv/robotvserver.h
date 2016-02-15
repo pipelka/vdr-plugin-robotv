@@ -39,24 +39,26 @@ protected:
 
     virtual void Action(void);
 
-    void NewClientConnected(int fd);
+    void clientConnected(int fd);
 
-    int m_ServerPort;
+    int m_serverPort;
 
-    int m_ServerFD;
+    int m_serverFd;
 
-    bool m_IPv4Fallback;
+    bool m_ipv4Fallback;
 
-    cString m_AllowedHostsFile;
+    cString m_allowedHostsFile;
 
     ClientList m_clients;
 
     RoboTVServerConfig& m_config;
 
-    static unsigned int m_IdCnt;
+    static unsigned int m_idCnt;
 
 public:
+
     RoboTVServer(int listenPort);
+
     virtual ~RoboTVServer();
 };
 

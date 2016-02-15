@@ -36,19 +36,19 @@ public:
 
 protected:
 
-    int ParsePayload(unsigned char* data, int len);
+    int parsePayload(unsigned char* data, int len);
 
-    void SendPayload(unsigned char* payload, int length);
+    void sendPayload(unsigned char* payload, int length);
 
-    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
 
-    void ReadStreamMuxConfig(cBitStream* bs);
+    void readStreamMuxConfig(cBitStream* bs);
 
-    void ReadAudioSpecificConfig(cBitStream* bs);
+    void readAudioSpecificConfig(cBitStream* bs);
 
 private:
 
-    int m_samplerateindex;
+    int m_sampleRateIndex;
 
 };
 

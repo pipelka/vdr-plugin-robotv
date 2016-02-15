@@ -49,7 +49,7 @@
 
 //#define ENABLE_CHANNELTRIGGER 1
 
-unsigned int RoboTVServer::m_IdCnt = 0;
+unsigned int RoboTVServer::m_idCnt = 0;
 
 class cAllowedHosts : public cSVDRPhosts {
 public:
@@ -74,40 +74,40 @@ public:
 };
 
 RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_config(RoboTVServerConfig::instance()) {
-    m_IPv4Fallback = false;
-    m_ServerPort  = listenPort;
+    m_ipv4Fallback = false;
+    m_serverPort  = listenPort;
 
     if(!m_config.ConfigDirectory.empty()) {
-        m_AllowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.ConfigDirectory.c_str());
+        m_allowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.ConfigDirectory.c_str());
     }
     else {
         ERRORLOG("RoboTVServer: missing ConfigDirectory!");
-        m_AllowedHostsFile = cString::sprintf("/video/" ALLOWED_HOSTS_FILE);
+        m_allowedHostsFile = cString::sprintf("/video/" ALLOWED_HOSTS_FILE);
     }
 
-    m_ServerFD = socket(AF_INET6, SOCK_STREAM, 0);
+    m_serverFd = socket(AF_INET6, SOCK_STREAM, 0);
 
-    if(m_ServerFD == -1) {
+    if(m_serverFd == -1) {
         // trying to fallback to IPv4
-        m_ServerFD = socket(AF_INET, SOCK_STREAM, 0);
+        m_serverFd = socket(AF_INET, SOCK_STREAM, 0);
 
-        if(m_ServerFD == -1) {
+        if(m_serverFd == -1) {
             return;
         }
         else {
-            m_IPv4Fallback = true;
+            m_ipv4Fallback = true;
         }
     }
 
-    fcntl(m_ServerFD, F_SETFD, fcntl(m_ServerFD, F_GETFD) | FD_CLOEXEC);
+    fcntl(m_serverFd, F_SETFD, fcntl(m_serverFd, F_GETFD) | FD_CLOEXEC);
 
     int one = 1;
-    setsockopt(m_ServerFD, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
+    setsockopt(m_serverFd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
 
     // setting the server socket option to listen on IPv4 and IPv6 simultaneously
     int no = 0;
 
-    if(!m_IPv4Fallback && setsockopt(m_ServerFD, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&no, sizeof(no)) < 0) {
+    if(!m_ipv4Fallback && setsockopt(m_serverFd, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&no, sizeof(no)) < 0) {
         ERRORLOG("RoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
     }
 
@@ -115,25 +115,25 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_con
 
     memset(&s, 0, sizeof(s));
 
-    if(!m_IPv4Fallback) {
+    if(!m_ipv4Fallback) {
         ((struct sockaddr_in6*)&s)->sin6_family = AF_INET6;
-        ((struct sockaddr_in6*)&s)->sin6_port = htons(m_ServerPort);
+        ((struct sockaddr_in6*)&s)->sin6_port = htons(m_serverPort);
     }
     else {
         ((struct sockaddr_in*)&s)->sin_family = AF_INET;
-        ((struct sockaddr_in*)&s)->sin_port = htons(m_ServerPort);
+        ((struct sockaddr_in*)&s)->sin_port = htons(m_serverPort);
     }
 
-    int x = bind(m_ServerFD, (struct sockaddr*)&s, sizeof(s));
+    int x = bind(m_serverFd, (struct sockaddr*)&s, sizeof(s));
 
     if(x < 0) {
-        close(m_ServerFD);
+        close(m_serverFd);
         INFOLOG("Unable to start RoboTV Server, port already in use ?");
-        m_ServerFD = -1;
+        m_serverFd = -1;
         return;
     }
 
-    listen(m_ServerFD, 10);
+    listen(m_serverFd, 10);
 
     Start();
 
@@ -152,18 +152,18 @@ RoboTVServer::~RoboTVServer() {
     INFOLOG("RoboTV Server stopped");
 }
 
-void RoboTVServer::NewClientConnected(int fd) {
+void RoboTVServer::clientConnected(int fd) {
     struct sockaddr_storage sin;
     socklen_t len = sizeof(sin);
     in_addr_t* ipv4_addr = NULL;
 
     if(getpeername(fd, (struct sockaddr*)&sin, &len)) {
-        ERRORLOG("getpeername() failed, dropping new incoming connection %d", m_IdCnt);
+        ERRORLOG("getpeername() failed, dropping new incoming connection %d", m_idCnt);
         close(fd);
         return;
     }
 
-    if(!m_IPv4Fallback) {
+    if(!m_ipv4Fallback) {
         if(IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)&sin)->sin6_addr) ||
                 IN6_IS_ADDR_V4COMPAT(&((struct sockaddr_in6*)&sin)->sin6_addr)) {
             ipv4_addr = &((struct sockaddr_in6*)&sin)->sin6_addr.s6_addr32[3];
@@ -175,10 +175,10 @@ void RoboTVServer::NewClientConnected(int fd) {
 
     // Acceptable() method only supports in_addr_t argument so we're currently checking IPv4 hosts only
     if(ipv4_addr) {
-        cAllowedHosts AllowedHosts(m_AllowedHostsFile);
+        cAllowedHosts AllowedHosts(m_allowedHostsFile);
 
         if(!AllowedHosts.Acceptable(*ipv4_addr)) {
-            ERRORLOG("Address not allowed to connect (%s)", *m_AllowedHostsFile);
+            ERRORLOG("Address not allowed to connect (%s)", *m_allowedHostsFile);
             close(fd);
             return;
         }
@@ -207,16 +207,16 @@ void RoboTVServer::NewClientConnected(int fd) {
     val = 1;
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 
-    if(!m_IPv4Fallback) {
-        INFOLOG("Client %s:%i with ID %d connected.", robotv_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_IdCnt);
+    if(!m_ipv4Fallback) {
+        INFOLOG("Client %s:%i with ID %d connected.", robotv_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_idCnt);
     }
     else {
-        INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_IdCnt);
+        INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_idCnt);
     }
 
-    RoboTVClient* connection = new RoboTVClient(fd, m_IdCnt);
+    RoboTVClient* connection = new RoboTVClient(fd, m_idCnt);
     m_clients.push_back(connection);
-    m_IdCnt++;
+    m_idCnt++;
 }
 
 void RoboTVServer::Action(void) {
@@ -248,12 +248,12 @@ void RoboTVServer::Action(void) {
 
     while(Running()) {
         FD_ZERO(&fds);
-        FD_SET(m_ServerFD, &fds);
+        FD_SET(m_serverFd, &fds);
 
         tv.tv_sec = 0;
         tv.tv_usec = 250 * 1000;
 
-        int r = select(m_ServerFD + 1, &fds, NULL, NULL, &tv);
+        int r = select(m_serverFd + 1, &fds, NULL, NULL, &tv);
 
         if(r == -1) {
             ERRORLOG("failed during select");
@@ -267,7 +267,7 @@ void RoboTVServer::Action(void) {
             for(ClientList::iterator i = m_clients.begin(); i != m_clients.end();) {
 
                 if(!(*i)->Active()) {
-                    INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->GetID());
+                    INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->getID());
                     delete(*i);
                     i = m_clients.erase(i);
                     bChanged = true;
@@ -279,14 +279,14 @@ void RoboTVServer::Action(void) {
 
             // store channel cache
             if(bChanged) {
-                ChannelCache::instance().SaveChannelCacheData();
+                ChannelCache::instance().save();
             }
 
             // trigger clients to reload the modified channel list
             if(m_clients.size() > 0) {
                 RoboTVChannels& c = RoboTVChannels::instance();
-                uint64_t hash = c.CheckUpdates();
-                c.Lock(false);
+                uint64_t hash = c.checkUpdates();
+                c.lock(false);
 
                 if(hash != channelsHash) {
                     channelReloadTrigger = true;
@@ -297,7 +297,7 @@ void RoboTVServer::Action(void) {
                     INFOLOG("Checking for channel updates ...");
 
                     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
-                        (*i)->ChannelsChanged();
+                        (*i)->sendChannelsChanged();
                     }
 
                     channelReloadTrigger = false;
@@ -305,7 +305,7 @@ void RoboTVServer::Action(void) {
                     INFOLOG("Done.");
                 }
 
-                c.Unlock();
+                c.unlock();
                 channelsHash = hash;
             }
 
@@ -324,7 +324,7 @@ void RoboTVServer::Action(void) {
             // store channel cache
             if(m_clients.size() > 0 && channelCacheTimer.Elapsed() >= 60 * 1000) {
                 if(!bChanged) {
-                    ChannelCache::instance().SaveChannelCacheData();
+                    ChannelCache::instance().save();
                 }
 
                 channelCacheTimer.Set(0);
@@ -345,14 +345,14 @@ void RoboTVServer::Action(void) {
 
                 // start gc
                 INFOLOG("Starting garbage collection in recordings cache");
-                RecordingsCache::GetInstance().gc();
+                RecordingsCache::instance().gc();
 
                 // request clients to reload recordings
                 if(!m_clients.empty()) {
                     INFOLOG("Requesting clients to reload recordings list");
 
                     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
-                        (*i)->RecordingsChange();
+                        (*i)->sendMoviesChange();
                     }
                 }
 
@@ -363,10 +363,10 @@ void RoboTVServer::Action(void) {
             continue;
         }
 
-        int fd = accept(m_ServerFD, 0, 0);
+        int fd = accept(m_serverFd, 0, 0);
 
         if(fd >= 0) {
-            NewClientConnected(fd);
+            clientConnected(fd);
         }
         else {
             ERRORLOG("accept failed");

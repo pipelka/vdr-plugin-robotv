@@ -28,24 +28,24 @@
 #include "pes.h"
 
 Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : cRingBufferLinear(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
-    m_samplerate = 0;
-    m_bitrate = 0;
+    m_sampleRate = 0;
+    m_bitRate = 0;
     m_channels = 0;
     m_duration = 0;
-    m_headersize = 0;
-    m_frametype = StreamInfo::ftUNKNOWN;
+    m_headerSize = 0;
+    m_frameType = StreamInfo::ftUNKNOWN;
 
-    m_curPTS = DVD_NOPTS_VALUE;
-    m_curDTS = DVD_NOPTS_VALUE;
+    m_curPts = DVD_NOPTS_VALUE;
+    m_curDts = DVD_NOPTS_VALUE;
 
-    m_lastPTS = DVD_NOPTS_VALUE;
-    m_lastDTS = DVD_NOPTS_VALUE;
+    m_lastPts = DVD_NOPTS_VALUE;
+    m_lastDts = DVD_NOPTS_VALUE;
 }
 
 Parser::~Parser() {
 }
 
-int Parser::ParsePESHeader(uint8_t* buf, size_t len) {
+int Parser::parsePesHeader(uint8_t* buf, size_t len) {
     // parse PES header
     unsigned int hdr_len = PesPayloadOffset(buf);
 
@@ -57,33 +57,33 @@ int Parser::ParsePESHeader(uint8_t* buf, size_t len) {
         dts = pts;
     }
 
-    if(m_curDTS == DVD_NOPTS_VALUE) {
-        m_curDTS = dts;
+    if(m_curDts == DVD_NOPTS_VALUE) {
+        m_curDts = dts;
     }
 
-    if(m_curPTS == DVD_NOPTS_VALUE) {
-        m_curPTS = pts;
+    if(m_curPts == DVD_NOPTS_VALUE) {
+        m_curPts = pts;
     }
 
     return hdr_len;
 }
 
-void Parser::SendPayload(unsigned char* payload, int length) {
+void Parser::sendPayload(unsigned char* payload, int length) {
     StreamPacket pkt;
     pkt.data      = payload;
     pkt.size      = length;
     pkt.duration  = m_duration;
-    pkt.dts       = m_curDTS;
-    pkt.pts       = m_curPTS;
-    pkt.frametype = m_frametype;
+    pkt.dts       = m_curDts;
+    pkt.pts       = m_curPts;
+    pkt.frameType = m_frameType;
 
-    m_demuxer->SendPacket(&pkt);
+    m_demuxer->sendPacket(&pkt);
 }
 
-void Parser::PutData(unsigned char* data, int length, bool pusi) {
+void Parser::putData(unsigned char* data, int length, bool pusi) {
     // get PTS / DTS on PES start
     if(pusi) {
-        int offset = ParsePESHeader(data, length);
+        int offset = parsePesHeader(data, length);
         data += offset;
         length -= offset;
 
@@ -102,7 +102,7 @@ void Parser::PutData(unsigned char* data, int length, bool pusi) {
     }
 }
 
-void Parser::Parse(unsigned char* data, int datasize, bool pusi) {
+void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     // get available data
     int length = 0;
     uint8_t* buffer = Get(length);
@@ -110,39 +110,39 @@ void Parser::Parse(unsigned char* data, int datasize, bool pusi) {
     // do we have a sync ?
     int framesize = 0;
 
-    if(length > m_headersize && buffer != NULL && CheckAlignmentHeader(buffer, framesize)) {
+    if(length > m_headerSize && buffer != NULL && checkAlignmentHeader(buffer, framesize)) {
         // valid framesize ?
-        if(framesize > 0 && length >= framesize + m_headersize) {
+        if(framesize > 0 && length >= framesize + m_headerSize) {
 
             // check for the next frame (eliminate false positive header checks)
             int next_framesize = 0;
 
-            if(!CheckAlignmentHeader(&buffer[framesize], next_framesize)) {
+            if(!checkAlignmentHeader(&buffer[framesize], next_framesize)) {
                 ERRORLOG("next frame not found on expected position, searching ...");
             }
             else {
                 // check if we should extrapolate the timestamps
-                if(m_curPTS == DVD_NOPTS_VALUE) {
-                    m_curPTS = PtsAdd(m_lastPTS, m_duration);
+                if(m_curPts == DVD_NOPTS_VALUE) {
+                    m_curPts = PtsAdd(m_lastPts, m_duration);
                 }
 
-                if(m_curDTS == DVD_NOPTS_VALUE) {
-                    m_curDTS = PtsAdd(m_lastDTS, m_duration);
+                if(m_curDts == DVD_NOPTS_VALUE) {
+                    m_curDts = PtsAdd(m_lastDts, m_duration);
                 }
 
-                int length = ParsePayload(buffer, framesize);
-                SendPayload(buffer, length);
+                int length = parsePayload(buffer, framesize);
+                sendPayload(buffer, length);
 
                 // keep last timestamp
-                m_lastPTS = m_curPTS;
-                m_lastDTS = m_curDTS;
+                m_lastPts = m_curPts;
+                m_lastDts = m_curDts;
 
                 // reset timestamps
-                m_curPTS = DVD_NOPTS_VALUE;
-                m_curDTS = DVD_NOPTS_VALUE;
+                m_curPts = DVD_NOPTS_VALUE;
+                m_curDts = DVD_NOPTS_VALUE;
 
                 Del(framesize);
-                PutData(data, datasize, pusi);
+                putData(data, datasize, pusi);
                 return;
             }
         }
@@ -150,45 +150,45 @@ void Parser::Parse(unsigned char* data, int datasize, bool pusi) {
     }
 
     // try to find sync
-    int offset = FindAlignmentOffset(buffer, length, 1, framesize);
+    int offset = findAlignmentOffset(buffer, length, 1, framesize);
 
     if(offset != -1) {
-        INFOLOG("sync found at offset %i (streamtype: %s / %i bytes in buffer / framesize: %i bytes)", offset, m_demuxer->TypeName(), Available(), framesize);
+        INFOLOG("sync found at offset %i (streamtype: %s / %i bytes in buffer / framesize: %i bytes)", offset, m_demuxer->typeName(), Available(), framesize);
         Del(offset);
     }
-    else if(length > m_headersize) {
-        Del(length - m_headersize);
+    else if(length > m_headerSize) {
+        Del(length - m_headerSize);
     }
 
-    PutData(data, datasize, pusi);
+    putData(data, datasize, pusi);
 }
 
-int Parser::ParsePayload(unsigned char* payload, int length) {
+int Parser::parsePayload(unsigned char* payload, int length) {
     return length;
 }
 
-int Parser::FindAlignmentOffset(unsigned char* buffer, int buffersize, int o, int& framesize) {
+int Parser::findAlignmentOffset(unsigned char* buffer, int buffersize, int o, int& framesize) {
     framesize = 0;
 
     // seek sync
-    while(o < (buffersize - m_headersize) && !CheckAlignmentHeader(buffer + o, framesize)) {
+    while(o < (buffersize - m_headerSize) && !checkAlignmentHeader(buffer + o, framesize)) {
         o++;
     }
 
     // not found
-    if(o >= buffersize - m_headersize || framesize <= 0) {
+    if(o >= buffersize - m_headerSize || framesize <= 0) {
         return -1;
     }
 
     return o;
 }
 
-bool Parser::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool Parser::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     framesize = 0;
     return true;
 }
 
-int Parser::FindStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask) {
+int Parser::findStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask) {
     uint32_t sc = 0xFFFFFFFF;
 
     while(offset < buffersize) {

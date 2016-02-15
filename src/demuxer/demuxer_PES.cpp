@@ -29,7 +29,7 @@ ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffe
     m_startup = true;
 }
 
-void ParserPes::Parse(unsigned char* data, int size, bool pusi) {
+void ParserPes::parse(unsigned char* data, int size, bool pusi) {
 
     // packet completely assembled ?
     if(!m_startup) {
@@ -43,13 +43,13 @@ void ParserPes::Parse(unsigned char* data, int size, bool pusi) {
             }
 
             // parse payload
-            int len = ParsePayload(buffer, m_length);
+            int len = parsePayload(buffer, m_length);
 
             // send payload data
-            SendPayload(buffer, len);
+            sendPayload(buffer, len);
 
-            m_curDTS = DVD_NOPTS_VALUE;
-            m_curPTS = DVD_NOPTS_VALUE;
+            m_curDts = DVD_NOPTS_VALUE;
+            m_curPts = DVD_NOPTS_VALUE;
         }
     }
 
@@ -64,7 +64,7 @@ void ParserPes::Parse(unsigned char* data, int size, bool pusi) {
         }
 
         // strip PES header
-        int offset = ParsePESHeader(data, size);
+        int offset = parsePesHeader(data, size);
         data += offset;
         size -= offset;
         m_startup = false;

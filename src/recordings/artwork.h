@@ -43,7 +43,7 @@ public:
 
 private:
 
-    void CreateDB();
+    void createDb();
 
     RoboTV::Storage& m_storage;
 

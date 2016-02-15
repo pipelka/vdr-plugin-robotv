@@ -35,17 +35,17 @@ ChannelCache& ChannelCache::instance() {
     return cache;
 }
 
-void ChannelCache::AddToCache(uint32_t channeluid, const StreamBundle& channel) {
-    Lock();
+void ChannelCache::add(uint32_t channeluid, const StreamBundle& channel) {
+    lock();
 
     if(channeluid != 0) {
         m_cache[channeluid] = channel;
     }
 
-    Unlock();
+    unlock();
 }
 
-void ChannelCache::AddToCache(const cChannel* channel) {
+void ChannelCache::add(const cChannel* channel) {
     cMutexLock lock(&m_access);
 
     uint32_t uid = CreateChannelUID(channel);
@@ -65,30 +65,30 @@ void ChannelCache::AddToCache(const cChannel* channel) {
     }
 
     // create new cache item
-    StreamBundle item = StreamBundle::FromChannel(channel);
+    StreamBundle item = StreamBundle::createFromChannel(channel);
 
-    AddToCache(uid, item);
+    add(uid, item);
 }
 
-StreamBundle ChannelCache::GetFromCache(uint32_t channeluid) {
+StreamBundle ChannelCache::lookup(uint32_t channeluid) {
     static StreamBundle empty;
 
-    Lock();
+    lock();
 
     auto i = m_cache.find(channeluid);
 
     if(i == m_cache.end()) {
-        Unlock();
+        unlock();
         return empty;
     }
 
     StreamBundle result = m_cache[channeluid];
-    Unlock();
+    unlock();
 
     return result;
 }
 
-void ChannelCache::SaveChannelCacheData() {
+void ChannelCache::save() {
     cString filename = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE".bak");
 
     int fd = open(*filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -98,7 +98,7 @@ void ChannelCache::SaveChannelCacheData() {
         return;
     }
 
-    Lock();
+    lock();
 
     MsgPacket* p = new MsgPacket;
     p->put_String("V2");
@@ -109,7 +109,7 @@ void ChannelCache::SaveChannelCacheData() {
         *p << i->second;
     }
 
-    Unlock();
+    unlock();
 
     p->write(fd, 1000);
     delete p;
@@ -129,8 +129,8 @@ void ChannelCache::gc() {
 
     // remove orphaned cache entries
     RoboTVChannels& c = RoboTVChannels::instance();
-    c.Lock(false);
-    cChannels* channels = c.Get();
+    c.lock(false);
+    cChannels* channels = c.get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         uint32_t uid = CreateChannelUID(channel);
@@ -151,7 +151,7 @@ void ChannelCache::gc() {
         m_newcache[uid] = i->second;
     }
 
-    c.Unlock();
+    c.unlock();
 
     // regenerate cache
     m_cache.clear();
@@ -163,7 +163,7 @@ void ChannelCache::gc() {
     INFOLOG("after: %zu channels in cache", m_cache.size());
 }
 
-void ChannelCache::LoadChannelCacheData() {
+void ChannelCache::load() {
     m_cache.clear();
 
     // load cache

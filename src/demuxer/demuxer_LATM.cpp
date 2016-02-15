@@ -48,7 +48,7 @@ static void putBits(uint8_t* buffer, int& offset, int val, int num) {
 ParserLatm::ParserLatm(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
 }
 
-bool ParserLatm::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     cBitStream bs(buffer, 24 * 8);
 
     // read sync
@@ -64,16 +64,16 @@ bool ParserLatm::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
 }
 
 // dummy - handled in ParsePayload
-void ParserLatm::SendPayload(unsigned char* payload, int length) {
+void ParserLatm::sendPayload(unsigned char* payload, int length) {
 }
 
-int ParserLatm::ParsePayload(unsigned char* data, int len) {
+int ParserLatm::parsePayload(unsigned char* data, int len) {
     cBitStream bs(data, len * 8);
 
     bs.SkipBits(24); // skip header
 
     if(!bs.GetBit()) {
-        ReadStreamMuxConfig(&bs);
+        readStreamMuxConfig(&bs);
     }
 
     int tmp;
@@ -89,7 +89,7 @@ int ParserLatm::ParsePayload(unsigned char* data, int len) {
         return len;
     }
 
-    if(m_curDTS == DVD_NOPTS_VALUE) {
+    if(m_curDts == DVD_NOPTS_VALUE) {
         return len;
     }
 
@@ -104,7 +104,7 @@ int ParserLatm::ParsePayload(unsigned char* data, int len) {
     putBits(payload, offset, 0, 2);      // Layer
     putBits(payload, offset, 1, 1);      // Protection absent
     putBits(payload, offset, 2, 2);      // AOT
-    putBits(payload, offset, m_samplerateindex, 4);
+    putBits(payload, offset, m_sampleRateIndex, 4);
     putBits(payload, offset, 1, 1);      // Private bit
     putBits(payload, offset, m_channels, 3);
     putBits(payload, offset, 1, 1);      // Original
@@ -123,7 +123,7 @@ int ParserLatm::ParsePayload(unsigned char* data, int len) {
     }
 
     // send converted payload packet
-    Parser::SendPayload(payload, payloadlength);
+    Parser::sendPayload(payload, payloadlength);
 
     // free payload buffer
     free(payload);
@@ -131,7 +131,7 @@ int ParserLatm::ParsePayload(unsigned char* data, int len) {
     return len;
 }
 
-void ParserLatm::ReadStreamMuxConfig(cBitStream* bs) {
+void ParserLatm::readStreamMuxConfig(cBitStream* bs) {
     int AudioMuxVersion = bs->GetBits(1);
     int AudioMuxVersion_A = 0;
 
@@ -156,7 +156,7 @@ void ParserLatm::ReadStreamMuxConfig(cBitStream* bs) {
 
     // for each layer (which there is only on in DVB)
     if(!AudioMuxVersion) {
-        ReadAudioSpecificConfig(bs);
+        readAudioSpecificConfig(bs);
     }
     else {
         return;
@@ -207,17 +207,17 @@ void ParserLatm::ReadStreamMuxConfig(cBitStream* bs) {
     }
 }
 
-void ParserLatm::ReadAudioSpecificConfig(cBitStream* bs) {
+void ParserLatm::readAudioSpecificConfig(cBitStream* bs) {
     bs->GetBits(5); // audio object type
 
-    m_samplerateindex = bs->GetBits(4);
+    m_sampleRateIndex = bs->GetBits(4);
 
-    if(m_samplerateindex == 0xf) {
+    if(m_sampleRateIndex == 0xf) {
         return;
     }
 
-    m_samplerate = aac_samplerates[m_samplerateindex];
-    m_duration = 1024 * 90000 / m_samplerate;
+    m_sampleRate = aac_samplerates[m_sampleRateIndex];
+    m_duration = 1024 * 90000 / m_sampleRate;
 
     int channelindex = bs->GetBits(4);
 
@@ -237,5 +237,5 @@ void ParserLatm::ReadAudioSpecificConfig(cBitStream* bs) {
         bs->SkipBits(1);    // ext3_flag
     }
 
-    m_demuxer->SetAudioInformation(m_channels, m_samplerate, 0, 0, 0);
+    m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
 }

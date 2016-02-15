@@ -25,6 +25,6 @@
 #ifndef ROBOTV_TIMERCONFLICTS_H
 #define ROBOTV_TIMERCONFLICTS_H
 
-int CheckTimerConflicts(cTimer* timer);
+int checkTimerConflicts(cTimer* timer);
 
 #endif // ROBOTV_TIMERCONFLICTS_H

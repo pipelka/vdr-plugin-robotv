@@ -27,11 +27,11 @@
 #include "ac3common.h"
 
 ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {
-    m_headersize = AC3_HEADER_SIZE;
+    m_headerSize = AC3_HEADER_SIZE;
     m_enhanced = false;
 }
 
-bool ParserAc3::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     cBitStream bs(buffer, AC3_HEADER_SIZE * 8);
 
     if(bs.GetBits(16) != 0x0B77) {
@@ -66,7 +66,7 @@ bool ParserAc3::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
     return true;
 }
 
-int ParserAc3::ParsePayload(unsigned char* payload, int length) {
+int ParserAc3::parsePayload(unsigned char* payload, int length) {
     cBitStream bs(payload, AC3_HEADER_SIZE * 8);
 
     if(bs.GetBits(16) != 0x0B77) {
@@ -99,19 +99,19 @@ int ParserAc3::ParsePayload(unsigned char* payload, int length) {
                 return length;
             }
 
-            m_samplerate = AC3SampleRateTable[sr_code2] / 2;
+            m_sampleRate = AC3SampleRateTable[sr_code2] / 2;
         }
         else {
             numBlocks = EAC3Blocks[bs.GetBits(2)];
-            m_samplerate = AC3SampleRateTable[sr_code];
+            m_sampleRate = AC3SampleRateTable[sr_code];
         }
 
         int channelMode = bs.GetBits(3);
         int lfeon = bs.GetBits(1);
 
-        m_bitrate  = (uint32_t)(8.0 * framesize * m_samplerate / (numBlocks * 256.0));
+        m_bitRate  = (uint32_t)(8.0 * framesize * m_sampleRate / (numBlocks * 256.0));
         m_channels = AC3ChannelsTable[channelMode] + lfeon;
-        m_duration = (framesize * 8 * 1000 * 90) / m_bitrate;
+        m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
     }
 
     // AC-3
@@ -143,15 +143,15 @@ int ParserAc3::ParsePayload(unsigned char* payload, int length) {
 
         int lfeon = bs.GetBits(1);
 
-        m_samplerate = AC3SampleRateTable[fscod];
-        m_bitrate = (AC3BitrateTable[frmsizecod >> 1] * 1000);
+        m_sampleRate = AC3SampleRateTable[fscod];
+        m_bitRate = (AC3BitrateTable[frmsizecod >> 1] * 1000);
         m_channels = AC3ChannelsTable[acmod] + lfeon;
 
         int framesize = AC3FrameSizeTable[frmsizecod][fscod] * 2;
 
-        m_duration = (framesize * 8 * 1000 * 90) / m_bitrate;
+        m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
     }
 
-    m_demuxer->SetAudioInformation(m_channels, m_samplerate, m_bitrate, 0, 0);
+    m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
     return length;
 }

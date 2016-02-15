@@ -27,11 +27,11 @@
 #include "aaccommon.h"
 
 ParserAdts::ParserAdts(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) {
-    m_headersize = 9; // header is 9 bytes long (with CRC)
+    m_headerSize = 9; // header is 9 bytes long (with CRC)
 }
 
 bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize) {
-    cBitStream bs(buffer, m_headersize * 8);
+    cBitStream bs(buffer, m_headerSize * 8);
 
     // sync
     if(bs.GetBits(12) != 0xFFF) {
@@ -65,25 +65,25 @@ bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerat
 
     framesize = bs.GetBits(13);
 
-    m_samplerate = aac_samplerates[samplerateindex];
+    m_sampleRate = aac_samplerates[samplerateindex];
     m_channels = aac_channels[channelindex];
-    m_duration = 1024 * 90000 / m_samplerate;
+    m_duration = 1024 * 90000 / m_sampleRate;
 
     return true;
 }
 
-bool ParserAdts::CheckAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserAdts::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     int channels, samplerate;
     return ParseAudioHeader(buffer, channels, samplerate, framesize);
 }
 
-int ParserAdts::ParsePayload(unsigned char* payload, int length) {
+int ParserAdts::parsePayload(unsigned char* payload, int length) {
     int framesize = 0;
 
-    if(!ParseAudioHeader(payload, m_channels, m_samplerate, framesize)) {
+    if(!ParseAudioHeader(payload, m_channels, m_sampleRate, framesize)) {
         return length;
     }
 
-    m_demuxer->SetAudioInformation(m_channels, m_samplerate, 0, 0, 0);
+    m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
     return length;
 }

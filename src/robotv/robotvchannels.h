@@ -9,12 +9,18 @@
 
 class RoboTVChannels: public cRwLock {
 private:
-    cChannels* channels;
-    uint64_t channelsHash;
-    cChannels* Reorder(cChannels* channels);
-    bool Read(FILE* f, cChannels* channels);
-    bool Write(FILE* f, cChannels* channels);
-    uint64_t ChannelsHash(cChannels* channels);
+
+    cChannels* m_channels;
+
+    uint64_t m_hash;
+
+    cChannels* reorder(cChannels* channels);
+
+    bool read(FILE* f, cChannels* channels);
+
+    bool write(FILE* f, cChannels* channels);
+
+    uint64_t getChannelsHash(cChannels* channels);
 
 protected:
 
@@ -34,7 +40,7 @@ public:
      *
      * TODO: Think about replacing hash with checksum.
      */
-    uint64_t CheckUpdates();
+    uint64_t checkUpdates();
 
     /**
      * Returns reference to either reordered list (if ReorderCmd is specified),
@@ -42,22 +48,22 @@ public:
      *
      * NOTE: Lock before calling this method.
      */
-    cChannels* Get();
+    cChannels* get();
 
     /**
      * Returns the channels hash calculated on the prev. CheckUpdates().
      */
-    uint64_t GetHash();
+    uint64_t getHash();
 
     /**
      * Lock both this instance an the referencing channels list.
      */
-    bool Lock(bool Write, int TimeoutMs = 0);
+    bool lock(bool Write, int TimeoutMs = 0);
 
     /**
      * Unlock this instance an the referencing channels list.
      */
-    void Unlock(void);
+    void unlock(void);
 };
 
 #endif /* RoboTVCHANNELS_H_ */

@@ -51,49 +51,49 @@ private:
     friend class ChannelCache;
 
     void detach(void);
-    
+
     bool attach(void);
-    
+
     TsDemuxer* findDemuxer(int Pid);
 
     void reorderStreams(int lang, StreamInfo::Type type);
 
     void sendStreamChange();
-    
+
     void sendStatus(int status);
-    
+
     void sendDetach();
 
     cDevice* m_device;              /*!> The receiving device the channel depents to */
-    
+
     DemuxerBundle m_demuxers;
-    
+
     bool m_startup;
-    
+
     bool m_requestStreamChange;
-    
+
     uint32_t m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
-    
+
     cTimeMs m_lastTick;
-    
+
     bool m_signalLost;
-    
+
     int m_languageIndex;
-    
+
     StreamInfo::Type m_langStreamType;
-    
+
     LiveQueue* m_queue;
-    
+
     uint32_t m_uid;
-    
+
     bool m_ready;
-    
+
     uint32_t m_protocolVersion;
-    
+
     bool m_waitForKeyFrame;
-    
+
     RoboTVClient* m_parent;
-    
+
     bool m_rawPTS;
 
     std::mutex m_mutex;
@@ -117,39 +117,39 @@ private:
     void createDemuxers(StreamBundle* bundle);
 
 public:
-  
+
     LiveStreamer(RoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
-    
+
     virtual ~LiveStreamer();
 
     bool isReady();
-    
+
     bool isStarting() {
         return m_startup;
     }
-    
-    void channelChange(const cChannel* Channel);
-    
+
+    void processChannelChange(const cChannel* Channel);
+
     bool isPaused();
-    
+
     bool getTimeShiftMode();
 
     void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
-    
+
     void setTimeout(uint32_t timeout);
-    
+
     void setProtocolVersion(uint32_t protocolVersion);
-    
+
     void setWaitForKeyFrame(bool waitForKeyFrame);
 
     void pause(bool on);
-    
+
     void requestPacket();
-    
+
     void requestSignalInfo();
 
     void sendStreamPacket(StreamPacket* pkt);
-    
+
     void requestStreamChange();
 
 };

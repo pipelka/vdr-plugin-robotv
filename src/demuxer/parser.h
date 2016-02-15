@@ -35,42 +35,49 @@ public:
 
     virtual ~Parser();
 
-    virtual void Parse(unsigned char* data, int size, bool pusi);
+    virtual void parse(unsigned char* data, int size, bool pusi);
 
 protected:
 
-    int ParsePESHeader(uint8_t* buf, size_t len);
+    int parsePesHeader(uint8_t* buf, size_t len);
 
-    virtual void SendPayload(unsigned char* payload, int length);
+    virtual void sendPayload(unsigned char* payload, int length);
 
-    virtual int ParsePayload(unsigned char* payload, int length);
+    virtual int parsePayload(unsigned char* payload, int length);
 
-    virtual bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    virtual bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
 
-    int FindStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask = 0xFFFFFFFF);
+    int findStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask = 0xFFFFFFFF);
 
     TsDemuxer* m_demuxer;
 
-    int64_t m_curPTS;
-    int64_t m_curDTS;
+    int64_t m_curPts;
 
-    int m_samplerate;
-    int m_bitrate;
+    int64_t m_curDts;
+
+    int m_sampleRate;
+
+    int m_bitRate;
+
     int m_channels;
+
     int m_duration;
-    int m_headersize;
-    StreamInfo::FrameType m_frametype;
+
+    int m_headerSize;
+
+    StreamInfo::FrameType m_frameType;
 
     bool m_startup;
 
 private:
 
-    int64_t m_lastPTS;
-    int64_t m_lastDTS;
+    int64_t m_lastPts;
 
-    void PutData(unsigned char* data, int size, bool pusi);
+    int64_t m_lastDts;
 
-    int FindAlignmentOffset(unsigned char* buffer, int buffersize, int startoffset, int& framesize);
+    void putData(unsigned char* data, int size, bool pusi);
+
+    int findAlignmentOffset(unsigned char* buffer, int buffersize, int startoffset, int& framesize);
 
 };
 

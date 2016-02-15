@@ -32,7 +32,7 @@ public:
 
     ParserH265(TsDemuxer* demuxer);
 
-    int ParsePayload(unsigned char* data, int length);
+    int parsePayload(unsigned char* data, int length);
 
 private:
 
@@ -40,7 +40,7 @@ private:
 
     void skipShortTermRefPicSets(cBitStream& bs);
 
-    bool Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
 
 };
 

@@ -211,7 +211,7 @@ int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
 
     // seek to position
     if(lseek(m_file, filePosition, SEEK_SET) == -1) {
-        ERRORLOG("unable to seek to position: %llu", filePosition);
+        ERRORLOG("unable to seek to position: %lu", filePosition);
         return 0;
     }
 

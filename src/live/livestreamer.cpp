@@ -73,7 +73,7 @@ LiveStreamer::LiveStreamer(RoboTVClient* parent, const cChannel* channel, int pr
     }
 
     // create send queue
-    m_queue = new LiveQueue(m_parent->GetSocket());
+    m_queue = new LiveQueue(m_parent->getSocket());
     m_queue->Start();
 
     SetTimeouts(0, 10);
@@ -150,22 +150,22 @@ void LiveStreamer::tryChannelSwitch() {
     switch(rc) {
         case ROBOTV_RET_ENCRYPTED:
             ERRORLOG("Unable to decrypt channel %i - %s", channel->Number(), channel->Name());
-            m_parent->StatusMessage(tr("Unable to decrypt channel"));
+            m_parent->sendStatusMessage(tr("Unable to decrypt channel"));
             break;
 
         case ROBOTV_RET_DATALOCKED:
             ERRORLOG("Can't get device for channel %i - %s", channel->Number(), channel->Name());
-            m_parent->StatusMessage(tr("All tuners busy"));
+            m_parent->sendStatusMessage(tr("All tuners busy"));
             break;
 
         case ROBOTV_RET_RECRUNNING:
             ERRORLOG("Active recording blocking channel %i - %s", channel->Number(), channel->Name());
-            m_parent->StatusMessage(tr("Blocked by active recording"));
+            m_parent->sendStatusMessage(tr("Blocked by active recording"));
             break;
 
         case ROBOTV_RET_ERROR:
             ERRORLOG("Error switching to channel %i - %s", channel->Number(), channel->Name());
-            m_parent->StatusMessage(tr("Failed to switch"));
+            m_parent->sendStatusMessage(tr("Failed to switch"));
             break;
     }
 
@@ -187,13 +187,7 @@ void LiveStreamer::Action(void) {
         buf = Get(size);
 
         // try to switch channel if we aren't attached yet
-<<<<<<< HEAD
-        TryChannelSwitch();
-=======
-        if(!IsAttached()) {
-            tryChannelSwitch();
-        }
->>>>>>> [transition] XVDR -> RoboTV - Part 4
+        tryChannelSwitch();
 
         if(!isStarting() && (m_lastTick.Elapsed() > (uint64_t)(m_scanTimeout * 1000)) && !m_signalLost) {
             INFOLOG("timeout. signal lost!");
@@ -277,7 +271,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     // get cached demuxer data
     ChannelCache& cache = ChannelCache::instance();
-    StreamBundle bundle = cache.GetFromCache(m_uid);
+    StreamBundle bundle = cache.lookup(m_uid);
 
     // channel already in cache
     if(bundle.size() != 0) {
@@ -286,17 +280,17 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     // channel not found in cache -> add it from vdr
     else {
         INFOLOG("adding channel to cache");
-        cache.AddToCache(channel);
-        bundle = cache.GetFromCache(m_uid);
+        cache.add(channel);
+        bundle = cache.lookup(m_uid);
     }
 
     // recheck cache item
-    StreamBundle currentitem = StreamBundle::FromChannel(channel);
+    StreamBundle currentitem = StreamBundle::createFromChannel(channel);
 
-    if(!currentitem.ismetaof(bundle)) {
+    if(!currentitem.isMetaOf(bundle)) {
         INFOLOG("current channel differs from cache item - updating");
         bundle = currentitem;
-        cache.AddToCache(m_uid, bundle);
+        cache.add(m_uid, bundle);
     }
 
     if(bundle.size() != 0) {
@@ -309,12 +303,12 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     INFOLOG("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
 
     if(m_waitForKeyFrame) {
-        INFOLOG("Will wait for first I-Frame ...");
+        INFOLOG("Will wait for first key frame ...");
     }
 
     // clear cached data
     Clear();
-    m_queue->Cleanup();
+    m_queue->cleanup();
 
     m_uid = CreateChannelUID(channel);
 
@@ -367,7 +361,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     }
 
     // wait for first I-Frame (if enabled)
-    if(m_waitForKeyFrame && pkt->frametype != StreamInfo::ftIFRAME) {
+    if(m_waitForKeyFrame && pkt->frameType != StreamInfo::ftIFRAME) {
         return;
     }
 
@@ -395,8 +389,8 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     packet->put_U16(pkt->pid);
 
     if(m_rawPTS) {
-        packet->put_S64(pkt->rawpts);
-        packet->put_S64(pkt->rawdts);
+        packet->put_S64(pkt->rawPts);
+        packet->put_S64(pkt->rawDts);
     }
     else {
         packet->put_S64(pkt->pts);
@@ -408,20 +402,20 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     }
 
     // write frame type into unused header field clientid
-    packet->setClientID((uint16_t)pkt->frametype);
+    packet->setClientID((uint16_t)pkt->frameType);
 
     // write payload into stream packet
     packet->put_U32(pkt->size);
     packet->put_Blob(pkt->data, pkt->size);
 
-    m_queue->Add(packet, pkt->content);
+    m_queue->add(packet, pkt->content);
     m_lastTick.Set(0);
 }
 
 void LiveStreamer::sendDetach() {
     INFOLOG("sending detach message");
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
-    m_parent->QueueMessage(resp);
+    m_parent->queueMessage(resp);
 }
 
 void LiveStreamer::sendStreamChange() {
@@ -431,17 +425,17 @@ void LiveStreamer::sendStreamChange() {
     INFOLOG("Stored channel information in cache:");
 
     for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
-        cache.AddStream(*(*i));
+        cache.addStream(*(*i));
         (*i)->info();
     }
 
-    ChannelCache::instance().AddToCache(m_uid, cache);
+    ChannelCache::instance().add(m_uid, cache);
 
     // reorder streams as preferred
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
     MsgPacket* resp = m_demuxers.createStreamChangePacket(m_protocolVersion);
-    m_queue->Add(resp, StreamInfo::scSTREAMINFO);
+    m_queue->add(resp, StreamInfo::scSTREAMINFO);
 
     m_requestStreamChange = false;
 }
@@ -449,7 +443,7 @@ void LiveStreamer::sendStreamChange() {
 void LiveStreamer::sendStatus(int status) {
     MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_STATUS, ROBOTV_CHANNEL_STREAM);
     packet->put_U32(status);
-    m_parent->QueueMessage(packet);
+    m_parent->queueMessage(packet);
 }
 
 void LiveStreamer::requestSignalInfo() {
@@ -530,7 +524,7 @@ void LiveStreamer::requestSignalInfo() {
     }
 
     DEBUGLOG("RequestSignalInfo");
-    m_queue->Add(resp, StreamInfo::scNONE);
+    m_queue->add(resp, StreamInfo::scNONE);
 }
 
 void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {
@@ -547,7 +541,7 @@ bool LiveStreamer::isPaused() {
         return false;
     }
 
-    return m_queue->IsPaused();
+    return m_queue->isPaused();
 }
 
 bool LiveStreamer::getTimeShiftMode() {
@@ -555,7 +549,7 @@ bool LiveStreamer::getTimeShiftMode() {
         return false;
     }
 
-    return m_queue->TimeShiftMode();
+    return m_queue->getTimeShiftMode();
 }
 
 void LiveStreamer::pause(bool on) {
@@ -563,7 +557,7 @@ void LiveStreamer::pause(bool on) {
         return;
     }
 
-    m_queue->Pause(on);
+    m_queue->pause(on);
 }
 
 void LiveStreamer::requestPacket() {
@@ -571,7 +565,7 @@ void LiveStreamer::requestPacket() {
         return;
     }
 
-    m_queue->Request();
+    m_queue->request();
 }
 
 #if VDRVERSNUM < 20300
@@ -587,13 +581,9 @@ void LiveStreamer::Receive(const uchar* Data, int Length)
     }
 }
 
-<<<<<<< HEAD
-void cLiveStreamer::ChannelChange(const cChannel* channel) {
+void LiveStreamer::processChannelChange(const cChannel* channel) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-=======
-void LiveStreamer::channelChange(const cChannel* channel) {
->>>>>>> [transition] XVDR -> RoboTV - Part 4
     if(CreateChannelUID(channel) != m_uid || !Running()) {
         return;
     }
@@ -611,7 +601,6 @@ void LiveStreamer::createDemuxers(StreamBundle* bundle) {
 
     for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
         TsDemuxer* dmx = *i;
-        dmx->info();
-        AddPid(dmx->GetPID());
+        AddPid(dmx->getPid());
     }
 }

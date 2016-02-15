@@ -35,11 +35,11 @@ public:
 
     StreamBundle();
 
-    void AddStream(const StreamInfo& s);
+    void addStream(const StreamInfo& s);
 
     bool operator ==(const StreamBundle& c) const;
 
-    bool ismetaof(const StreamBundle& c) const;
+    bool isMetaOf(const StreamBundle& c) const;
 
     bool contains(const StreamInfo& s) const;
 
@@ -47,11 +47,11 @@ public:
         return m_bChanged;
     }
 
-    bool IsParsed();
+    bool isParsed();
 
-    static StreamBundle FromChannel(const cChannel* channel);
+    static StreamBundle createFromChannel(const cChannel* channel);
 
-    static StreamBundle FromPatPmt(const cPatPmtParser* patpmt);
+    static StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
 
 private:
 

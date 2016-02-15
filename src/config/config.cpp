@@ -38,7 +38,7 @@ RoboTVServerConfig::RoboTVServerConfig() : listen_port(LISTEN_PORT), stream_time
 }
 
 void RoboTVServerConfig::Load() {
-    LiveQueue::SetTimeShiftDir(cVideoDirectory::Name());
+    LiveQueue::setTimeShiftDir(cVideoDirectory::Name());
 
     if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory.c_str(), GENERAL_CONFIG_FILE), true, false)) {
         return;
@@ -50,16 +50,16 @@ void RoboTVServerConfig::Load() {
         }
     }
 
-    LiveQueue::RemoveTimeShiftFiles();
-    ChannelCache::instance().LoadChannelCacheData();
+    LiveQueue::removeTimeShiftFiles();
+    ChannelCache::instance().load();
 }
 
 bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
     if(!strcasecmp(Name, "TimeShiftDir")) {
-        LiveQueue::SetTimeShiftDir(Value);
+        LiveQueue::setTimeShiftDir(Value);
     }
     else if(!strcasecmp(Name, "MaxTimeShiftSize")) {
-        LiveQueue::SetBufferSize(strtoull(Value, NULL, 10));
+        LiveQueue::setBufferSize(strtoull(Value, NULL, 10));
     }
     else if(!strcasecmp(Name, "PiconsURL")) {
         PiconsURL = Value;

@@ -30,10 +30,10 @@
 #include "net/msgpacket.h"
 #include "livequeue.h"
 
-cString LiveQueue::TimeShiftDir = "/video";
-uint64_t LiveQueue::BufferSize = 1024 * 1024 * 1024;
+cString LiveQueue::m_timeShiftDir = "/video";
+uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
-LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readfd(-1), m_writefd(-1), m_queuesize(400) {
+LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readFd(-1), m_writeFd(-1), m_queueSize(400) {
     m_pause = false;
 }
 
@@ -41,11 +41,11 @@ LiveQueue::~LiveQueue() {
     DEBUGLOG("Deleting LiveQueue");
     m_cond.Signal();
     Cancel(3);
-    Cleanup();
-    CloseTimeShift();
+    cleanup();
+    close();
 }
 
-void LiveQueue::Cleanup() {
+void LiveQueue::cleanup() {
     cMutexLock lock(&m_lock);
 
     while(!empty()) {
@@ -54,23 +54,23 @@ void LiveQueue::Cleanup() {
     }
 }
 
-void LiveQueue::Request() {
+void LiveQueue::request() {
     cMutexLock lock(&m_lock);
 
     // read packet from storage
-    MsgPacket* p = MsgPacket::read(m_readfd, 1000);
+    MsgPacket* p = MsgPacket::read(m_readFd, 1000);
 
     // check for buffer overrun
     if(p == NULL) {
         // ring-buffer overrun ?
-        off_t pos = lseek(m_readfd, 0, SEEK_CUR);
+        off_t pos = lseek(m_readFd, 0, SEEK_CUR);
 
-        if(pos < (off_t)BufferSize) {
+        if(pos < (off_t)m_bufferSize) {
             return;
         }
 
-        lseek(m_readfd, 0, SEEK_SET);
-        p = MsgPacket::read(m_readfd, 1000);
+        lseek(m_readFd, 0, SEEK_SET);
+        p = MsgPacket::read(m_readFd, 1000);
     }
 
     // no packet
@@ -84,35 +84,35 @@ void LiveQueue::Request() {
     m_cond.Signal();
 }
 
-bool LiveQueue::IsPaused() {
+bool LiveQueue::isPaused() {
     cMutexLock lock(&m_lock);
     return m_pause;
 }
 
-bool LiveQueue::TimeShiftMode() {
+bool LiveQueue::getTimeShiftMode() {
     cMutexLock lock(&m_lock);
-    return (m_pause || (!m_pause && m_writefd != -1));
+    return (m_pause || (!m_pause && m_writeFd != -1));
 }
 
-bool LiveQueue::Add(MsgPacket* p, StreamInfo::Content content) {
+bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content) {
     cMutexLock lock(&m_lock);
 
     // in timeshift mode ?
-    if(m_pause || (!m_pause && m_writefd != -1)) {
+    if(m_pause || (!m_pause && m_writeFd != -1)) {
         // write packet
-        if(!p->write(m_writefd, 1000)) {
+        if(!p->write(m_writeFd, 1000)) {
             ERRORLOG("Unable to write packet into timeshift ringbuffer !");
             delete p;
             return false;
         }
 
         // ring-buffer overrun ?
-        off_t length = lseek(m_writefd, 0, SEEK_CUR);
+        off_t length = lseek(m_writeFd, 0, SEEK_CUR);
 
-        if(length >= (off_t)BufferSize) {
+        if(length >= (off_t)m_bufferSize) {
             // truncate to current position
-            if(ftruncate(m_writefd, length) == 0) {
-                lseek(m_writefd, 0, SEEK_SET);
+            if(ftruncate(m_writeFd, length) == 0) {
+                lseek(m_writeFd, 0, SEEK_SET);
             }
         }
 
@@ -121,7 +121,7 @@ bool LiveQueue::Add(MsgPacket* p, StreamInfo::Content content) {
     }
 
     // discard teletext / signalinfo packets if the buffer fills up, ...
-    if(size() > (m_queuesize / 2)) {
+    if(size() > (m_queueSize / 2)) {
         if(content == StreamInfo::scTELETEXT || content == StreamInfo::scNONE) {
             delete p;
             m_cond.Signal();
@@ -133,7 +133,7 @@ bool LiveQueue::Add(MsgPacket* p, StreamInfo::Content content) {
     push(p);
 
     // queue too long ?
-    while(size() > m_queuesize) {
+    while(size() > m_queueSize) {
         p = front();
         pop();
     }
@@ -184,18 +184,18 @@ void LiveQueue::Action() {
     INFOLOG("LiveQueue stopped");
 }
 
-void LiveQueue::CloseTimeShift() {
-    close(m_readfd);
-    m_readfd = -1;
-    close(m_writefd);
-    m_writefd = -1;
+void LiveQueue::close() {
+    ::close(m_readFd);
+    m_readFd = -1;
+    ::close(m_writeFd);
+    m_writeFd = -1;
 
     if(*m_storage) {
         unlink(m_storage);
     }
 }
 
-bool LiveQueue::Pause(bool on) {
+bool LiveQueue::pause(bool on) {
     cMutexLock lock(&m_lock);
 
     // deactivate timeshift
@@ -210,16 +210,16 @@ bool LiveQueue::Pause(bool on) {
     }
 
     // create offline storage
-    if(m_readfd == -1) {
-        m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)TimeShiftDir, m_socket);
+    if(m_readFd == -1) {
+        m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
         DEBUGLOG("FILE: %s", (const char*)m_storage);
 
-        m_readfd = open(m_storage, O_CREAT | O_RDONLY, 0644);
-        m_writefd = open(m_storage, O_CREAT | O_WRONLY, 0644);
-        lseek(m_readfd, 0, SEEK_SET);
-        lseek(m_writefd, 0, SEEK_SET);
+        m_readFd = open(m_storage, O_CREAT | O_RDONLY, 0644);
+        m_writeFd = open(m_storage, O_CREAT | O_WRONLY, 0644);
+        lseek(m_readFd, 0, SEEK_SET);
+        lseek(m_writeFd, 0, SEEK_SET);
 
-        if(m_readfd == -1) {
+        if(m_readFd == -1) {
             ERRORLOG("Failed to create timeshift ringbuffer !");
         }
     }
@@ -232,7 +232,7 @@ bool LiveQueue::Pause(bool on) {
     while(!empty()) {
         MsgPacket* p = front();
 
-        if(p->write(m_writefd, 1000)) {
+        if(p->write(m_writeFd, 1000)) {
             delete p;
             pop();
         }
@@ -241,18 +241,18 @@ bool LiveQueue::Pause(bool on) {
     return true;
 }
 
-void LiveQueue::SetTimeShiftDir(const cString& dir) {
-    TimeShiftDir = dir;
-    DEBUGLOG("TIMESHIFTDIR: %s", (const char*)TimeShiftDir);
+void LiveQueue::setTimeShiftDir(const cString& dir) {
+    m_timeShiftDir = dir;
+    DEBUGLOG("TIMESHIFTDIR: %s", (const char*)m_timeShiftDir);
 }
 
-void LiveQueue::SetBufferSize(uint64_t s) {
-    BufferSize = s;
-    DEBUGLOG("BUFFSERIZE: %llu bytes", BufferSize);
+void LiveQueue::setBufferSize(uint64_t s) {
+    m_bufferSize = s;
+    DEBUGLOG("BUFFSERIZE: %llu bytes", m_bufferSize);
 }
 
-void LiveQueue::RemoveTimeShiftFiles() {
-    DIR* dir = opendir((const char*)TimeShiftDir);
+void LiveQueue::removeTimeShiftFiles() {
+    DIR* dir = opendir((const char*)m_timeShiftDir);
 
     if(dir == NULL) {
         return;
@@ -263,7 +263,7 @@ void LiveQueue::RemoveTimeShiftFiles() {
     while((entry = readdir(dir)) != NULL) {
         if(strncmp(entry->d_name, "robotv-ringbuffer-", 16) == 0) {
             INFOLOG("Removing old time-shift storage: %s", entry->d_name);
-            unlink(AddDirectory(TimeShiftDir, entry->d_name));
+            unlink(AddDirectory(m_timeShiftDir, entry->d_name));
         }
     }
 

@@ -27,7 +27,7 @@
 ParserSubtitle::ParserSubtitle(TsDemuxer* demuxer) : ParserPes(demuxer, 64 * 1024) {
 }
 
-void ParserSubtitle::SendPayload(unsigned char* payload, int length) {
+void ParserSubtitle::sendPayload(unsigned char* payload, int length) {
 
     if(length < 3 || payload[0] != 0x20 || payload[1] != 0x00) {
         return;
@@ -40,5 +40,5 @@ void ParserSubtitle::SendPayload(unsigned char* payload, int length) {
         return;
     }
 
-    Parser::SendPayload(payload, length);
+    Parser::sendPayload(payload, length);
 }

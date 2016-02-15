@@ -32,7 +32,7 @@ public:
 
     ParserPes(TsDemuxer* demuxer, int buffersize = 4096);
 
-    void Parse(unsigned char* data, int size, bool pusi);
+    void parse(unsigned char* data, int size, bool pusi);
 
 protected:
 

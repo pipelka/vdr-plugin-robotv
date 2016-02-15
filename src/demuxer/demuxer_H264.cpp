@@ -47,7 +47,7 @@ const ParserH264::pixel_aspect_t ParserH264::m_aspect_ratios[17] = {
 };
 
 // golomb decoding
-uint32_t ParserH264::read_golomb_ue(cBitStream* bs) {
+uint32_t ParserH264::readGolombUe(cBitStream* bs) {
     int leadingZeroBits = -1;
 
     for(uint32_t b = 0; !b; ++leadingZeroBits) {
@@ -57,8 +57,8 @@ uint32_t ParserH264::read_golomb_ue(cBitStream* bs) {
     return ((1 << leadingZeroBits) - 1) + bs->GetBits(leadingZeroBits);
 }
 
-int32_t ParserH264::read_golomb_se(cBitStream* bs) {
-    int32_t v = read_golomb_ue(bs);
+int32_t ParserH264::readGolombSe(cBitStream* bs) {
+    int32_t v = readGolombUe(bs);
 
     if(v == 0) {
         return 0;
@@ -76,8 +76,8 @@ ParserH264::ParserH264(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024) {
     m_rate = 0;
 }
 
-uint8_t* ParserH264::ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len) {
-    int e = FindStartCode(packet, length, nal_offset, 0x00000001);
+uint8_t* ParserH264::extractNal(uint8_t* packet, int length, int nal_offset, int& nal_len) {
+    int e = findStartCode(packet, length, nal_offset, 0x00000001);
 
     if(e == -1) {
         e = length;
@@ -99,7 +99,7 @@ uint8_t* ParserH264::ExtractNAL(uint8_t* packet, int length, int nal_offset, int
     return nal_data;
 }
 
-int ParserH264::ParsePayload(unsigned char* data, int length) {
+int ParserH264::parsePayload(unsigned char* data, int length) {
     int o = 0;
     int sps_start = -1;
     int pps_start = -1;
@@ -110,7 +110,7 @@ int ParserH264::ParsePayload(unsigned char* data, int length) {
     }
 
     // iterate through all NAL units
-    while((o = FindStartCode(data, length, o, 0x00000001)) >= 0) {
+    while((o = findStartCode(data, length, o, 0x00000001)) >= 0) {
         o += 4;
 
         if(o >= length) {
@@ -122,10 +122,10 @@ int ParserH264::ParsePayload(unsigned char* data, int length) {
         // NAL_SLH
         if(nal_type == NAL_SLH && length - o > 1) {
             o++;
-            uint8_t* nal_data = ExtractNAL(data, length, o, nal_len);
+            uint8_t* nal_data = extractNal(data, length, o, nal_len);
 
             if(nal_data != NULL) {
-                Parse_SLH(nal_data, nal_len);
+                parseSlh(nal_data, nal_len);
                 delete[] nal_data;
             }
         }
@@ -151,10 +151,10 @@ int ParserH264::ParsePayload(unsigned char* data, int length) {
 
     // extract and register PPS data (decoder specific data)
     if(pps_start != -1) {
-        uint8_t* pps_data = ExtractNAL(data, length, pps_start, nal_len);
+        uint8_t* pps_data = extractNal(data, length, pps_start, nal_len);
 
         if(pps_data != NULL) {
-            m_demuxer->SetVideoDecoderData(NULL, 0, pps_data, nal_len);
+            m_demuxer->setVideoDecoderData(NULL, 0, pps_data, nal_len);
             delete[] pps_data;
         }
     }
@@ -165,20 +165,20 @@ int ParserH264::ParsePayload(unsigned char* data, int length) {
     }
 
     // extract SPS
-    uint8_t* nal_data = ExtractNAL(data, length, sps_start, nal_len);
+    uint8_t* nal_data = extractNal(data, length, sps_start, nal_len);
 
     if(nal_data == NULL) {
         return length;
     }
 
     // register SPS data (decoder specific data)
-    m_demuxer->SetVideoDecoderData(nal_data, nal_len, NULL, 0);
+    m_demuxer->setVideoDecoderData(nal_data, nal_len, NULL, 0);
 
     int width = 0;
     int height = 0;
     pixel_aspect_t pixelaspect = { 1, 1 };
 
-    bool rc = Parse_SPS(nal_data, nal_len, pixelaspect, width, height);
+    bool rc = parseSps(nal_data, nal_len, pixelaspect, width, height);
     delete[] nal_data;
 
     if(!rc) {
@@ -188,7 +188,7 @@ int ParserH264::ParsePayload(unsigned char* data, int length) {
     double PAR = (double)pixelaspect.num / (double)pixelaspect.den;
     double DAR = (PAR * width) / height;
 
-    m_demuxer->SetVideoInformation(m_scale, m_rate, height, width, DAR, pixelaspect.num, pixelaspect.den);
+    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, DAR, pixelaspect.num, pixelaspect.den);
     return length;
 }
 
@@ -209,11 +209,11 @@ int ParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
     return d;
 }
 
-void ParserH264::Parse_SLH(uint8_t* buf, int len) {
+void ParserH264::parseSlh(uint8_t* buf, int len) {
     cBitStream bs(buf, len * 8);
 
-    read_golomb_ue(&bs); // first_mb_in_slice
-    int type = read_golomb_ue(&bs);;
+    readGolombUe(&bs); // first_mb_in_slice
+    int type = readGolombUe(&bs);;
 
     if(type > 4) {
         type -= 5;
@@ -221,26 +221,26 @@ void ParserH264::Parse_SLH(uint8_t* buf, int len) {
 
     switch(type) {
         case 0:
-            m_frametype = StreamInfo::ftPFRAME;
+            m_frameType = StreamInfo::ftPFRAME;
             break;
 
         case 1:
-            m_frametype = StreamInfo::ftBFRAME;
+            m_frameType = StreamInfo::ftBFRAME;
             break;
 
         case 2:
-            m_frametype = StreamInfo::ftIFRAME;
+            m_frameType = StreamInfo::ftIFRAME;
             break;
 
         default:
-            m_frametype = StreamInfo::ftUNKNOWN;
+            m_frameType = StreamInfo::ftUNKNOWN;
             break;
     }
 
     return;
 }
 
-bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
+bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
     bool seq_scaling_matrix_present = false;
     cBitStream bs(buf, len * 8);
 
@@ -262,7 +262,7 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
     bs.SkipBits(8); // constraint set flag 0-4, 4 bits reserved
 
     bs.SkipBits(8); // level idc
-    read_golomb_ue(&bs); // sequence parameter set id
+    readGolombUe(&bs); // sequence parameter set id
 
     // high profile ?
     if(profile_idc == PROFILE_HP ||
@@ -270,14 +270,14 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
             profile_idc == PROFILE_HI422 ||
             profile_idc == PROFILE_HI444 ||
             profile_idc == PROFILE_CAVLC444) {
-        int chroma_format_idc = read_golomb_ue(&bs);
+        int chroma_format_idc = readGolombUe(&bs);
 
         if(chroma_format_idc == 3) { // chroma_format_idc
             bs.SkipBits(1);    // residual_colour_transform_flag
         }
 
-        read_golomb_ue(&bs); // bit_depth_luma - 8
-        read_golomb_ue(&bs); // bit_depth_chroma - 8
+        readGolombUe(&bs); // bit_depth_luma - 8
+        readGolombUe(&bs); // bit_depth_chroma - 8
         bs.SkipBits(1); // transform_bypass
 
         seq_scaling_matrix_present = bs.GetBit();
@@ -289,7 +289,7 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
 
                     for(int j = 0; j < size; j++) {
                         if(next) {
-                            next = (last + read_golomb_se(&bs)) & 0xff;
+                            next = (last + readGolombSe(&bs)) & 0xff;
                         }
 
                         last = next ? : last;
@@ -299,21 +299,21 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
         }
     }
 
-    read_golomb_ue(&bs); // log2_max_frame_num - 4
-    int pic_order_cnt_type = read_golomb_ue(&bs);
+    readGolombUe(&bs); // log2_max_frame_num - 4
+    int pic_order_cnt_type = readGolombUe(&bs);
 
     if(pic_order_cnt_type == 0) {
-        read_golomb_ue(&bs);    // log2_max_poc_lsb - 4
+        readGolombUe(&bs);    // log2_max_poc_lsb - 4
     }
     else if(pic_order_cnt_type == 1) {
         bs.SkipBits(1); // delta_pic_order_always_zero
-        read_golomb_se(&bs); // offset_for_non_ref_pic
-        read_golomb_se(&bs); // offset_for_top_to_bottom_field
+        readGolombSe(&bs); // offset_for_non_ref_pic
+        readGolombSe(&bs); // offset_for_top_to_bottom_field
 
-        unsigned int tmp = read_golomb_ue(&bs); // num_ref_frames_in_pic_order_cnt_cycle
+        unsigned int tmp = readGolombUe(&bs); // num_ref_frames_in_pic_order_cnt_cycle
 
         for(unsigned int i = 0; i < tmp; i++) {
-            read_golomb_se(&bs);    // offset_for_ref_frame
+            readGolombSe(&bs);    // offset_for_ref_frame
         }
     }
     else if(pic_order_cnt_type != 2) {
@@ -321,11 +321,11 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
         return false;
     }
 
-    read_golomb_ue(&bs); // ref_frames
+    readGolombUe(&bs); // ref_frames
     bs.SkipBits(1); // gaps_in_frame_num_allowed
 
-    width = read_golomb_ue(&bs) + 1;
-    height = read_golomb_ue(&bs) + 1;
+    width = readGolombUe(&bs) + 1;
+    height = readGolombUe(&bs) + 1;
     unsigned int frame_mbs_only = bs.GetBit();
 
     width  *= 16;
@@ -339,10 +339,10 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
 
     // frame_cropping_flag
     if(bs.GetBit()) {
-        uint32_t crop_left = read_golomb_ue(&bs);
-        uint32_t crop_right = read_golomb_ue(&bs);
-        uint32_t crop_top = read_golomb_ue(&bs);
-        uint32_t crop_bottom = read_golomb_ue(&bs);
+        uint32_t crop_left = readGolombUe(&bs);
+        uint32_t crop_right = readGolombUe(&bs);
+        uint32_t crop_top = readGolombUe(&bs);
+        uint32_t crop_bottom = readGolombUe(&bs);
 
         width -= 2 * (crop_left + crop_right);
 
@@ -391,8 +391,8 @@ bool ParserH264::Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, i
 
         // chroma loc info present
         if(bs.GetBit()) {
-            read_golomb_ue(&bs); // type top field
-            read_golomb_ue(&bs); // type bottom field
+            readGolombUe(&bs); // type top field
+            readGolombUe(&bs); // type bottom field
         }
 
         // timing info present

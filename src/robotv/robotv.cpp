@@ -27,7 +27,7 @@
 #include "robotv.h"
 
 PluginRoboTVServer::PluginRoboTVServer(void) {
-    Server = NULL;
+    m_server = NULL;
 }
 
 PluginRoboTVServer::~PluginRoboTVServer() {
@@ -76,14 +76,14 @@ bool PluginRoboTVServer::Initialize(void) {
 }
 
 bool PluginRoboTVServer::Start(void) {
-    Server = new RoboTVServer(RoboTVServerConfig::instance().listen_port);
+    m_server = new RoboTVServer(RoboTVServerConfig::instance().listen_port);
 
     return true;
 }
 
 void PluginRoboTVServer::Stop(void) {
-    delete Server;
-    Server = NULL;
+    delete m_server;
+    m_server = NULL;
 }
 
 void PluginRoboTVServer::Housekeeping(void) {

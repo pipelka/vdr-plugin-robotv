@@ -36,19 +36,19 @@ public:
 
 protected:
 
-    int ParsePayload(unsigned char* data, int length);
+    int parsePayload(unsigned char* data, int length);
 
-    void SendPayload(unsigned char* payload, int length);
+    void sendPayload(unsigned char* payload, int length);
 
 private:
 
-    void ParseSequenceStart(unsigned char* data, int length);
+    void parseSequenceStart(unsigned char* data, int length);
 
-    StreamInfo::FrameType ParsePicture(unsigned char* data, int length);
+    StreamInfo::FrameType parsePicture(unsigned char* data, int length);
 
-    int64_t m_pdiff;
+    int64_t m_frameDifference;
 
-    int64_t m_lastDTS;
+    int64_t m_lastDts;
 };
 
 #endif // ROBOTV_DEMUXER_MPEGVIDEO_H

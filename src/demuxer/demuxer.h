@@ -34,25 +34,26 @@ class Parser;
 #define DVD_NOPTS_VALUE    (-1LL<<52) // should be possible to represent in both double and __int64
 
 struct StreamPacket {
+
     StreamPacket() {
         type = StreamInfo::stNONE;
         content = StreamInfo::scNONE;
-        frametype = StreamInfo::ftUNKNOWN;
+        frameType = StreamInfo::ftUNKNOWN;
     }
 
-    StreamInfo::FrameType frametype;
+    StreamInfo::FrameType frameType;
     StreamInfo::Type type;
     StreamInfo::Content content;
 
-    int64_t   pid;
-    int64_t   dts;
-    int64_t   pts;
-    int64_t   rawdts;
-    int64_t   rawpts;
-    int       duration;
+    int64_t pid;
+    int64_t dts;
+    int64_t pts;
+    int64_t rawDts;
+    int64_t rawPts;
+    int duration;
 
-    uint8_t*  data;
-    int       size;
+    uint8_t* data;
+    int size;
 };
 
 class TsDemuxer : public StreamInfo {
@@ -71,86 +72,108 @@ public:
 
 private:
 
-    Listener* m_Streamer;
+    Listener* m_streamer;
+
     Parser* m_pesParser;
 
-    int64_t Rescale(int64_t a);
+    int64_t rescale(int64_t a);
 
 public:
+
     TsDemuxer(Listener* streamer, StreamInfo::Type type, int pid);
+
     TsDemuxer(Listener* streamer, const StreamInfo& info);
+
     virtual ~TsDemuxer();
 
-    bool ProcessTSPacket(unsigned char* data);
-    void SendPacket(StreamPacket* pkt);
+    bool processTsPacket(unsigned char* data);
 
-    void SetLanguageDescriptor(const char* language, uint8_t atype);
-    const char* GetLanguage() {
+    void sendPacket(StreamPacket* pkt);
+
+    void setLanguageDescriptor(const char* language, uint8_t atype);
+
+    const char* getLanguage() {
         return m_language;
     }
-    uint8_t GetAudioType() {
-        return m_audiotype;
+
+    uint8_t getAudioType() {
+        return m_audioType;
     }
-    bool IsParsed() const {
+
+    bool isParsed() const {
         return m_parsed;
     }
 
     /* Video Stream Information */
-    void SetVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den);
-    uint32_t GetFpsScale() const {
-        return m_fpsscale;
+    void setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den);
+
+    uint32_t getFpsScale() const {
+        return m_fpsScale;
     }
-    uint32_t GetFpsRate() const {
-        return m_fpsrate;
+
+    uint32_t getFpsRate() const {
+        return m_fpsRate;
     }
-    uint32_t GetHeight() const {
+
+    uint32_t getHeight() const {
         return m_height;
     }
-    uint32_t GetWidth() const {
+
+    uint32_t getWidth() const {
         return m_width;
     }
-    double GetAspect() const {
+
+    double getAspect() const {
         return m_aspect;
     }
 
     /* Audio Stream Information */
-    void SetAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign);
-    uint32_t GetChannels() const {
+    void setAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign);
+
+    uint32_t getChannels() const {
         return m_channels;
     }
-    uint32_t GetSampleRate() const {
-        return m_samplerate;
+
+    uint32_t getSampleRate() const {
+        return m_sampleRate;
     }
-    uint32_t GetBlockAlign() const {
-        return m_blockalign;
+
+    uint32_t getBlockAlign() const {
+        return m_blockAlign;
     }
-    uint32_t GetBitRate() const {
-        return m_bitrate;
+
+    uint32_t getBitRate() const {
+        return m_bitRate;
     }
-    uint32_t GetBitsPerSample() const {
-        return m_bitspersample;
+
+    uint32_t getBitsPerSample() const {
+        return m_bitsPerSample;
     }
 
     /* Subtitle related stream information */
-    unsigned char SubtitlingType() const {
-        return m_subtitlingtype;
+    unsigned char subtitlingType() const {
+        return m_subTitlingType;
     }
-    uint16_t CompositionPageId() const {
-        return m_compositionpageid;
+    uint16_t compositionPageId() const {
+        return m_compositionPageId;
     }
-    uint16_t AncillaryPageId() const {
-        return m_ancillarypageid;
+
+    uint16_t ancillaryPageId() const {
+        return m_ancillaryPageId;
     }
 
     /* Decoder specific data */
-    void SetVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps = NULL, int vpsLength = 0);
-    uint8_t* GetVideoDecoderSPS(int& length);
-    uint8_t* GetVideoDecoderPPS(int& length);
-    uint8_t* GetVideoDecoderVPS(int& length);
+    void setVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps = NULL, int vpsLength = 0);
+
+    uint8_t* getVideoDecoderSps(int& length);
+
+    uint8_t* getVideoDecoderPps(int& length);
+
+    uint8_t* getVideoDecoderVps(int& length);
 
 private:
 
-    Parser* CreateParser(StreamInfo::Type type);
+    Parser* createParser(StreamInfo::Type type);
 
 };
 

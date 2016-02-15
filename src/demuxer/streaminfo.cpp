@@ -54,7 +54,7 @@ StreamInfo::StreamInfo(int pid, Type type, const char* lang) {
     memset(m_pps, 0, sizeof(m_pps));
     memset(m_vps, 0, sizeof(m_vps));
 
-    SetContent();
+    setContent();
 }
 
 StreamInfo::~StreamInfo() {
@@ -62,20 +62,20 @@ StreamInfo::~StreamInfo() {
 
 void StreamInfo::Initialize() {
     m_language[0]       = 0;
-    m_audiotype         = 0;
-    m_fpsscale          = 0;
-    m_fpsrate           = 0;
+    m_audioType         = 0;
+    m_fpsScale          = 0;
+    m_fpsRate           = 0;
     m_height            = 0;
     m_width             = 0;
     m_aspect            = 0.0f;
     m_channels          = 0;
-    m_samplerate        = 0;
-    m_bitrate           = 0;
-    m_bitspersample     = 0;
-    m_blockalign        = 0;
-    m_subtitlingtype    = 0;
-    m_compositionpageid = 0;
-    m_ancillarypageid   = 0;
+    m_sampleRate        = 0;
+    m_bitRate           = 0;
+    m_bitsPerSample     = 0;
+    m_blockAlign        = 0;
+    m_subTitlingType    = 0;
+    m_compositionPageId = 0;
+    m_ancillaryPageId   = 0;
     m_pid               = 0;
     m_type              = stNONE;
     m_content           = scNONE;
@@ -87,7 +87,7 @@ void StreamInfo::Initialize() {
 
 bool StreamInfo::operator ==(const StreamInfo& rhs) const {
     // general comparison
-    if(!ismetaof(rhs)) {
+    if(!isMetaOf(rhs)) {
         return false;
     }
 
@@ -98,24 +98,24 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
         case scAUDIO:
             return
                 (strcmp(m_language, rhs.m_language) == 0) &&
-                (m_audiotype == rhs.m_audiotype) &&
+                (m_audioType == rhs.m_audioType) &&
                 (m_channels == rhs.m_channels) &&
-                (m_samplerate == rhs.m_samplerate);
+                (m_sampleRate == rhs.m_sampleRate);
 
         case scVIDEO:
             return
                 (m_width == rhs.m_width) &&
                 (m_height == rhs.m_height) &&
                 (m_aspect == rhs.m_aspect) &&
-                (m_fpsscale == rhs.m_fpsscale) &&
-                (m_fpsrate == rhs.m_fpsrate);
+                (m_fpsScale == rhs.m_fpsScale) &&
+                (m_fpsRate == rhs.m_fpsRate);
 
         case scSUBTITLE:
             return
                 (strcmp(m_language, rhs.m_language) == 0) &&
-                (m_subtitlingtype == rhs.m_subtitlingtype) &&
-                (m_compositionpageid == rhs.m_compositionpageid) &&
-                (m_ancillarypageid == rhs.m_ancillarypageid);
+                (m_subTitlingType == rhs.m_subTitlingType) &&
+                (m_compositionPageId == rhs.m_compositionPageId) &&
+                (m_ancillaryPageId == rhs.m_ancillaryPageId);
 
         case scTELETEXT:
             return true;
@@ -127,7 +127,7 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
     return false;
 }
 
-bool StreamInfo::ismetaof(const StreamInfo& rhs) const {
+bool StreamInfo::isMetaOf(const StreamInfo& rhs) const {
     if(m_content != rhs.m_content) {
         return false;
     }
@@ -143,11 +143,11 @@ bool StreamInfo::operator !=(const StreamInfo& rhs) const {
     return !((*this) == rhs);
 }
 
-void StreamInfo::SetContent() {
-    m_content = GetContent(m_type);
+void StreamInfo::setContent() {
+    m_content = getContent(m_type);
 }
 
-const StreamInfo::Content StreamInfo::GetContent(Type type) {
+const StreamInfo::Content StreamInfo::getContent(Type type) {
     if(type == stMPEG2AUDIO || type == stAC3 || type == stEAC3  || type == stAAC || type == stLATM) {
         return scAUDIO;
     }
@@ -164,15 +164,15 @@ const StreamInfo::Content StreamInfo::GetContent(Type type) {
     return scNONE;
 }
 
-const char* StreamInfo::TypeName() {
-    return TypeName(m_type);
+const char* StreamInfo::typeName() {
+    return typeName(m_type);
 }
 
-const char* StreamInfo::TypeName(const StreamInfo::Type& type) {
+const char* StreamInfo::typeName(const StreamInfo::Type& type) {
     return typenames[type];
 }
 
-const char* StreamInfo::ContentName(const StreamInfo::Content& content) {
+const char* StreamInfo::contentName(const StreamInfo::Content& content) {
     return contentnames[content];
 }
 
@@ -180,17 +180,17 @@ void StreamInfo::info() const {
     char buffer[100];
     buffer[0] = 0;
 
-    int scale = m_fpsscale;
+    int scale = m_fpsScale;
 
     if(scale == 0) {
         scale = 1;
     }
 
     if(m_content == scAUDIO) {
-        snprintf(buffer, sizeof(buffer), "%i Hz, %i channels, Lang: %s", m_samplerate, m_channels, m_language);
+        snprintf(buffer, sizeof(buffer), "%i Hz, %i channels, Lang: %s", m_sampleRate, m_channels, m_language);
     }
     else if(m_content == scVIDEO) {
-        snprintf(buffer, sizeof(buffer), "%ix%i DAR: %.2f FPS: %.3f SPS/PPS/VPS: %i/%i/%i bytes", m_width, m_height , m_aspect, (double)m_fpsrate / (double)scale, m_spsLength, m_ppsLength, m_vpsLength);
+        snprintf(buffer, sizeof(buffer), "%ix%i DAR: %.2f FPS: %.3f SPS/PPS/VPS: %i/%i/%i bytes", m_width, m_height , m_aspect, (double)m_fpsRate / (double)scale, m_spsLength, m_ppsLength, m_vpsLength);
     }
     else if(m_content == scSUBTITLE) {
         snprintf(buffer, sizeof(buffer), "Lang: %s", m_language);
@@ -205,13 +205,13 @@ void StreamInfo::info() const {
         snprintf(buffer, sizeof(buffer), "Unknown");
     }
 
-    INFOLOG("Stream: %s PID: %i %s (parsed: %s)", TypeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
+    INFOLOG("Stream: %s PID: %i %s (parsed: %s)", typeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
 }
 
-void StreamInfo::SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {
-    m_subtitlingtype    = SubtitlingType;
-    m_compositionpageid = CompositionPageId;
-    m_ancillarypageid   = AncillaryPageId;
+void StreamInfo::setSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {
+    m_subTitlingType    = SubtitlingType;
+    m_compositionPageId = CompositionPageId;
+    m_ancillaryPageId   = AncillaryPageId;
     m_parsed            = true;
 }
 
@@ -231,17 +231,17 @@ MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs) {
     switch(rhs.m_content) {
         case StreamInfo::scAUDIO:
             lhs.put_String(lang);
-            lhs.put_U8(rhs.m_audiotype);
+            lhs.put_U8(rhs.m_audioType);
             lhs.put_U8(rhs.m_channels);
-            lhs.put_U32(rhs.m_samplerate);
-            lhs.put_U32(rhs.m_bitrate);
-            lhs.put_U8(rhs.m_bitspersample);
-            lhs.put_U32(rhs.m_blockalign);
+            lhs.put_U32(rhs.m_sampleRate);
+            lhs.put_U32(rhs.m_bitRate);
+            lhs.put_U8(rhs.m_bitsPerSample);
+            lhs.put_U32(rhs.m_blockAlign);
             break;
 
         case StreamInfo::scVIDEO:
-            lhs.put_U32(rhs.m_fpsscale);
-            lhs.put_U32(rhs.m_fpsrate);
+            lhs.put_U32(rhs.m_fpsScale);
+            lhs.put_U32(rhs.m_fpsRate);
             lhs.put_U16(rhs.m_height);
             lhs.put_U16(rhs.m_width);
             lhs.put_U64((unsigned long long)(rhs.m_aspect * 1000000000));
@@ -267,9 +267,9 @@ MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs) {
 
         case StreamInfo::scSUBTITLE:
             lhs.put_String(lang);
-            lhs.put_U8(rhs.m_subtitlingtype);
-            lhs.put_U16(rhs.m_compositionpageid);
-            lhs.put_U16(rhs.m_ancillarypageid);
+            lhs.put_U8(rhs.m_subTitlingType);
+            lhs.put_U16(rhs.m_compositionPageId);
+            lhs.put_U16(rhs.m_ancillaryPageId);
             break;
 
         case StreamInfo::scTELETEXT:
@@ -304,17 +304,17 @@ MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs) {
     switch(rhs.m_content) {
         case StreamInfo::scAUDIO:
             lang = lhs.get_String();
-            rhs.m_audiotype = lhs.get_U8();
+            rhs.m_audioType = lhs.get_U8();
             rhs.m_channels = lhs.get_U8();
-            rhs.m_samplerate = lhs.get_U32();
-            rhs.m_bitrate = lhs.get_U32();
-            rhs.m_bitspersample = lhs.get_U8();
-            rhs.m_blockalign = lhs.get_U32();
+            rhs.m_sampleRate = lhs.get_U32();
+            rhs.m_bitRate = lhs.get_U32();
+            rhs.m_bitsPerSample = lhs.get_U8();
+            rhs.m_blockAlign = lhs.get_U32();
             break;
 
         case StreamInfo::scVIDEO:
-            rhs.m_fpsscale = lhs.get_U32();
-            rhs.m_fpsrate = lhs.get_U32();
+            rhs.m_fpsScale = lhs.get_U32();
+            rhs.m_fpsRate = lhs.get_U32();
             rhs.m_height = lhs.get_U16();
             rhs.m_width = lhs.get_U16();
             rhs.m_aspect = (double)lhs.get_U64() / 1000000000.0;
@@ -340,9 +340,9 @@ MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs) {
 
         case StreamInfo::scSUBTITLE:
             lang = lhs.get_String();
-            rhs.m_subtitlingtype = lhs.get_U8();
-            rhs.m_compositionpageid = lhs.get_U16();
-            rhs.m_ancillarypageid = lhs.get_U16();
+            rhs.m_subTitlingType = lhs.get_U8();
+            rhs.m_compositionPageId = lhs.get_U16();
+            rhs.m_ancillaryPageId = lhs.get_U16();
             break;
 
         case StreamInfo::scTELETEXT:

@@ -34,9 +34,9 @@ public:
 
 protected:
 
-    int ParsePayload(unsigned char* payload, int length);
+    int parsePayload(unsigned char* payload, int length);
 
-    bool CheckAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
 
     bool m_enhanced;
 

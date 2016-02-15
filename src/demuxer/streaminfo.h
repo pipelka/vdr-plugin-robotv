@@ -75,71 +75,84 @@ public:
 
     bool operator ==(const StreamInfo& rhs) const;
 
-    bool ismetaof(const StreamInfo& rhs) const;
+    bool isMetaOf(const StreamInfo& rhs) const;
 
     bool operator !=(const StreamInfo& rhs) const;
 
-    const int GetPID() const {
+    const int getPid() const {
         return m_pid;
     }
 
-    void SetContent();
+    static const Content getContent(Type type);
 
-    static const Content GetContent(Type type);
-
-    const Content GetContent() const {
+    const Content getContent() const {
         return m_content;
     }
 
-    const Type GetType() const {
+    void setContent();
+
+    const Type getType() const {
         return m_type;
     }
 
-    const char* TypeName();
+    const char* typeName();
 
-    static const char* TypeName(const StreamInfo::Type& type);
+    static const char* typeName(const StreamInfo::Type& type);
 
-    static const char* ContentName(const StreamInfo::Content& content);
+    static const char* contentName(const StreamInfo::Content& content);
 
     void info() const;
 
-    inline bool IsParsed() {
+    inline bool isParsed() {
         return m_parsed;
     }
 
-    void SetSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId);
+    void setSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId);
 
 protected:
 
-    Content m_content;   // stream content (e.g. scVIDEO)
-    Type m_type;         // stream type (e.g. stAC3)
-    int m_pid;           // transport stream pid
+    Content m_content; // stream content (e.g. scVIDEO)
 
-    char m_language[4];  // ISO 639 3-letter language code (empty string if undefined)
-    uint8_t m_audiotype; // ISO 639 audio type
+    Type m_type; // stream type (e.g. stAC3)
 
-    int m_fpsscale;      // scale of 1000 and a rate of 29970 will result in 29.97 fps
-    int m_fpsrate;
-    int m_height;        // height of the stream reported by the demuxer
-    int m_width;         // width of the stream reported by the demuxer
-    float m_aspect;      // display aspect of stream
+    int m_pid; // transport stream pid
 
-    int m_channels;      // number of audio channels (e.g. 6 for 5.1)
-    int m_samplerate;    // number of audio samples per second (e.g. 48000)
-    int m_bitrate;       // audio bitrate (e.g. 160000)
-    int m_bitspersample; // number of bits per audio sample (e.g. 16)
-    int m_blockalign;    // number of bytes per audio block
+    char m_language[4]; // ISO 639 3-letter language code (empty string if undefined)
 
-    bool m_parsed;       // stream parsed flag (if all stream data is known)
+    uint8_t m_audioType; // ISO 639 audio type
 
-    unsigned char m_subtitlingtype; // subtitling type
-    uint16_t m_compositionpageid;   // composition page id
-    uint16_t m_ancillarypageid;     // ancillary page id
+    int m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
+
+    int m_fpsRate;
+
+    int m_height; // height of the stream reported by the demuxer
+
+    int m_width; // width of the stream reported by the demuxer
+
+    float m_aspect; // display aspect of stream
+
+    int m_channels; // number of audio channels (e.g. 6 for 5.1)
+
+    int m_sampleRate; // number of audio samples per second (e.g. 48000)
+
+    int m_bitRate; // audio bitrate (e.g. 160000)
+
+    int m_bitsPerSample; // number of bits per audio sample (e.g. 16)
+
+    int m_blockAlign; // number of bytes per audio block
+
+    bool m_parsed; // stream parsed flag (if all stream data is known)
+
+    unsigned char m_subTitlingType; // subtitling type
+
+    uint16_t m_compositionPageId; // composition page id
+
+    uint16_t m_ancillaryPageId; // ancillary page id
 
     // decoder data
-    uint8_t m_sps[128];  // SPS data (for decoder)
-    uint8_t m_pps[128];  // PPS data (for decoder)
-    uint8_t m_vps[128];  // VPS data (for decoder)
+    uint8_t m_sps[128]; // SPS data (for decoder)
+    uint8_t m_pps[128]; // PPS data (for decoder)
+    uint8_t m_vps[128]; // VPS data (for decoder)
 
     int m_spsLength;     // SPS length
     int m_ppsLength;     // PPS length

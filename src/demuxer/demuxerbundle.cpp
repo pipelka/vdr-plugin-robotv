@@ -39,7 +39,7 @@ DemuxerBundle::~DemuxerBundle() {
 void DemuxerBundle::clear() {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL) {
-            DEBUGLOG("Deleting stream demuxer for pid=%i and type=%i", (*i)->GetPID(), (*i)->GetType());
+            DEBUGLOG("Deleting stream demuxer for pid=%i and type=%i", (*i)->getPid(), (*i)->getType());
             delete(*i);
         }
     }
@@ -49,7 +49,7 @@ void DemuxerBundle::clear() {
 
 TsDemuxer* DemuxerBundle::findDemuxer(int Pid) {
     for(auto i = begin(); i != end(); i++) {
-        if((*i) != NULL && (*i)->GetPID() == Pid) {
+        if((*i) != NULL && (*i)->getPid() == Pid) {
             return (*i);
         }
     }
@@ -90,10 +90,10 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 #define PID_MASK        0x0000FFFF
 
         // last resort ordering, the PID
-        uint32_t w = 0xFFFF - (stream->GetPID() & PID_MASK);
+        uint32_t w = 0xFFFF - (stream->getPid() & PID_MASK);
 
         // stream type weights
-        switch(stream->GetContent()) {
+        switch(stream->getContent()) {
             case StreamInfo::scVIDEO:
                 w |= VIDEO_MASK;
                 break;
@@ -102,10 +102,10 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
                 w |= AUDIO_MASK;
 
                 // weight of audio stream type
-                w |= (stream->GetType() == type) ? STREAMTYPE_MASK : 0;
+                w |= (stream->getType() == type) ? STREAMTYPE_MASK : 0;
 
                 // weight of audio type
-                w |= ((4 - stream->GetAudioType()) << 16) & AUDIOTYPE_MASK;
+                w |= ((4 - stream->getAudioType()) << 16) & AUDIOTYPE_MASK;
                 break;
 
             case StreamInfo::scSUBTITLE:
@@ -117,7 +117,7 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
         }
 
         // weight of language
-        int streamLangIndex = I18nLanguageIndex(stream->GetLanguage());
+        int streamLangIndex = I18nLanguageIndex(stream->getLanguage());
         w |= (streamLangIndex == lang) ? LANGUAGE_MASK : 0;
 
         // summed weight
@@ -130,15 +130,15 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 
     for(std::map<uint32_t, TsDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
         TsDemuxer* stream = i->second;
-        DEBUGLOG("Stream : Type %s / %s Weight: %08X", stream->TypeName(), stream->GetLanguage(), i->first);
+        DEBUGLOG("Stream : Type %s / %s Weight: %08X", stream->typeName(), stream->getLanguage(), i->first);
         push_back(stream);
     }
 }
 
 bool DemuxerBundle::isReady() {
     for(auto i = begin(); i != end(); i++) {
-        if(!(*i)->IsParsed()) {
-            DEBUGLOG("Stream with PID %i not parsed", (*i)->GetPID());
+        if(!(*i)->isParsed()) {
+            DEBUGLOG("Stream with PID %i not parsed", (*i)->getPid());
             return false;
         }
     }
@@ -151,7 +151,7 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
 
     // remove old demuxers
     for(auto i = begin(); i != end(); i++) {
-        old.AddStream(*(*i));
+        old.addStream(*(*i));
         delete *i;
     }
 
@@ -163,7 +163,7 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
         StreamInfo& infoold = old[i->first];
 
         // reuse previous stream information
-        if(infonew.GetPID() == infoold.GetPID() && infonew.GetType() == infoold.GetType()) {
+        if(infonew.getPid() == infoold.getPid() && infonew.getType() == infoold.getType()) {
             infonew = infoold;
         }
 
@@ -184,7 +184,7 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet) {
         return false;
     }
 
-    return demuxer->ProcessTSPacket(packet);
+    return demuxer->processTsPacket(packet);
 }
 
 MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
@@ -197,39 +197,39 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
             continue;
         }
 
-        int streamid = stream->GetPID();
+        int streamid = stream->getPid();
         resp->put_U32(streamid);
 
-        switch(stream->GetContent()) {
+        switch(stream->getContent()) {
             case StreamInfo::scAUDIO:
-                resp->put_String(stream->TypeName());
-                resp->put_String(stream->GetLanguage());
+                resp->put_String(stream->typeName());
+                resp->put_String(stream->getLanguage());
 
                 if(protocolVersion >= 5) {
-                    resp->put_U32(stream->GetChannels());
-                    resp->put_U32(stream->GetSampleRate());
-                    resp->put_U32(stream->GetBlockAlign());
-                    resp->put_U32(stream->GetBitRate());
-                    resp->put_U32(stream->GetBitsPerSample());
+                    resp->put_U32(stream->getChannels());
+                    resp->put_U32(stream->getSampleRate());
+                    resp->put_U32(stream->getBlockAlign());
+                    resp->put_U32(stream->getBitRate());
+                    resp->put_U32(stream->getBitsPerSample());
                 }
 
                 break;
 
             case StreamInfo::scVIDEO:
                 // H265 is supported on protocol version 6 or higher, ...
-                resp->put_String(stream->TypeName());
-                resp->put_U32(stream->GetFpsScale());
-                resp->put_U32(stream->GetFpsRate());
-                resp->put_U32(stream->GetHeight());
-                resp->put_U32(stream->GetWidth());
-                resp->put_S64(stream->GetAspect() * 10000.0);
+                resp->put_String(stream->typeName());
+                resp->put_U32(stream->getFpsScale());
+                resp->put_U32(stream->getFpsRate());
+                resp->put_U32(stream->getHeight());
+                resp->put_U32(stream->getWidth());
+                resp->put_S64(stream->getAspect() * 10000.0);
 
                 // send decoder specific data SPS / PPS / VPS ... (Protocol Version 6)
                 if(protocolVersion >= 6) {
                     int length = 0;
 
                     // put SPS
-                    uint8_t* sps = stream->GetVideoDecoderSPS(length);
+                    uint8_t* sps = stream->getVideoDecoderSps(length);
                     resp->put_U8(length);
 
                     if(sps != NULL) {
@@ -237,7 +237,7 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                     }
 
                     // put PPS
-                    uint8_t* pps = stream->GetVideoDecoderPPS(length);
+                    uint8_t* pps = stream->getVideoDecoderPps(length);
                     resp->put_U8(length);
 
                     if(pps != NULL) {
@@ -245,7 +245,7 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                     }
 
                     // put VPS
-                    uint8_t* vps = stream->GetVideoDecoderVPS(length);
+                    uint8_t* vps = stream->getVideoDecoderVps(length);
                     resp->put_U8(length);
 
                     if(pps != NULL) {
@@ -256,14 +256,14 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                 break;
 
             case StreamInfo::scSUBTITLE:
-                resp->put_String(stream->TypeName());
-                resp->put_String(stream->GetLanguage());
-                resp->put_U32(stream->CompositionPageId());
-                resp->put_U32(stream->AncillaryPageId());
+                resp->put_String(stream->typeName());
+                resp->put_String(stream->getLanguage());
+                resp->put_U32(stream->compositionPageId());
+                resp->put_U32(stream->ancillaryPageId());
                 break;
 
             case StreamInfo::scTELETEXT:
-                resp->put_String(stream->TypeName());
+                resp->put_String(stream->typeName());
                 break;
 
             default:

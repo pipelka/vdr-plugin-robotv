@@ -33,7 +33,7 @@ public:
 
     ParserH264(TsDemuxer* demuxer);
 
-    int ParsePayload(unsigned char* data, int length);
+    int parsePayload(unsigned char* data, int length);
 
 protected:
 
@@ -45,13 +45,13 @@ protected:
     // pixel aspect ratios
     static const pixel_aspect_t m_aspect_ratios[17];
 
-    uint8_t* ExtractNAL(uint8_t* packet, int length, int nal_offset, int& nal_len);
+    uint8_t* extractNal(uint8_t* packet, int length, int nal_offset, int& nal_len);
 
     int nalUnescape(uint8_t* dst, const uint8_t* src, int len);
 
-    uint32_t read_golomb_ue(cBitStream* bs);
+    uint32_t readGolombUe(cBitStream* bs);
 
-    int32_t read_golomb_se(cBitStream* bs);
+    int32_t readGolombSe(cBitStream* bs);
 
     int m_scale;
 
@@ -59,9 +59,9 @@ protected:
 
 private:
 
-    bool Parse_SPS(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
 
-    void Parse_SLH(uint8_t* buf, int len);
+    void parseSlh(uint8_t* buf, int len);
 
 };
 

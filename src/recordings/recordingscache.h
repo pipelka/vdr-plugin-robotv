@@ -41,37 +41,37 @@ protected:
 
 public:
 
-    static RecordingsCache& GetInstance();
+    static RecordingsCache& instance();
 
-    uint32_t Register(cRecording* recording);
+    uint32_t add(cRecording* recording);
 
-    cRecording* Lookup(uint32_t uid);
+    cRecording* lookup(uint32_t uid);
 
-    void SetPlayCount(uint32_t uid, int count);
+    int getPlayCount(uint32_t uid);
 
-    void SetLastPlayedPosition(uint32_t uid, uint64_t position);
+    void setPlayCount(uint32_t uid, int count);
 
-    int GetPlayCount(uint32_t uid);
+    uint64_t getLastPlayedPosition(uint32_t uid);
 
-    uint64_t GetLastPlayedPosition(uint32_t uid);
+    void setLastPlayedPosition(uint32_t uid, uint64_t position);
 
-    void SetPosterUrl(uint32_t uid, const char* url);
+    cString getPosterUrl(uint32_t uid);
 
-    void SetBackgroundUrl(uint32_t uid, const char* url);
+    void setPosterUrl(uint32_t uid, const char* url);
 
-    void SetMovieID(uint32_t uid, uint32_t id);
+    cString getBackgroundUrl(uint32_t uid);
 
-    cString GetPosterUrl(uint32_t uid);
+    void setBackgroundUrl(uint32_t uid, const char* url);
 
-    cString GetBackgroundUrl(uint32_t uid);
+    void setMovieID(uint32_t uid, uint32_t id);
 
     void gc();
 
 protected:
 
-    void Update();
+    void update();
 
-    void CreateDB();
+    void createDb();
 
 private:
 

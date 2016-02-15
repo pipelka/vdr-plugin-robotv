@@ -6,8 +6,8 @@
 
 RoboTVChannels::RoboTVChannels() {
     Channels.Lock(false);
-    channels = Reorder(&Channels);
-    channelsHash = ChannelsHash(&Channels);
+    m_channels = reorder(&Channels);
+    m_hash = getChannelsHash(&Channels);
     Channels.Unlock();
 }
 
@@ -16,13 +16,13 @@ RoboTVChannels& RoboTVChannels::instance() {
     return channels;
 }
 
-uint64_t RoboTVChannels::CheckUpdates() {
+uint64_t RoboTVChannels::checkUpdates() {
     cRwLock::Lock(false);
     Channels.Lock(false);
 
-    cChannels* oldChannels = channels;
-    uint64_t oldHash = channelsHash;
-    uint64_t newHash = ChannelsHash(&Channels);
+    cChannels* oldChannels = m_channels;
+    uint64_t oldHash = m_hash;
+    uint64_t newHash = getChannelsHash(&Channels);
 
     if(newHash == oldHash) {
         Channels.Unlock();
@@ -33,17 +33,17 @@ uint64_t RoboTVChannels::CheckUpdates() {
     cRwLock::Unlock();
     cRwLock::Lock(true);
 
-    if((channelsHash == oldHash) && (channels == oldChannels)) {
-        if(channels != &Channels) {
-            delete channels;
+    if((m_hash == oldHash) && (m_channels == oldChannels)) {
+        if(m_channels != &Channels) {
+            delete m_channels;
         }
 
-        channels = Reorder(&Channels);
-        channelsHash = newHash;
+        m_channels = reorder(&Channels);
+        m_hash = newHash;
     }
     else {
         // Seems another thread has already updated the hash.
-        newHash = channelsHash;
+        newHash = m_hash;
     }
 
     Channels.Unlock();
@@ -51,11 +51,11 @@ uint64_t RoboTVChannels::CheckUpdates() {
     return newHash;
 }
 
-cChannels* RoboTVChannels::Get() {
-    return channels;
+cChannels* RoboTVChannels::get() {
+    return m_channels;
 }
 
-cChannels* RoboTVChannels::Reorder(cChannels* channels) {
+cChannels* RoboTVChannels::reorder(cChannels* channels) {
     std::string reorderCmd = RoboTVServerConfig::instance().ReorderCmd;
 
     if(reorderCmd.empty()) {
@@ -121,7 +121,7 @@ cChannels* RoboTVChannels::Reorder(cChannels* channels) {
 
             // Write channels
             f = fdopen(input[1], "w");
-            result = Write(f, channels);
+            result = write(f, channels);
             fclose(f);
             close(input[1]);
 
@@ -134,7 +134,7 @@ cChannels* RoboTVChannels::Reorder(cChannels* channels) {
             // Load channels
             f = fdopen(output[0], "r");
             reordered = new cChannels();
-            result = Read(f, reordered);
+            result = read(f, reordered);
             fclose(f);
             close(output[0]);
             waitpid(pid, &status, 0);
@@ -156,7 +156,7 @@ cChannels* RoboTVChannels::Reorder(cChannels* channels) {
     }
 }
 
-uint64_t RoboTVChannels::ChannelsHash(cChannels* channels) {
+uint64_t RoboTVChannels::getChannelsHash(cChannels* channels) {
     uint64_t hash = 0;
     uint64_t count = 0;
 
@@ -168,7 +168,7 @@ uint64_t RoboTVChannels::ChannelsHash(cChannels* channels) {
     return (count << 32) | hash;
 }
 
-bool RoboTVChannels::Read(FILE* f, cChannels* channels) {
+bool RoboTVChannels::read(FILE* f, cChannels* channels) {
     cReadLine ReadLine;
 
     for(char* line = ReadLine.Read(f); line != NULL; line = ReadLine.Read(f)) {
@@ -198,7 +198,7 @@ bool RoboTVChannels::Read(FILE* f, cChannels* channels) {
     return true;
 }
 
-bool RoboTVChannels::Write(FILE* f, cChannels* channels) {
+bool RoboTVChannels::write(FILE* f, cChannels* channels) {
     for(cChannel* c = channels->First(); c != NULL; c = channels->Next(c)) {
         if(!c->Save(f)) {
             return false;
@@ -208,9 +208,9 @@ bool RoboTVChannels::Write(FILE* f, cChannels* channels) {
     return true;
 }
 
-bool RoboTVChannels::Lock(bool Write, int TimeoutMs) {
+bool RoboTVChannels::lock(bool Write, int TimeoutMs) {
     if(cRwLock::Lock(Write, TimeoutMs)) {
-        if(Get()->Lock(Write, TimeoutMs)) {
+        if(get()->Lock(Write, TimeoutMs)) {
             return true;
         }
         else {
@@ -221,7 +221,7 @@ bool RoboTVChannels::Lock(bool Write, int TimeoutMs) {
     return false;
 }
 
-void RoboTVChannels::Unlock(void) {
-    Get()->Unlock();
+void RoboTVChannels::unlock(void) {
+    get()->Unlock();
     cRwLock::Unlock();
 }
