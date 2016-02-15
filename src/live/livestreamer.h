@@ -43,7 +43,7 @@ class cChannel;
 class TsDemuxer;
 class MsgPacket;
 class LiveQueue;
-class RoboTVClient;
+class RoboTvClient;
 
 class LiveStreamer : public cThread, public cRingBufferLinear, public cReceiver, public TsDemuxer::Listener {
 private:
@@ -92,7 +92,7 @@ private:
 
     bool m_waitForKeyFrame;
 
-    RoboTVClient* m_parent;
+    RoboTvClient* m_parent;
 
     bool m_rawPTS;
 
@@ -118,13 +118,11 @@ private:
 
 public:
 
-    LiveStreamer(RoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
+    LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
 
     virtual ~LiveStreamer();
 
-    bool isReady();
-
-    bool isStarting() {
+    bool isStarting() const {
         return m_startup;
     }
 
@@ -147,6 +145,8 @@ public:
     void requestPacket();
 
     void requestSignalInfo();
+
+    // TsDemuxer::Listener implementation
 
     void sendStreamPacket(StreamPacket* pkt);
 

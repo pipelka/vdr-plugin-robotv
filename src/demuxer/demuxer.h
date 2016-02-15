@@ -86,17 +86,13 @@ public:
 
     virtual ~TsDemuxer();
 
-    bool processTsPacket(unsigned char* data);
+    bool processTsPacket(unsigned char* data) const;
 
-    void sendPacket(StreamPacket* pkt);
-
-    void setLanguageDescriptor(const char* language, uint8_t atype);
-
-    const char* getLanguage() {
+    const char* getLanguage() const {
         return m_language;
     }
 
-    uint8_t getAudioType() {
+    uint8_t getAudioType() const {
         return m_audioType;
     }
 
@@ -170,6 +166,12 @@ public:
     uint8_t* getVideoDecoderPps(int& length);
 
     uint8_t* getVideoDecoderVps(int& length);
+
+protected:
+
+    void sendPacket(StreamPacket* pkt);
+
+    friend class Parser;
 
 private:
 

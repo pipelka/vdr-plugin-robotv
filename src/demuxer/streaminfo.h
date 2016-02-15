@@ -103,7 +103,7 @@ public:
 
     void info() const;
 
-    inline bool isParsed() {
+    inline bool isParsed() const {
         return m_parsed;
     }
 

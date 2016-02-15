@@ -214,7 +214,7 @@ void RoboTVServer::clientConnected(int fd) {
         INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_idCnt);
     }
 
-    RoboTVClient* connection = new RoboTVClient(fd, m_idCnt);
+    RoboTvClient* connection = new RoboTvClient(fd, m_idCnt);
     m_clients.push_back(connection);
     m_idCnt++;
 }
@@ -222,13 +222,10 @@ void RoboTVServer::clientConnected(int fd) {
 void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
-    cTimeMs channelReloadTimer;
     cTimeMs channelCacheTimer;
     cTimeMs recordingReloadTimer;
 
-    bool channelReloadTrigger = false;
     bool recordingReloadTrigger = false;
-    uint64_t channelsHash = 0;
 
     SetPriority(19);
 
@@ -280,33 +277,6 @@ void RoboTVServer::Action(void) {
             // store channel cache
             if(bChanged) {
                 ChannelCache::instance().save();
-            }
-
-            // trigger clients to reload the modified channel list
-            if(m_clients.size() > 0) {
-                RoboTVChannels& c = RoboTVChannels::instance();
-                uint64_t hash = c.checkUpdates();
-                c.lock(false);
-
-                if(hash != channelsHash) {
-                    channelReloadTrigger = true;
-                    channelReloadTimer.Set(0);
-                }
-
-                if(channelReloadTrigger && channelReloadTimer.Elapsed() >= 10 * 1000) {
-                    INFOLOG("Checking for channel updates ...");
-
-                    for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
-                        (*i)->sendChannelsChanged();
-                    }
-
-                    channelReloadTrigger = false;
-
-                    INFOLOG("Done.");
-                }
-
-                c.unlock();
-                channelsHash = hash;
             }
 
             // artwork cleanup (every 12 hours)

@@ -47,7 +47,7 @@ void DemuxerBundle::clear() {
     std::list<TsDemuxer*>::clear();
 }
 
-TsDemuxer* DemuxerBundle::findDemuxer(int Pid) {
+TsDemuxer* DemuxerBundle::findDemuxer(int Pid) const {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL && (*i)->getPid() == Pid) {
             return (*i);
@@ -135,7 +135,7 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
     }
 }
 
-bool DemuxerBundle::isReady() {
+bool DemuxerBundle::isReady() const {
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->isParsed()) {
             DEBUGLOG("Stream with PID %i not parsed", (*i)->getPid());
@@ -176,7 +176,7 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
     }
 }
 
-bool DemuxerBundle::processTsPacket(uint8_t* packet) {
+bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
     unsigned int ts_pid = TsPid(packet);
     TsDemuxer* demuxer = findDemuxer(ts_pid);
 

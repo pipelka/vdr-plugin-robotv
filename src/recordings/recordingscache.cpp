@@ -55,7 +55,7 @@ RecordingsCache& RecordingsCache::instance() {
 
 uint32_t RecordingsCache::add(cRecording* recording) {
     cString filename = recording->FileName();
-    uint32_t uid = CreateStringHash(filename);
+    uint32_t uid = createStringHash(filename);
 
     // try to update existing record
     m_storage.exec(

@@ -44,7 +44,7 @@ public:
     bool contains(const StreamInfo& s) const;
 
     bool changed() const {
-        return m_bChanged;
+        return m_changed;
     }
 
     bool isParsed();
@@ -55,7 +55,7 @@ public:
 
 private:
 
-    bool m_bChanged;
+    bool m_changed;
 
 };
 

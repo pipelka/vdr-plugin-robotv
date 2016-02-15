@@ -22,44 +22,45 @@
  *
  */
 
-#ifndef ROBOTV_SERVER_H
-#define ROBOTV_SERVER_H
-
-#include <list>
-#include <vdr/thread.h>
-
-#include "config/config.h"
+#ifndef ROBOTV_RECORDINGCONTROLLER_H
+#define	ROBOTV_RECORDINGCONTROLLER_H
 
 class RoboTvClient;
+class MsgPacket;
+class PacketPlayer;
 
-class RoboTVServer : public cThread {
-protected:
-
-    typedef std::list<RoboTvClient*> ClientList;
-
-    virtual void Action(void);
-
-    void clientConnected(int fd);
-
-    int m_serverPort;
-
-    int m_serverFd;
-
-    bool m_ipv4Fallback;
-
-    cString m_allowedHostsFile;
-
-    ClientList m_clients;
-
-    RoboTVServerConfig& m_config;
-
-    static unsigned int m_idCnt;
-
+class RecordingController {
 public:
 
-    RoboTVServer(int listenPort);
+    RecordingController(RoboTvClient* parent);
 
-    virtual ~RoboTVServer();
+    virtual ~RecordingController();
+
+    bool process(MsgPacket* request, MsgPacket* response);
+
+protected:
+
+    bool processOpen(MsgPacket* request, MsgPacket* response);
+
+    bool processClose(MsgPacket* request, MsgPacket* response);
+
+    bool processGetBlock(MsgPacket* request, MsgPacket* response);
+
+    bool processGetPacket(MsgPacket* request, MsgPacket* response);
+
+    bool processUpdate(MsgPacket* request, MsgPacket* response);
+
+    bool processSeek(MsgPacket* request, MsgPacket* response);
+
+
+private:
+
+    RecordingController(const RecordingController& orig);
+
+    RoboTvClient* m_parent;
+
+    PacketPlayer* m_recPlayer;
 };
 
-#endif // ROBOTV_SERVER_H
+#endif	// ROBOTV_RECORDINGCONTROLLER_H
+

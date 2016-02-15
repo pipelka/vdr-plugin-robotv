@@ -121,7 +121,7 @@ void TsDemuxer::sendPacket(StreamPacket* pkt) {
     m_streamer->sendStreamPacket(pkt);
 }
 
-bool TsDemuxer::processTsPacket(unsigned char* data) {
+bool TsDemuxer::processTsPacket(unsigned char* data) const {
     if(data == NULL) {
         return false;
     }
@@ -162,14 +162,6 @@ bool TsDemuxer::processTsPacket(unsigned char* data) {
     }
 
     return true;
-}
-
-void TsDemuxer::setLanguageDescriptor(const char* language, uint8_t atype) {
-    m_language[0] = language[0];
-    m_language[1] = language[1];
-    m_language[2] = language[2];
-    m_language[3] = 0;
-    m_audioType = atype;
 }
 
 void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {

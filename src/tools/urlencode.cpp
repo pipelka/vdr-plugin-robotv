@@ -28,7 +28,7 @@
 #include <iomanip>
 #include <sstream>
 
-std::string url_encode(const std::string& value) {
+std::string urlEncode(const std::string& value) {
     std::stringstream escaped;
     escaped.fill('0');
     escaped << std::hex;

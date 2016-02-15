@@ -30,12 +30,14 @@
 #include <vdr/channels.h>
 #include <vdr/timers.h>
 
-uint32_t CreateChannelUID(const cChannel* channel);
-const cChannel* FindChannelByUID(uint32_t channelUID);
+uint32_t createChannelUid(const cChannel* channel);
 
-uint32_t CreateTimerUID(const cTimer* channel);
-cTimer* FindTimerByUID(uint32_t timerUID);
+const cChannel* findChannelByUid(uint32_t channelUID);
 
-uint32_t CreateStringHash(const cString& string);
+uint32_t createTimerUid(const cTimer* channel);
+
+cTimer* findTimerByUid(uint32_t timerUID);
+
+uint32_t createStringHash(const cString& string);
 
 #endif // ROBOTV_HASH_H

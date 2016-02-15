@@ -41,15 +41,15 @@ public:
 
     void clear();
 
-    TsDemuxer* findDemuxer(int pid);
+    TsDemuxer* findDemuxer(int pid) const;
 
     void reorderStreams(int lang, StreamInfo::Type type);
 
-    bool isReady();
+    bool isReady() const;
 
     void updateFrom(StreamBundle* bundle);
 
-    bool processTsPacket(uint8_t* packet);
+    bool processTsPacket(uint8_t* packet) const;
 
     MsgPacket* createStreamChangePacket(int protocolVersion = ROBOTV_PROTOCOLVERSION);
 

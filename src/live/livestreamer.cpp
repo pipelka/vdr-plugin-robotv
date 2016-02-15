@@ -48,24 +48,23 @@
 #include "livequeue.h"
 #include "channelcache.h"
 
-LiveStreamer::LiveStreamer(RoboTVClient* parent, const cChannel* channel, int priority, bool rawPTS)
+LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS)
     : cThread("LiveStreamer stream processor")
     , cRingBufferLinear(MEGABYTE(10), TS_SIZE, true)
     , cReceiver(NULL, priority)
     , m_demuxers(this)
     , m_scanTimeout(10)
     , m_parent(parent) {
-    m_device          = NULL;
-    m_queue           = NULL;
-    m_startup         = true;
-    m_signalLost      = false;
-    m_langStreamType  = StreamInfo::stMPEG2AUDIO;
-    m_languageIndex   = -1;
-    m_uid             = CreateChannelUID(channel);
+    m_device = NULL;
+    m_queue = NULL;
+    m_startup = true;
+    m_signalLost = false;
+    m_langStreamType = StreamInfo::stMPEG2AUDIO;
+    m_languageIndex = -1;
+    m_uid = createChannelUid(channel);
     m_protocolVersion = ROBOTV_PROTOCOLVERSION;
-    m_waitForKeyFrame   = false;
-    m_rawPTS          = rawPTS;
-
+    m_waitForKeyFrame = false;
+    m_rawPTS = rawPTS;
     m_requestStreamChange = false;
 
     if(m_scanTimeout == 0) {
@@ -130,7 +129,7 @@ void LiveStreamer::tryChannelSwitch() {
     }
 
     // find channel from uid
-    const cChannel* channel = FindChannelByUID(m_uid);
+    const cChannel* channel = findChannelByUid(m_uid);
 
     // try to switch channel
     int rc = switchChannel(channel);
@@ -310,7 +309,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     Clear();
     m_queue->cleanup();
 
-    m_uid = CreateChannelUID(channel);
+    m_uid = createChannelUid(channel);
 
     if(!attach()) {
         INFOLOG("Unable to attach receiver !");
@@ -508,7 +507,7 @@ void LiveStreamer::requestSignalInfo() {
     resp->put_U32(0);
 
     // get provider & service information
-    const cChannel* channel = FindChannelByUID(m_uid);
+    const cChannel* channel = findChannelByUid(m_uid);
 
     if(channel != NULL) {
         // put in provider name
@@ -584,7 +583,7 @@ void LiveStreamer::Receive(const uchar* Data, int Length)
 void LiveStreamer::processChannelChange(const cChannel* channel) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if(CreateChannelUID(channel) != m_uid || !Running()) {
+    if(createChannelUid(channel) != m_uid || !Running()) {
         return;
     }
 

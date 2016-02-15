@@ -162,7 +162,7 @@ uint64_t RoboTVChannels::getChannelsHash(cChannels* channels) {
 
     for(cChannel* c = channels->First(); c != NULL; c = channels->Next(c)) {
         count++;
-        hash ^= CreateChannelUID(c);
+        hash ^= createChannelUid(c);
     }
 
     return (count << 32) | hash;

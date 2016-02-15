@@ -25,4 +25,4 @@
 #pragma once
 #include <string>
 
-std::string url_encode(const std::string& value);
+std::string urlEncode(const std::string& value);

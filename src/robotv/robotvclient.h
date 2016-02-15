@@ -25,11 +25,9 @@
 #ifndef ROBOTV_CLIENT_H
 #define ROBOTV_CLIENT_H
 
-#include <map>
 #include <list>
 #include <string>
 #include <queue>
-#include <set>
 
 #include <vdr/thread.h>
 #include <vdr/tools.h>
@@ -37,17 +35,17 @@
 #include <vdr/status.h>
 
 #include "demuxer/streaminfo.h"
-#include "scanner/wirbelscan.h"
 #include "recordings/artwork.h"
+
+#include "controllers/streamcontroller.h"
+#include "controllers/recordingcontroller.h"
 
 class cChannel;
 class cDevice;
-class LiveStreamer;
 class MsgPacket;
 class PacketPlayer;
-class cCmdControl;
 
-class RoboTVClient : public cThread, public cStatus {
+class RoboTvClient : public cThread, public cStatus {
 private:
 
     unsigned int m_id;
@@ -57,10 +55,6 @@ private:
     bool m_loggedIn;
 
     bool m_statusInterfaceEnabled;
-
-    LiveStreamer* m_streamer;
-
-    PacketPlayer* m_recPlayer;
 
     MsgPacket* m_request;
 
@@ -72,13 +66,7 @@ private:
 
     cMutex m_msgLock;
 
-    cMutex m_streamerLock;
-
     int m_compressionLevel;
-
-    int m_languageIndex;
-
-    StreamInfo::Type m_langStreamType;
 
     std::list<int> m_caids;
 
@@ -90,17 +78,19 @@ private:
 
     int m_timeout;
 
-    cWirbelScan m_scanner;
-
-    bool m_scanSupported;
-
     std::string m_clientName;
-
-    Artwork m_artwork;
 
     std::queue<MsgPacket*> m_queue;
 
     cMutex m_queueLock;
+
+    Artwork m_artwork;
+
+    // Controllers
+
+    StreamController m_channelController;
+
+    RecordingController m_recordingController;
 
 protected:
 
@@ -115,11 +105,9 @@ protected:
 
 public:
 
-    RoboTVClient(int fd, unsigned int id);
+    RoboTvClient(int fd, unsigned int id);
 
-    virtual ~RoboTVClient();
-
-    void sendChannelsChanged();
+    virtual ~RoboTvClient();
 
     void sendMoviesChange();
 
@@ -151,31 +139,17 @@ protected:
         m_statusInterfaceEnabled = yesNo;
     }
 
-    int startStreaming(const cChannel* channel, uint32_t timeout, int32_t priority, bool waitforiframe = false, bool rawPTS = false);
-
-    void stopStreaming();
-
 private:
-
-    typedef struct {
-        bool automatic;
-        bool radio;
-        std::string name;
-    } ChannelGroup;
-
-    std::map<std::string, ChannelGroup> m_channelgroups[2];
 
     void putTimer(cTimer* timer, MsgPacket* p);
 
-    bool isChannelWanted(cChannel* channel, int type = 0);
+    bool isChannelWanted(int languageIndex, cChannel* channel, int type = 0);
 
-    int channelCount();
+    int channelCount(int languageIndex);
 
     cString createLogoUrl(const cChannel* channel);
 
     cString createServiceReference(const cChannel* channel);
-
-    void createChannelGroups(bool automatic);
 
     void addChannelToPacket(const cChannel*, MsgPacket*);
 
@@ -193,45 +167,9 @@ private:
 
     //
 
-    bool processChannelStreamOpen();
-
-    bool processChannelStreamClose();
-
-    bool processChannelStreamPause();
-
-    bool processChannelStreamRequest();
-
-    bool processChannelStreamSignal();
-
-    //
-
-    bool processRecordingOpen();
-
-    bool processRecordingClose();
-
-    bool processRecordingGetBlock();
-
-    bool processRecordingGetPacket();
-
-    bool processRecordingUpdate();
-
-    bool processRecordingSeek();
-
-    //
-
-    bool processChannelsGroupCount();
-
-    bool processChannelsCount();
-
-    bool processChannelsGroupList();
-
     bool processChannelsGetChannels();
 
-    bool processChannelsGetGroupMembers();
-
     //
-
-    bool processTimerGetCount();
 
     bool processTimerGet();
 
@@ -246,8 +184,6 @@ private:
     //
 
     bool processMoviesGetDiskSpace();
-
-    bool processMoviesGetCount();
 
     bool processMoviesGetList();
 
@@ -278,22 +214,6 @@ private:
     //
 
     bool processEPG_GetForChannel();
-
-    //
-
-    bool processScanSupported();
-
-    bool processScanGetSetup();
-
-    bool processScanSetSetup();
-
-    bool processScanStart();
-
-    bool processScanStop();
-
-    bool processScanGetStatus();
-
-    void SendScannerStatus();
 };
 
 #endif // ROBOTV_CLIENT_H

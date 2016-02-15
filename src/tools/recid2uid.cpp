@@ -22,44 +22,12 @@
  *
  */
 
-#ifndef ROBOTV_SERVER_H
-#define ROBOTV_SERVER_H
+#include "recid2uid.h"
+#include <stdio.h>
 
-#include <list>
-#include <vdr/thread.h>
+uint32_t recid2uid(const char* recid) {
+    uint32_t uid = 0;
+    sscanf(recid, "%8x", &uid);
+    return uid;
+}
 
-#include "config/config.h"
-
-class RoboTvClient;
-
-class RoboTVServer : public cThread {
-protected:
-
-    typedef std::list<RoboTvClient*> ClientList;
-
-    virtual void Action(void);
-
-    void clientConnected(int fd);
-
-    int m_serverPort;
-
-    int m_serverFd;
-
-    bool m_ipv4Fallback;
-
-    cString m_allowedHostsFile;
-
-    ClientList m_clients;
-
-    RoboTVServerConfig& m_config;
-
-    static unsigned int m_idCnt;
-
-public:
-
-    RoboTVServer(int listenPort);
-
-    virtual ~RoboTVServer();
-};
-
-#endif // ROBOTV_SERVER_H

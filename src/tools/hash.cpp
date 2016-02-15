@@ -86,19 +86,19 @@ uint32_t crc32(const unsigned char* buf, size_t size) {
     return (crc ^ ~0U) & 0x7FFFFFFF; // channeluid is signed
 }
 
-uint32_t CreateStringHash(const cString& string) {
+uint32_t createStringHash(const cString& string) {
     const char* p = string;
     int len = strlen(p);
 
     return crc32((const unsigned char*)p, len);
 }
 
-uint32_t CreateChannelUID(const cChannel* channel) {
+uint32_t createChannelUid(const cChannel* channel) {
     cString channelid = channel->GetChannelID().ToString();
-    return CreateStringHash(channelid);
+    return createStringHash(channelid);
 }
 
-const cChannel* FindChannelByUID(uint32_t channelUID) {
+const cChannel* findChannelByUid(uint32_t channelUID) {
     cChannel* result = NULL;
     RoboTVChannels& c = RoboTVChannels::instance();
 
@@ -109,7 +109,7 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         cString channelid = channel->GetChannelID().ToString();
 
-        if(channelUID == CreateStringHash(channelid)) {
+        if(channelUID == createStringHash(channelid)) {
             result = channel;
             break;
         }
@@ -119,7 +119,7 @@ const cChannel* FindChannelByUID(uint32_t channelUID) {
     return result;
 }
 
-uint32_t CreateTimerUID(const cTimer* timer) {
+uint32_t createTimerUid(const cTimer* timer) {
     cString timerid = cString::sprintf("%s:%s:%04d:%04d:%s",
                                        *timer->Channel()->GetChannelID().ToString(),
                                        *timer->PrintDay(timer->Day(), timer->WeekDays(), true),
@@ -127,10 +127,10 @@ uint32_t CreateTimerUID(const cTimer* timer) {
                                        timer->Stop(),
                                        timer->File());
 
-    return CreateStringHash(timerid);
+    return createStringHash(timerid);
 }
 
-cTimer* FindTimerByUID(uint32_t timerUID) {
+cTimer* findTimerByUid(uint32_t timerUID) {
     int numTimers = Timers.Count();
 
     for(int i = 0; i < numTimers; i++) {
@@ -140,7 +140,7 @@ cTimer* FindTimerByUID(uint32_t timerUID) {
             continue;
         }
 
-        if(CreateTimerUID(timer) == timerUID) {
+        if(createTimerUid(timer) == timerUID) {
             return timer;
         }
     }

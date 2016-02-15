@@ -89,9 +89,11 @@ OBJS = \
 	src/recordings/recordingscache.o \
 	src/recordings/packetplayer.o \
 	src/recordings/recplayer.o \
-	src/scanner/wirbelscan.o \
 	src/tools/hash.o \
+	src/tools/recid2uid.o \
 	src/tools/urlencode.o \
+	src/robotv/controllers/streamcontroller.o \
+	src/robotv/controllers/recordingcontroller.o \
 	src/robotv/timerconflicts.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \

@@ -24,7 +24,7 @@
 
 #include "demuxer/streambundle.h"
 
-StreamBundle::StreamBundle() : m_bChanged(false) {
+StreamBundle::StreamBundle() : m_changed(false) {
 }
 
 void StreamBundle::addStream(const StreamInfo& s) {
@@ -44,7 +44,7 @@ void StreamBundle::addStream(const StreamInfo& s) {
     StreamInfo old = (*this)[s.getPid()];
     (*this)[s.getPid()] = s;
 
-    m_bChanged = (old != s);
+    m_changed = (old != s);
 }
 
 bool StreamBundle::isParsed() {

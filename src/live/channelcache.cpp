@@ -48,7 +48,7 @@ void ChannelCache::add(uint32_t channeluid, const StreamBundle& channel) {
 void ChannelCache::add(const cChannel* channel) {
     cMutexLock lock(&m_access);
 
-    uint32_t uid = CreateChannelUID(channel);
+    uint32_t uid = createChannelUid(channel);
 
     // ignore invalid channels
     if(uid == 0) {
@@ -133,7 +133,7 @@ void ChannelCache::gc() {
     cChannels* channels = c.get();
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
-        uint32_t uid = CreateChannelUID(channel);
+        uint32_t uid = createChannelUid(channel);
 
         // ignore invalid channels
         if(uid == 0) {
