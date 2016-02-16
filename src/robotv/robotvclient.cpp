@@ -55,96 +55,6 @@
 #include "timerconflicts.h"
 
 
-static bool IsRadio(const cChannel* channel) {
-    bool isRadio = false;
-
-    // assume channels without VPID & APID are video channels
-    if(channel->Vpid() == 0 && channel->Apid(0) == 0) {
-        isRadio = false;
-    }
-    // channels without VPID are radio channels (channels with VPID 1 are encrypted radio channels)
-    else if(channel->Vpid() == 0 || channel->Vpid() == 1) {
-        isRadio = true;
-    }
-
-    return isRadio;
-}
-
-void RoboTvClient::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
-    p->put_U32(channel->Number());
-    p->put_String(m_toUtf8.Convert(channel->Name()));
-    p->put_U32(createChannelUid(channel));
-    p->put_U32(channel->Ca());
-
-    // logo url
-    p->put_String((const char*)createLogoUrl(channel));
-
-    // service reference
-    if(m_protocolVersion > 4) {
-        p->put_String((const char*)createServiceReference(channel));
-    }
-}
-
-cString RoboTvClient::createServiceReference(const cChannel* channel) {
-    int hash = 0;
-
-    if(cSource::IsSat(channel->Source())) {
-        hash = channel->Source() & cSource::st_Pos;
-
-#if VDRVERSNUM >= 20101
-        hash = -hash;
-#endif
-
-        if(hash > 0x00007FFF) {
-            hash |= 0xFFFF0000;
-        }
-
-        if(hash < 0) {
-            hash = -hash;
-        }
-        else {
-            hash = 1800 + hash;
-        }
-
-        hash = hash << 16;
-    }
-    else if(cSource::IsCable(channel->Source())) {
-        hash = 0xFFFF0000;
-    }
-    else if(cSource::IsTerr(channel->Source())) {
-        hash = 0xEEEE0000;
-    }
-    else if(cSource::IsAtsc(channel->Source())) {
-        hash = 0xDDDD0000;
-    }
-
-    cString serviceref = cString::sprintf("1_0_%i_%X_%X_%X_%X_0_0_0",
-                                          IsRadio(channel) ? 2 : (channel->Vtype() == 27) ? 19 : 1,
-                                          channel->Sid(),
-                                          channel->Tid(),
-                                          channel->Nid(),
-                                          hash);
-
-    return serviceref;
-}
-
-cString RoboTvClient::createLogoUrl(const cChannel* channel) {
-    std::string url = RoboTVServerConfig::instance().PiconsURL;
-
-    if(url.empty()) {
-        return "";
-    }
-
-    std::string filename = (const char*)createServiceReference(channel);
-
-    if(url.size() > 4 && url.substr(0, 4) == "http") {
-        filename = urlEncode(filename);
-    }
-
-    cString piconurl = AddDirectory(url.c_str(), filename.c_str());
-    return cString::sprintf("%s.png", (const char*)piconurl);
-}
-
 void RoboTvClient::putTimer(cTimer* timer, MsgPacket* p) {
     int flags = checkTimerConflicts(timer);
 
@@ -160,19 +70,16 @@ void RoboTvClient::putTimer(cTimer* timer, MsgPacket* p) {
     p->put_String(m_toUtf8.Convert(timer->File()));
 }
 
-RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_channelController(this), m_recordingController(this) {
+RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_streamController(this), m_recordingController(this) {
     m_id = id;
     m_loggedIn = false;
     m_statusInterfaceEnabled  = false;
     m_request = NULL;
     m_response = NULL;
     m_compressionLevel = 0;
-    m_channelCount = 0;
     m_timeout = 3000;
 
     m_socket = fd;
-    m_wantFta = true;
-    m_filterLanguage = false;
 
     Start();
 }
@@ -252,13 +159,13 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
 }
 
 void RoboTvClient::ChannelChange(const cChannel* Channel) {
-    m_channelController.processChannelChange(Channel);
+    m_streamController.processChannelChange(Channel);
 
     cMutexLock msgLock(&m_msgLock);
 
     if(m_statusInterfaceEnabled && m_protocolVersion >= 6) {
         MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGED, ROBOTV_CHANNEL_STATUS);
-        addChannelToPacket(Channel, resp);
+        m_channelController.addChannelToPacket(Channel, resp);
         queueMessage(resp);
     }
 }
@@ -390,96 +297,6 @@ void RoboTvClient::sendStatusMessage(const char* Message) {
     queueMessage(resp);
 }
 
-bool RoboTvClient::isChannelWanted(int languageIndex, cChannel* channel, int type) {
-    // dismiss invalid channels
-    if(channel == NULL) {
-        return false;
-    }
-
-    // radio
-    if((type == 1) && !IsRadio(channel)) {
-        return false;
-    }
-
-    // (U)HD channels
-    if((type == 2) && (channel->Vtype() != 27 && channel->Vtype() != 36)) {
-        return false;
-    }
-
-    // skip channels witout SID
-    if(channel->Sid() == 0) {
-        return false;
-    }
-
-    if(strcmp(channel->Name(), ".") == 0) {
-        return false;
-    }
-
-    // check language
-    if(m_filterLanguage && languageIndex != -1) {
-        bool bLanguageFound = false;
-        const char* lang = NULL;
-
-        // check MP2 languages
-        for(int i = 0; i < MAXAPIDS; i++) {
-            lang = channel->Alang(i);
-
-            if(lang == NULL) {
-                break;
-            }
-
-            if(languageIndex == I18nLanguageIndex(lang)) {
-                bLanguageFound = true;
-                break;
-            }
-        }
-
-        // check other digital languages
-        for(int i = 0; i < MAXDPIDS; i++) {
-            lang = channel->Dlang(i);
-
-            if(lang == NULL) {
-                break;
-            }
-
-            if(languageIndex == I18nLanguageIndex(lang)) {
-                bLanguageFound = true;
-                break;
-            }
-        }
-
-        if(!bLanguageFound) {
-            return false;
-        }
-    }
-
-    // user selection for FTA channels
-    if(channel->Ca(0) == 0) {
-        return m_wantFta;
-    }
-
-    // we want all encrypted channels if there isn't any CaID filter
-    if(m_caids.size() == 0) {
-        return true;
-    }
-
-    // check if we have a matching CaID
-    for(std::list<int>::iterator i = m_caids.begin(); i != m_caids.end(); i++) {
-        for(int j = 0; j < MAXCAIDS; j++) {
-
-            if(channel->Ca(j) == 0) {
-                break;
-            }
-
-            if(channel->Ca(j) == *i) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 bool RoboTvClient::processRequest() {
     cMutexLock lock(&m_msgLock);
 
@@ -497,10 +314,13 @@ bool RoboTvClient::processRequest() {
     bool result = false;
 
     /** OPCODE 20 - 39: RoboTV network functions for live streaming */
-    result = m_channelController.process(m_request, m_response);
+    result = m_streamController.process(m_request, m_response);
 
     /** OPCODE 40 - 59: RoboTV network functions for recording streaming */
-    result = m_recordingController.process(m_request, m_response);
+    result |= m_recordingController.process(m_request, m_response);
+
+    /** OPCODE 60 - 79: RoboTV network functions for channel access */
+    result |= m_channelController.process(m_request, m_response);
 
     switch(m_request->getMsgID()) {
             /** OPCODE 1 - 19: RoboTV network functions for general purpose */
@@ -518,15 +338,6 @@ bool RoboTvClient::processRequest() {
 
         case ROBOTV_UPDATECHANNELS:
             result = processUpdateChannels();
-            break;
-
-        case ROBOTV_CHANNELFILTER:
-            result = processChannelFilter();
-            break;
-
-            /** OPCODE 60 - 79: RoboTV network functions for channel access */
-        case ROBOTV_CHANNELS_GETCHANNELS:
-            result = processChannelsGetChannels();
             break;
 
         case ROBOTV_TIMER_GET:
@@ -678,102 +489,6 @@ bool RoboTvClient::processUpdateChannels() {
 
     return true;
 }
-
-bool RoboTvClient::processChannelFilter() {
-    INFOLOG("Channellist filter:");
-
-    // do we want fta channels ?
-    m_wantFta = m_request->get_U32();
-    INFOLOG("Free To Air channels: %s", m_wantFta ? "Yes" : "No");
-
-    // display only channels with native language audio ?
-    m_filterLanguage = m_request->get_U32();
-    INFOLOG("Only native language: %s", m_filterLanguage ? "Yes" : "No");
-
-    // read caids
-    m_caids.clear();
-    uint32_t count = m_request->get_U32();
-
-    INFOLOG("Enabled CaIDs: ");
-
-    // sanity check (maximum of 20 caids)
-    if(count < 20) {
-        for(uint32_t i = 0; i < count; i++) {
-            int caid = m_request->get_U32();
-            m_caids.push_back(caid);
-            INFOLOG("%04X", caid);
-        }
-    }
-
-
-    m_response->put_U32(ROBOTV_RET_OK);
-
-    return true;
-}
-
-
-int RoboTvClient::channelCount(int languageIndex) {
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-    cChannels* channels = c.get();
-    int count = 0;
-
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
-        if(isChannelWanted(languageIndex, channel, false)) {
-            count++;
-        }
-
-        if(isChannelWanted(languageIndex, channel, true)) {
-            count++;
-        }
-    }
-
-    c.unlock();
-    return count;
-}
-
-/** OPCODE 60 - 79: RoboTV network functions for channel access */
-
-bool RoboTvClient::processChannelsGetChannels() { /* OPCODE 63 */
-    int type = m_request->get_U32();
-    const char* language = m_request->get_String(); // PROTOCOL 7 - CLIENT MUST SEND THIS
-    int languageIndex = I18nLanguageIndex(language);
-
-    RoboTVChannels& c = RoboTVChannels::instance();
-    m_channelCount = channelCount(languageIndex);
-
-    if(!c.lock(false)) {
-        return true;
-    }
-
-    cChannels* channels = c.get();
-
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
-        if(!isChannelWanted(languageIndex, channel, type)) {
-            continue;
-        }
-
-        m_response->put_U32(channel->Number());
-        m_response->put_String(m_toUtf8.Convert(channel->Name()));
-        m_response->put_U32(createChannelUid(channel));
-        m_response->put_U32(channel->Ca());
-
-        // logo url
-        m_response->put_String((const char*)createLogoUrl(channel));
-
-        // service reference
-        if(m_protocolVersion > 4) {
-            m_response->put_String((const char*)createServiceReference(channel));
-        }
-    }
-
-    c.unlock();
-
-    m_response->compress(m_compressionLevel);
-
-    return true;
-}
-
 
 /** OPCODE 80 - 99: RoboTV network functions for timer access */
 

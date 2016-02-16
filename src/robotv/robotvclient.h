@@ -39,6 +39,7 @@
 
 #include "controllers/streamcontroller.h"
 #include "controllers/recordingcontroller.h"
+#include "controllers/channelcontroller.h"
 
 class cChannel;
 class cDevice;
@@ -68,14 +69,6 @@ private:
 
     int m_compressionLevel;
 
-    std::list<int> m_caids;
-
-    bool m_wantFta;
-
-    bool m_filterLanguage;
-
-    int m_channelCount;
-
     int m_timeout;
 
     std::string m_clientName;
@@ -88,9 +81,11 @@ private:
 
     // Controllers
 
-    StreamController m_channelController;
+    StreamController m_streamController;
 
     RecordingController m_recordingController;
+
+    ChannelController m_channelController;
 
 protected:
 
@@ -143,16 +138,6 @@ private:
 
     void putTimer(cTimer* timer, MsgPacket* p);
 
-    bool isChannelWanted(int languageIndex, cChannel* channel, int type = 0);
-
-    int channelCount(int languageIndex);
-
-    cString createLogoUrl(const cChannel* channel);
-
-    cString createServiceReference(const cChannel* channel);
-
-    void addChannelToPacket(const cChannel*, MsgPacket*);
-
     //
 
     bool processLogin();
@@ -162,12 +147,6 @@ private:
     bool processEnableStatusInterface();
 
     bool processUpdateChannels();
-
-    bool processChannelFilter();
-
-    //
-
-    bool processChannelsGetChannels();
 
     //
 

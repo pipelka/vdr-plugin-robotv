@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef ROBOTV_CHANNELCONTROLLER_H
-#define	ROBOTV_CHANNELCONTROLLER_H
+#ifndef ROBOTV_STREAMCONTROLLER_H
+#define	ROBOTV_STREAMCONTROLLER_H
 
 #include <mutex>
 
@@ -74,5 +74,5 @@ private:
     RoboTvClient* m_parent;
 };
 
-#endif	// ROBOTV_CHANNELCONTROLLER_H
+#endif	// ROBOTV_STREAMCONTROLLER_H
 

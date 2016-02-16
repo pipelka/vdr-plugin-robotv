@@ -27,7 +27,7 @@
 #include "tools/hash.h"
 #include "robotv/robotvchannels.h"
 
-ChannelCache::ChannelCache() : m_config(RoboTVServerConfig::instance()) {
+ChannelCache::ChannelCache() {
 }
 
 ChannelCache& ChannelCache::instance() {
@@ -91,7 +91,7 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
 void ChannelCache::save() {
     cString filename = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE".bak");
 
-    int fd = open(*filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    int fd = ::open(*filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 
     if(fd == -1) {
         ERRORLOG("Unable to open channel cache data file (%s) !", (const char*)filename);
@@ -113,7 +113,7 @@ void ChannelCache::save() {
 
     p->write(fd, 1000);
     delete p;
-    close(fd);
+    ::close(fd);
 
     cString filenamenew = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE);
 
@@ -169,7 +169,7 @@ void ChannelCache::load() {
     // load cache
     cString filename = AddDirectory(m_config.CacheDirectory.c_str(), CHANNEL_CACHE_FILE);
 
-    int fd = open(*filename, O_RDONLY);
+    int fd = ::open(*filename, O_RDONLY);
 
     if(fd == -1) {
         ERRORLOG("Unable to open channel cache data file (%s) !", (const char*)filename);
@@ -180,7 +180,7 @@ void ChannelCache::load() {
 
     if(p == NULL) {
         ERRORLOG("Unable to load channel cache data file (%s) !", (const char*)filename);
-        close(fd);
+        ::close(fd);
         return;
     }
 
@@ -196,7 +196,7 @@ void ChannelCache::load() {
     // sanity check
     if(c > 10000) {
         delete p;
-        close(fd);
+        ::close(fd);
         return;
     }
 
@@ -214,7 +214,7 @@ void ChannelCache::load() {
     }
 
     delete p;
-    close(fd);
+    ::close(fd);
 
     gc();
 }

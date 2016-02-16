@@ -123,7 +123,7 @@ void LiveStreamer::requestStreamChange() {
 void LiveStreamer::tryChannelSwitch() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    // we're already attached to receiver ?  
+    // we're already attached to receiver ?
     if(IsAttached()) {
         return;
     }

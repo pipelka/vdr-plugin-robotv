@@ -25,11 +25,11 @@
 #ifndef ROBOTV_CHANNELCACHE_H
 #define ROBOTV_CHANNELCACHE_H
 
-#include "vdr/thread.h"
 #include "config/config.h"
+#include "db/storage.h"
 #include "demuxer/streambundle.h"
 
-class ChannelCache {
+class ChannelCache : public RoboTV::Storage {
 public:
 
     void load();
@@ -51,8 +51,6 @@ protected:
     ChannelCache();
 
 private:
-
-    RoboTVServerConfig& m_config;
 
     void lock() {
         m_access.Lock();
