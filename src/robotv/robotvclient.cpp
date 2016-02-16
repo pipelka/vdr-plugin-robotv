@@ -52,33 +52,12 @@
 #include "robotvcommand.h"
 #include "robotvclient.h"
 #include "robotvserver.h"
-#include "timerconflicts.h"
 
-
-void RoboTvClient::putTimer(cTimer* timer, MsgPacket* p) {
-    int flags = checkTimerConflicts(timer);
-
-    p->put_U32(createTimerUid(timer));
-    p->put_U32(timer->Flags() | flags);
-    p->put_U32(timer->Priority());
-    p->put_U32(timer->Lifetime());
-    p->put_U32(createChannelUid(timer->Channel()));
-    p->put_U32(timer->StartTime());
-    p->put_U32(timer->StopTime());
-    p->put_U32(timer->Day());
-    p->put_U32(timer->WeekDays());
-    p->put_String(m_toUtf8.Convert(timer->File()));
-}
-
-RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_streamController(this), m_recordingController(this) {
+RoboTvClient::RoboTvClient(int fd, unsigned int id) :
+    m_streamController(this),
+    m_recordingController(this),
+    m_timerController(this) {
     m_id = id;
-    m_loggedIn = false;
-    m_statusInterfaceEnabled  = false;
-    m_request = NULL;
-    m_response = NULL;
-    m_compressionLevel = 0;
-    m_timeout = 3000;
-
     m_socket = fd;
 
     Start();
@@ -322,6 +301,10 @@ bool RoboTvClient::processRequest() {
     /** OPCODE 60 - 79: RoboTV network functions for channel access */
     result |= m_channelController.process(m_request, m_response);
 
+    /** OPCODE 80 - 99: RoboTV network functions for timer access */
+    result |= m_timerController.process(m_request, m_response);
+
+
     switch(m_request->getMsgID()) {
             /** OPCODE 1 - 19: RoboTV network functions for general purpose */
         case ROBOTV_LOGIN:
@@ -339,27 +322,6 @@ bool RoboTvClient::processRequest() {
         case ROBOTV_UPDATECHANNELS:
             result = processUpdateChannels();
             break;
-
-        case ROBOTV_TIMER_GET:
-            result = processTimerGet();
-            break;
-
-        case ROBOTV_TIMER_GETLIST:
-            result = processTimerGetList();
-            break;
-
-        case ROBOTV_TIMER_ADD:
-            result = processTimerAdd();
-            break;
-
-        case ROBOTV_TIMER_DELETE:
-            result = processTimerDelete();
-            break;
-
-        case ROBOTV_TIMER_UPDATE:
-            result = processTimerUpdate();
-            break;
-
 
             /** OPCODE 100 - 119: RoboTV network functions for recording access */
         case ROBOTV_RECORDINGS_DISKSIZE:
@@ -489,234 +451,6 @@ bool RoboTvClient::processUpdateChannels() {
 
     return true;
 }
-
-/** OPCODE 80 - 99: RoboTV network functions for timer access */
-
-bool RoboTvClient::processTimerGet() { /* OPCODE 81 */
-    uint32_t number = m_request->get_U32();
-
-    if(Timers.Count() == 0) {
-        m_response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
-    }
-
-    cTimer* timer = Timers.Get(number - 1);
-
-    if(timer == NULL) {
-        m_response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
-    }
-
-    m_response->put_U32(ROBOTV_RET_OK);
-    putTimer(timer, m_response);
-
-    return true;
-}
-
-bool RoboTvClient::processTimerGetList() { /* OPCODE 82 */
-    if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to delete timer - timers being edited at VDR");
-        m_response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
-    }
-
-    cTimer* timer;
-    int numTimers = Timers.Count();
-
-    m_response->put_U32(numTimers);
-
-    for(int i = 0; i < numTimers; i++) {
-        timer = Timers.Get(i);
-
-        if(!timer) {
-            continue;
-        }
-
-        putTimer(timer, m_response);
-    }
-
-    return true;
-}
-
-bool RoboTvClient::processTimerAdd() { /* OPCODE 83 */
-    if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to add timer - timers being edited at VDR");
-        m_response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
-    }
-
-    m_request->get_U32(); // index unused
-    uint32_t flags      = m_request->get_U32() > 0 ? tfActive : tfNone;
-    uint32_t priority   = m_request->get_U32();
-    uint32_t lifetime   = m_request->get_U32();
-    uint32_t channelid  = m_request->get_U32();
-    time_t startTime    = m_request->get_U32();
-    time_t stopTime     = m_request->get_U32();
-    time_t day          = m_request->get_U32();
-    uint32_t weekdays   = m_request->get_U32();
-    const char* file    = m_request->get_String();
-    const char* aux     = m_request->get_String();
-
-    // handle instant timers
-    if(startTime == -1 || startTime == 0) {
-        startTime = time(NULL);
-    }
-
-    struct tm tm_r;
-
-    struct tm* time = localtime_r(&startTime, &tm_r);
-
-    if(day <= 0) {
-        day = cTimer::SetTime(startTime, 0);
-    }
-
-    int start = time->tm_hour * 100 + time->tm_min;
-    time = localtime_r(&stopTime, &tm_r);
-    int stop = time->tm_hour * 100 + time->tm_min;
-
-    cString buffer;
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-
-    const cChannel* channel = findChannelByUid(channelid);
-
-    if(channel != NULL) {
-        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
-    }
-
-    c.unlock();
-
-    cTimer* timer = new cTimer;
-
-    if(timer->Parse(buffer)) {
-        cTimer* t = Timers.GetTimer(timer);
-
-        if(!t) {
-            Timers.Add(timer);
-            Timers.SetModified();
-            INFOLOG("Timer %s added", *timer->ToDescr());
-            m_response->put_U32(ROBOTV_RET_OK);
-            return true;
-        }
-        else {
-            ERRORLOG("Timer already defined: %d %s", t->Index() + 1, *t->ToText());
-            m_response->put_U32(ROBOTV_RET_DATALOCKED);
-        }
-    }
-    else {
-        ERRORLOG("Error in timer settings");
-        m_response->put_U32(ROBOTV_RET_DATAINVALID);
-    }
-
-    delete timer;
-
-    return true;
-}
-
-bool RoboTvClient::processTimerDelete() { /* OPCODE 84 */
-    uint32_t uid = m_request->get_U32();
-    bool     force  = m_request->get_U32();
-
-    cTimer* timer = findTimerByUid(uid);
-
-    if(timer == NULL) {
-        ERRORLOG("Unable to delete timer - invalid timer identifier");
-        m_response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
-    }
-
-    if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to delete timer - timers being edited at VDR");
-        m_response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
-    }
-
-    if(timer->Recording() && !force) {
-        ERRORLOG("Timer is recording and can be deleted (use force to stop it)");
-        m_response->put_U32(ROBOTV_RET_RECRUNNING);
-        return true;
-    }
-
-    timer->Skip();
-    cRecordControls::Process(time(NULL));
-
-    INFOLOG("Deleting timer %s", *timer->ToDescr());
-    Timers.Del(timer);
-    Timers.SetModified();
-    m_response->put_U32(ROBOTV_RET_OK);
-
-    return true;
-}
-
-bool RoboTvClient::processTimerUpdate() { /* OPCODE 85 */
-    uint32_t uid = m_request->get_U32();
-    bool active = m_request->get_U32();
-
-    cTimer* timer = findTimerByUid(uid);
-
-    if(timer == NULL) {
-        ERRORLOG("Timer not defined");
-        m_response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
-    }
-
-    if(timer->Recording()) {
-        INFOLOG("Will not update timer - currently recording");
-        m_response->put_U32(ROBOTV_RET_OK);
-        return true;
-    }
-
-    cTimer t = *timer;
-
-    uint32_t flags      = active ? tfActive : tfNone;
-    uint32_t priority   = m_request->get_U32();
-    uint32_t lifetime   = m_request->get_U32();
-    uint32_t channelid  = m_request->get_U32();
-    time_t startTime    = m_request->get_U32();
-    time_t stopTime     = m_request->get_U32();
-    time_t day          = m_request->get_U32();
-    uint32_t weekdays   = m_request->get_U32();
-    const char* file    = m_request->get_String();
-    const char* aux     = m_request->get_String();
-
-    struct tm tm_r;
-    struct tm* time = localtime_r(&startTime, &tm_r);
-
-    if(day <= 0) {
-        day = cTimer::SetTime(startTime, 0);
-    }
-
-    int start = time->tm_hour * 100 + time->tm_min;
-    time = localtime_r(&stopTime, &tm_r);
-    int stop = time->tm_hour * 100 + time->tm_min;
-
-    cString buffer;
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-
-    const cChannel* channel = findChannelByUid(channelid);
-
-    if(channel != NULL) {
-        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
-    }
-
-    c.unlock();
-
-    if(!t.Parse(buffer)) {
-        ERRORLOG("Error in timer settings");
-        m_response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
-    }
-
-    *timer = t;
-    Timers.SetModified();
-    sendTimerChange();
-
-    m_response->put_U32(ROBOTV_RET_OK);
-
-    return true;
-}
-
 
 /** OPCODE 100 - 119: RoboTV network functions for recording access */
 

@@ -40,6 +40,7 @@
 #include "controllers/streamcontroller.h"
 #include "controllers/recordingcontroller.h"
 #include "controllers/channelcontroller.h"
+#include "controllers/timercontroller.h"
 
 class cChannel;
 class cDevice;
@@ -53,13 +54,13 @@ private:
 
     int m_socket;
 
-    bool m_loggedIn;
+    bool m_loggedIn = false;
 
-    bool m_statusInterfaceEnabled;
+    bool m_statusInterfaceEnabled = false;
 
-    MsgPacket* m_request;
+    MsgPacket* m_request = NULL;
 
-    MsgPacket* m_response;
+    MsgPacket* m_response = NULL;
 
     cCharSetConv m_toUtf8;
 
@@ -69,7 +70,7 @@ private:
 
     int m_compressionLevel;
 
-    int m_timeout;
+    int m_timeout = 3000;
 
     std::string m_clientName;
 
@@ -86,6 +87,8 @@ private:
     RecordingController m_recordingController;
 
     ChannelController m_channelController;
+
+    TimerController m_timerController;
 
 protected:
 
@@ -136,8 +139,6 @@ protected:
 
 private:
 
-    void putTimer(cTimer* timer, MsgPacket* p);
-
     //
 
     bool processLogin();
@@ -147,18 +148,6 @@ private:
     bool processEnableStatusInterface();
 
     bool processUpdateChannels();
-
-    //
-
-    bool processTimerGet();
-
-    bool processTimerGetList();
-
-    bool processTimerAdd();
-
-    bool processTimerDelete();
-
-    bool processTimerUpdate();
 
     //
 

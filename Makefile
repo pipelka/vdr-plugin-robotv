@@ -94,7 +94,8 @@ OBJS = \
 	src/tools/urlencode.o \
 	src/robotv/controllers/streamcontroller.o \
 	src/robotv/controllers/recordingcontroller.o \
-	src/robotv/timerconflicts.o \
+	src/robotv/controllers/channelcontroller.o \
+	src/robotv/controllers/timercontroller.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \
 	src/robotv/robotvserver.o \
