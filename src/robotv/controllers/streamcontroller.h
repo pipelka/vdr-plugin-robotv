@@ -64,11 +64,11 @@ private:
 
     void stopStreaming();
 
-    int m_languageIndex;
+    int m_languageIndex = -1;
 
     StreamInfo::Type m_langStreamType;
 
-    LiveStreamer* m_streamer;
+    LiveStreamer* m_streamer = NULL;
 
     std::mutex m_lock;
 

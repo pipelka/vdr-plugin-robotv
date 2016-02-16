@@ -55,8 +55,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     , m_demuxers(this)
     , m_scanTimeout(10)
     , m_parent(parent) {
-    m_device = NULL;
-    m_queue = NULL;
     m_startup = true;
     m_signalLost = false;
     m_langStreamType = StreamInfo::stMPEG2AUDIO;
@@ -216,7 +214,6 @@ void LiveStreamer::Action(void) {
 }
 
 int LiveStreamer::switchChannel(const cChannel* channel) {
-    std::lock_guard<std::mutex> lock(m_mutex);
 
     if(channel == NULL) {
         return ROBOTV_RET_ERROR;

@@ -64,7 +64,7 @@ private:
 
     void sendDetach();
 
-    cDevice* m_device;              /*!> The receiving device the channel depents to */
+    cDevice* m_device = NULL;              /*!> The receiving device the channel depents to */
 
     DemuxerBundle m_demuxers;
 
@@ -82,7 +82,7 @@ private:
 
     StreamInfo::Type m_langStreamType;
 
-    LiveQueue* m_queue;
+    LiveQueue* m_queue = NULL;
 
     uint32_t m_uid;
 
