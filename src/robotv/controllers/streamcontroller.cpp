@@ -28,6 +28,7 @@
 #include "robotv/robotvchannels.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
+#include "net/msgpacket.h"
 
 StreamController::StreamController(RoboTvClient* parent) :
     m_languageIndex(-1),

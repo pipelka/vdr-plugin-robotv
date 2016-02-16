@@ -22,49 +22,19 @@
  *
  */
 
-#ifndef ROBOTV_TIMERCONTROLLER_H
-#define ROBOTV_TIMERCONTROLLER_H
+#ifndef ROBOTV_CONTROLLER_H
+#define ROBOTV_CONTROLLER_H
 
-#include "vdr/timers.h"
-#include "controller.h"
-
-class RoboTvClient;
 class MsgPacket;
 
-class TimerController : public Controller {
+class Controller {
 public:
 
-    TimerController(RoboTvClient* parent);
+    virtual ~Controller() = default;
 
-    virtual ~TimerController();
-
-    bool process(MsgPacket* request, MsgPacket* response);
-
-private:
-
-    void putTimer(cTimer* timer, MsgPacket* p);
-
-    int checkTimerConflicts(cTimer* timer);
-
-    //
-
-    bool processGet(MsgPacket* request, MsgPacket* response);
-
-    bool processGetTimers(MsgPacket* request, MsgPacket* response);
-
-    bool processAdd(MsgPacket* request, MsgPacket* response);
-
-    bool processDelete(MsgPacket* request, MsgPacket* response);
-
-    bool processUpdate(MsgPacket* request, MsgPacket* response);
-
-    TimerController(const TimerController& orig);
-
-    RoboTvClient* m_parent;
-
-    cCharSetConv m_toUtf8;
+    virtual bool process(MsgPacket* request, MsgPacket* response) = 0;
 
 };
 
-#endif // ROBOTV_TIMERCONTROLLER_H
+#endif // ROBOTV_CONTROLLER_H
 

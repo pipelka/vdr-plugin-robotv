@@ -292,31 +292,24 @@ bool RoboTvClient::processRequest() {
 
     bool result = false;
 
-    /** OPCODE 20 - 39: RoboTV network functions for live streaming */
-    result = m_streamController.process(m_request, m_response);
+    std::list<Controller*> controllers = {
+        &m_streamController,
+        &m_recordingController,
+        &m_channelController,
+        &m_timerController
+    };
 
-    /** OPCODE 40 - 59: RoboTV network functions for recording streaming */
-    result |= m_recordingController.process(m_request, m_response);
-
-    /** OPCODE 60 - 79: RoboTV network functions for channel access */
-    result |= m_channelController.process(m_request, m_response);
-
-    /** OPCODE 80 - 99: RoboTV network functions for timer access */
-    result |= m_timerController.process(m_request, m_response);
-
+    for(auto i : controllers) {
+        if(i->process(m_request, m_response)) {
+            result = true;
+            break;
+        }
+    }
 
     switch(m_request->getMsgID()) {
             /** OPCODE 1 - 19: RoboTV network functions for general purpose */
         case ROBOTV_LOGIN:
             result = processLogin();
-            break;
-
-        case ROBOTV_GETTIME:
-            result = processGetTime();
-            break;
-
-        case ROBOTV_ENABLESTATUSINTERFACE:
-            result = processEnableStatusInterface();
             break;
 
         case ROBOTV_UPDATECHANNELS:
@@ -393,6 +386,7 @@ bool RoboTvClient::processLogin() { /* OPCODE 1 */
     m_protocolVersion = m_request->getProtocolVersion();
     m_compressionLevel = m_request->get_U8();
     m_clientName = m_request->get_String();
+    m_statusInterfaceEnabled = m_request->get_U8();
 
     if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 4) {
         ERRORLOG("Client '%s' has unsupported protocol version '%u', terminating client", m_clientName.c_str(), m_protocolVersion);
@@ -412,28 +406,7 @@ bool RoboTvClient::processLogin() { /* OPCODE 1 */
     m_response->put_String("RoboTV VDR Server");
     m_response->put_String(ROBOTV_VERSION);
 
-    setLoggedIn(true);
-    return true;
-}
-
-bool RoboTvClient::processGetTime() { /* OPCODE 2 */
-    time_t timeNow = time(NULL);
-    struct tm* timeStruct = localtime(&timeNow);
-    int timeOffset = timeStruct->tm_gmtoff;
-
-    m_response->put_U32(timeNow);
-    m_response->put_S32(timeOffset);
-
-    return true;
-}
-
-bool RoboTvClient::processEnableStatusInterface() {
-    bool enabled = m_request->get_U8();
-
-    enableStatusInterface(enabled);
-
-    m_response->put_U32(ROBOTV_RET_OK);
-
+    m_loggedIn = true;
     return true;
 }
 

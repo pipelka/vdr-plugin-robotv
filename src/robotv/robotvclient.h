@@ -129,23 +129,11 @@ public:
 
 protected:
 
-    void setLoggedIn(bool yesNo) {
-        m_loggedIn = yesNo;
-    }
-
-    void enableStatusInterface(bool yesNo) {
-        m_statusInterfaceEnabled = yesNo;
-    }
-
 private:
 
     //
 
     bool processLogin();
-
-    bool processGetTime();
-
-    bool processEnableStatusInterface();
 
     bool processUpdateChannels();
 

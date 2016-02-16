@@ -28,11 +28,12 @@
 #include <mutex>
 
 #include "live/livestreamer.h"
-#include "net/msgpacket.h"
+#include "controller.h"
 
 class RoboTvClient;
+class MsgPacket;
 
-class StreamController {
+class StreamController : public Controller {
 public:
 
     StreamController(RoboTvClient* parent);

@@ -25,11 +25,13 @@
 #ifndef ROBOTV_RECORDINGCONTROLLER_H
 #define	ROBOTV_RECORDINGCONTROLLER_H
 
+#include "controller.h"
+
 class RoboTvClient;
 class MsgPacket;
 class PacketPlayer;
 
-class RecordingController {
+class RecordingController : public Controller {
 public:
 
     RecordingController(RoboTvClient* parent);

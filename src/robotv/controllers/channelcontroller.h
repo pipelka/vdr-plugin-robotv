@@ -28,10 +28,11 @@
 #include <list>
 #include "vdr/channels.h"
 #include "robotv/robotvchannels.h"
+#include "controller.h"
 
 class MsgPacket;
 
-class ChannelController {
+class ChannelController : public Controller {
 public:
 
     ChannelController();
