@@ -112,7 +112,7 @@ void RoboTvClient::Action(void) {
             }
         }
 
-        m_request = MsgPacket::read(m_socket, bClosed, 1000);
+        m_request = MsgPacket::read(m_socket, bClosed, 10);
 
         if(bClosed) {
             delete m_request;

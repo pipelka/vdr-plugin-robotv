@@ -174,7 +174,7 @@ void LiveQueue::Action() {
             continue;
         }
         // send packet
-        else if(p->write(m_socket, 500)) {
+        else if(p->write(m_socket, 1000)) {
             pop();
             delete p;
         }
