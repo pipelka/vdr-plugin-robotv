@@ -41,6 +41,7 @@
 #include "controllers/recordingcontroller.h"
 #include "controllers/channelcontroller.h"
 #include "controllers/timercontroller.h"
+#include "controllers/moviecontroller.h"
 
 class cChannel;
 class cDevice;
@@ -66,8 +67,6 @@ private:
 
     uint32_t m_protocolVersion;
 
-    cMutex m_msgLock;
-
     int m_compressionLevel;
 
     int m_timeout = 3000;
@@ -89,6 +88,10 @@ private:
     ChannelController m_channelController;
 
     TimerController m_timerController;
+
+    MovieController m_movieController;
+
+    std::list<Controller*> m_controllers;
 
 protected:
 
@@ -127,8 +130,6 @@ public:
         return m_socket;
     }
 
-protected:
-
 private:
 
     //
@@ -136,30 +137,6 @@ private:
     bool processLogin();
 
     bool processUpdateChannels();
-
-    //
-
-    bool processMoviesGetDiskSpace();
-
-    bool processMoviesGetList();
-
-    bool processMoviesGetInfo();
-
-    bool processMoviesRename();
-
-    bool processMoviesDelete();
-
-    bool processMoviesMove();
-
-    bool processMoviesSetPlayCount();
-
-    bool processMoviesSetPosition();
-
-    bool processMoviesGetPosition();
-
-    bool processMoviesGetMarks();
-
-    bool processMoviesSetUrls();
 
     //
 

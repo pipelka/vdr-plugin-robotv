@@ -96,6 +96,7 @@ OBJS = \
 	src/robotv/controllers/recordingcontroller.o \
 	src/robotv/controllers/channelcontroller.o \
 	src/robotv/controllers/timercontroller.o \
+	src/robotv/controllers/moviecontroller.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \
 	src/robotv/robotvserver.o \

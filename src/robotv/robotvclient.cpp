@@ -33,16 +33,13 @@
 #include <vdr/recording.h>
 #include <vdr/channels.h>
 #include <vdr/i18n.h>
-#include <vdr/videodir.h>
 #include <vdr/plugin.h>
-#include <vdr/timers.h>
 #include <vdr/menu.h>
 #include <vdr/device.h>
 #include <vdr/sources.h>
 
 #include "config/config.h"
 #include "net/msgpacket.h"
-#include "recordings/recordingscache.h"
 #include "tools/hash.h"
 #include "tools/urlencode.h"
 #include "tools/recid2uid.h"
@@ -53,12 +50,18 @@
 #include "robotvclient.h"
 #include "robotvserver.h"
 
-RoboTvClient::RoboTvClient(int fd, unsigned int id) :
+RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
     m_streamController(this),
     m_recordingController(this),
     m_timerController(this) {
-    m_id = id;
-    m_socket = fd;
+
+    m_controllers = {
+        &m_streamController,
+        &m_recordingController,
+        &m_channelController,
+        &m_timerController,
+        &m_movieController
+    };
 
     Start();
 }
@@ -89,11 +92,6 @@ RoboTvClient::~RoboTvClient() {
 
 void RoboTvClient::Action(void) {
     bool bClosed(false);
-
-    // only root may change the priority
-    if(geteuid() == 0) {
-        SetPriority(10);
-    }
 
     while(Running()) {
 
@@ -140,28 +138,28 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
 void RoboTvClient::ChannelChange(const cChannel* Channel) {
     m_streamController.processChannelChange(Channel);
 
-    cMutexLock msgLock(&m_msgLock);
-
-    if(m_statusInterfaceEnabled && m_protocolVersion >= 6) {
-        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGED, ROBOTV_CHANNEL_STATUS);
-        m_channelController.addChannelToPacket(Channel, resp);
-        queueMessage(resp);
+    if(!m_statusInterfaceEnabled) {
+        return;
     }
+
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGED, ROBOTV_CHANNEL_STATUS);
+    m_channelController.addChannelToPacket(Channel, resp);
+
+    queueMessage(resp);
 }
 
 void RoboTvClient::sendTimerChange() {
-    cMutexLock lock(&m_msgLock);
-
-    if(m_statusInterfaceEnabled) {
-        INFOLOG("Sending timer change request to client #%i ...", m_id);
-        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
-        queueMessage(resp);
+    if(!m_statusInterfaceEnabled) {
+        return;
     }
+
+    INFOLOG("Sending timer change request to client #%i ...", m_id);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
+
+    queueMessage(resp);
 }
 
 void RoboTvClient::sendMoviesChange() {
-    cMutexLock lock(&m_msgLock);
-
     if(!m_statusInterfaceEnabled) {
         return;
     }
@@ -171,100 +169,100 @@ void RoboTvClient::sendMoviesChange() {
 }
 
 void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
-    cMutexLock lock(&m_msgLock);
-
-    if(m_statusInterfaceEnabled) {
-        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
-
-        resp->put_U32(Device->CardIndex());
-        resp->put_U32(On);
-
-        if(Name) {
-            resp->put_String(Name);
-        }
-        else {
-            resp->put_String("");
-        }
-
-        if(FileName) {
-            resp->put_String(FileName);
-        }
-        else {
-            resp->put_String("");
-        }
-
-        queueMessage(resp);
+    if(!m_statusInterfaceEnabled) {
+        return;
     }
+
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
+
+    resp->put_U32(Device->CardIndex());
+    resp->put_U32(On);
+
+    if(Name) {
+        resp->put_String(Name);
+    }
+    else {
+        resp->put_String("");
+    }
+
+    if(FileName) {
+        resp->put_String(FileName);
+    }
+    else {
+        resp->put_String("");
+    }
+
+    queueMessage(resp);
 }
 
 void RoboTvClient::OsdStatusMessage(const char* Message) {
-    cMutexLock lock(&m_msgLock);
-
-    if(m_statusInterfaceEnabled && Message) {
-        /* Ignore this messages */
-        if(strcasecmp(Message, trVDR("Channel not available!")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Delete timer?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Delete recording?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Press any key to cancel shutdown")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Press any key to cancel restart")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Editing - shut down anyway?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Recording - shut down anyway?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("shut down anyway?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Recording - restart anyway?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Editing - restart anyway?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Delete channel?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Timer still recording - really delete?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Delete marks information?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Delete resume information?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("CAM is in use - really reset?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Really restart?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Stop recording?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Cancel editing?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("Cutter already running - Add to cutting queue?")) == 0) {
-            return;
-        }
-        else if(strcasecmp(Message, trVDR("No index-file found. Creating may take minutes. Create one?")) == 0) {
-            return;
-        }
-
-        sendStatusMessage(Message);
+    if(!m_statusInterfaceEnabled || Message == NULL) {
+        return;
     }
+
+    /* Ignore this messages */
+    if(strcasecmp(Message, trVDR("Channel not available!")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Delete timer?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Delete recording?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Press any key to cancel shutdown")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Press any key to cancel restart")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Editing - shut down anyway?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Recording - shut down anyway?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("shut down anyway?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Recording - restart anyway?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Editing - restart anyway?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Delete channel?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Timer still recording - really delete?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Delete marks information?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Delete resume information?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("CAM is in use - really reset?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Really restart?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Stop recording?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Cancel editing?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("Cutter already running - Add to cutting queue?")) == 0) {
+        return;
+    }
+    else if(strcasecmp(Message, trVDR("No index-file found. Creating may take minutes. Create one?")) == 0) {
+        return;
+    }
+
+    sendStatusMessage(Message);
 }
 
 void RoboTvClient::sendStatusMessage(const char* Message) {
@@ -277,7 +275,6 @@ void RoboTvClient::sendStatusMessage(const char* Message) {
 }
 
 bool RoboTvClient::processRequest() {
-    cMutexLock lock(&m_msgLock);
 
     // set protocol version for all messages
     // except login, because login defines the
@@ -292,14 +289,7 @@ bool RoboTvClient::processRequest() {
 
     bool result = false;
 
-    std::list<Controller*> controllers = {
-        &m_streamController,
-        &m_recordingController,
-        &m_channelController,
-        &m_timerController
-    };
-
-    for(auto i : controllers) {
+    for(auto i : m_controllers) {
         if(i->process(m_request, m_response)) {
             result = true;
             break;
@@ -314,43 +304,6 @@ bool RoboTvClient::processRequest() {
 
         case ROBOTV_UPDATECHANNELS:
             result = processUpdateChannels();
-            break;
-
-            /** OPCODE 100 - 119: RoboTV network functions for recording access */
-        case ROBOTV_RECORDINGS_DISKSIZE:
-            result = processMoviesGetDiskSpace();
-            break;
-
-        case ROBOTV_RECORDINGS_GETLIST:
-            result = processMoviesGetList();
-            break;
-
-        case ROBOTV_RECORDINGS_RENAME:
-            result = processMoviesRename();
-            break;
-
-        case ROBOTV_RECORDINGS_DELETE:
-            result = processMoviesDelete();
-            break;
-
-        case ROBOTV_RECORDINGS_SETPLAYCOUNT:
-            result = processMoviesSetPlayCount();
-            break;
-
-        case ROBOTV_RECORDINGS_SETPOSITION:
-            result = processMoviesSetPosition();
-            break;
-
-        case ROBOTV_RECORDINGS_SETURLS:
-            result = processMoviesSetUrls();
-            break;
-
-        case ROBOTV_RECORDINGS_GETPOSITION:
-            result = processMoviesGetPosition();
-            break;
-
-        case ROBOTV_RECORDINGS_GETMARKS:
-            result = processMoviesGetMarks();
             break;
 
         case ROBOTV_ARTWORK_GET:
@@ -388,7 +341,7 @@ bool RoboTvClient::processLogin() { /* OPCODE 1 */
     m_clientName = m_request->get_String();
     m_statusInterfaceEnabled = m_request->get_U8();
 
-    if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 4) {
+    if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 7) {
         ERRORLOG("Client '%s' has unsupported protocol version '%u', terminating client", m_clientName.c_str(), m_protocolVersion);
         return false;
     }
@@ -403,7 +356,7 @@ bool RoboTvClient::processLogin() { /* OPCODE 1 */
     m_response->setProtocolVersion(m_protocolVersion);
     m_response->put_U32(timeNow);
     m_response->put_S32(timeOffset);
-    m_response->put_String("RoboTV VDR Server");
+    m_response->put_String("roboTV VDR Server");
     m_response->put_String(ROBOTV_VERSION);
 
     m_loggedIn = true;
@@ -425,288 +378,6 @@ bool RoboTvClient::processUpdateChannels() {
     return true;
 }
 
-/** OPCODE 100 - 119: RoboTV network functions for recording access */
-
-bool RoboTvClient::processMoviesGetDiskSpace() { /* OPCODE 100 */
-    int FreeMB;
-#if VDRVERSNUM >= 20102
-    int Percent = cVideoDirectory::VideoDiskSpace(&FreeMB);
-#else
-    int Percent = VideoDiskSpace(&FreeMB);
-#endif
-    int Total   = (FreeMB / (100 - Percent)) * 100;
-
-    m_response->put_U32(Total);
-    m_response->put_U32(FreeMB);
-    m_response->put_U32(Percent);
-
-    return true;
-}
-
-/*bool RoboTVClient::processMoviesGetCount() {
-    m_response->put_U32(Recordings.Count());
-
-    return true;
-}*/
-
-bool RoboTvClient::processMoviesGetList() { /* OPCODE 102 */
-    RecordingsCache& reccache = RecordingsCache::instance();
-
-    for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
-#if APIVERSNUM >= 10705
-        const cEvent* event = recording->Info()->GetEvent();
-#else
-        const cEvent* event = NULL;
-#endif
-
-        time_t recordingStart    = 0;
-        int    recordingDuration = 0;
-
-        if(event) {
-            recordingStart    = event->StartTime();
-            recordingDuration = event->Duration();
-        }
-        else {
-            cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
-
-            if(rc) {
-                recordingStart    = rc->Timer()->StartTime();
-                recordingDuration = rc->Timer()->StopTime() - recordingStart;
-            }
-            else {
-#if APIVERSNUM >= 10727
-                recordingStart = recording->Start();
-#else
-                recordingStart = recording->start;
-#endif
-            }
-        }
-
-        DEBUGLOG("GRI: RC: recordingStart=%lu recordingDuration=%i", recordingStart, recordingDuration);
-
-        // recording_time
-        m_response->put_U32(recordingStart);
-
-        // duration
-        m_response->put_U32(recordingDuration);
-
-        // priority
-        m_response->put_U32(
-#if APIVERSNUM >= 10727
-            recording->Priority()
-#else
-            recording->priority
-#endif
-        );
-
-        // lifetime
-        m_response->put_U32(
-#if APIVERSNUM >= 10727
-            recording->Lifetime()
-#else
-            recording->lifetime
-#endif
-        );
-
-        // channel_name
-        m_response->put_String(recording->Info()->ChannelName() ? m_toUtf8.Convert(recording->Info()->ChannelName()) : "");
-
-        char* fullname = strdup(recording->Name());
-        char* recname = strrchr(fullname, FOLDERDELIMCHAR);
-        char* directory = NULL;
-
-        if(recname == NULL) {
-            recname = fullname;
-        }
-        else {
-            *recname = 0;
-            recname++;
-            directory = fullname;
-        }
-
-        // title
-        m_response->put_String(m_toUtf8.Convert(recname));
-
-        // subtitle
-        if(!isempty(recording->Info()->ShortText())) {
-            m_response->put_String(m_toUtf8.Convert(recording->Info()->ShortText()));
-        }
-        else {
-            m_response->put_String("");
-        }
-
-        // description
-        if(!isempty(recording->Info()->Description())) {
-            m_response->put_String(m_toUtf8.Convert(recording->Info()->Description()));
-        }
-        else {
-            m_response->put_String("");
-        }
-
-        // directory
-        if(directory != NULL) {
-            char* p = directory;
-
-            while(*p != 0) {
-                if(*p == FOLDERDELIMCHAR) {
-                    *p = '/';
-                }
-
-                if(*p == '_') {
-                    *p = ' ';
-                }
-
-                p++;
-            }
-
-            while(*directory == '/') {
-                directory++;
-            }
-        }
-
-        m_response->put_String((isempty(directory)) ? "" : m_toUtf8.Convert(directory));
-
-        // filename / uid of recording
-        uint32_t uid = RecordingsCache::instance().add(recording);
-        char recid[9];
-        snprintf(recid, sizeof(recid), "%08x", uid);
-        m_response->put_String(recid);
-
-        // playcount
-        m_response->put_U32(reccache.getPlayCount(uid));
-
-        // content
-        if(event != NULL) {
-            m_response->put_U32(event->Contents());
-        }
-        else {
-            m_response->put_U32(0);
-        }
-
-        // thumbnail url - for future use
-        m_response->put_String((const char*)reccache.getPosterUrl(uid));
-
-        // icon url - for future use
-        m_response->put_String((const char*)reccache.getBackgroundUrl(uid));
-
-        free(fullname);
-    }
-
-    m_response->compress(m_compressionLevel);
-
-    return true;
-}
-
-bool RoboTvClient::processMoviesRename() { /* OPCODE 103 */
-    uint32_t uid = 0;
-    const char* recid = m_request->get_String();
-    uid = recid2uid(recid);
-
-    const char* newtitle     = m_request->get_String();
-    cRecording* recording    = RecordingsCache::instance().lookup(uid);
-    int         r            = ROBOTV_RET_DATAINVALID;
-
-    if(recording != NULL) {
-        // get filename and remove last part (recording time)
-        char* filename_old = strdup((const char*)recording->FileName());
-        char* sep = strrchr(filename_old, '/');
-
-        if(sep != NULL) {
-            *sep = 0;
-        }
-
-        // replace spaces in newtitle
-        strreplace((char*)newtitle, ' ', '_');
-        char filename_new[512];
-        strncpy(filename_new, filename_old, 512);
-        sep = strrchr(filename_new, '/');
-
-        if(sep != NULL) {
-            sep++;
-            *sep = 0;
-        }
-
-        strncat(filename_new, newtitle, sizeof(filename_new) - 1);
-
-        INFOLOG("renaming recording '%s' to '%s'", filename_old, filename_new);
-        r = rename(filename_old, filename_new);
-        Recordings.Update();
-
-        free(filename_old);
-    }
-
-    m_response->put_U32(r);
-
-    return true;
-}
-
-bool RoboTvClient::processMoviesDelete() { /* OPCODE 104 */
-    const char* recid = m_request->get_String();
-    uint32_t uid = recid2uid(recid);
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
-
-    if(recording == NULL) {
-        ERRORLOG("Recording not found !");
-        m_response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
-    }
-
-    DEBUGLOG("deleting recording: %s", recording->Name());
-
-    cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
-
-    if(rc != NULL) {
-        ERRORLOG("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
-        m_response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
-    }
-
-    if(!recording->Delete()) {
-        ERRORLOG("Error while deleting recording!");
-        m_response->put_U32(ROBOTV_RET_ERROR);
-        return true;
-    }
-
-    Recordings.DelByName(recording->FileName());
-    INFOLOG("Recording \"%s\" deleted", recording->FileName());
-    m_response->put_U32(ROBOTV_RET_OK);
-
-    return true;
-}
-
-bool RoboTvClient::processMoviesSetPlayCount() {
-    const char* recid = m_request->get_String();
-    uint32_t count = m_request->get_U32();
-
-    uint32_t uid = recid2uid(recid);
-    RecordingsCache::instance().setPlayCount(uid, count);
-
-    return true;
-}
-
-bool RoboTvClient::processMoviesSetPosition() {
-    const char* recid = m_request->get_String();
-    uint64_t position = m_request->get_U64();
-
-    uint32_t uid = recid2uid(recid);
-    RecordingsCache::instance().setLastPlayedPosition(uid, position);
-
-    return true;
-}
-
-bool RoboTvClient::processMoviesSetUrls() {
-    const char* recid = m_request->get_String();
-    const char* poster = m_request->get_String();
-    const char* background = m_request->get_String();
-    uint32_t id = m_request->get_U32();
-
-    uint32_t uid = recid2uid(recid);
-    RecordingsCache::instance().setPosterUrl(uid, poster);
-    RecordingsCache::instance().setBackgroundUrl(uid, background);
-    RecordingsCache::instance().setMovieID(uid, id);
-
-    return true;
-}
 
 bool RoboTvClient::processArtworkGet() {
     const char* title = m_request->get_String();
@@ -738,67 +409,6 @@ bool RoboTvClient::processArtworkSet() {
     m_artwork.set(content, title, poster, background, externalId);
     return true;
 }
-
-bool RoboTvClient::processMoviesGetPosition() {
-    const char* recid = m_request->get_String();
-
-    uint32_t uid = recid2uid(recid);
-    uint64_t position = RecordingsCache::instance().getLastPlayedPosition(uid);
-
-    m_response->put_U64(position);
-    return true;
-}
-
-bool RoboTvClient::processMoviesGetMarks() {
-#if VDRVERSNUM < 10732
-    m_response->put_U32(ROBOTV_RET_NOTSUPPORTED);
-    return true;
-#endif
-
-    const char* recid = m_request->get_String();
-    uint32_t uid = recid2uid(recid);
-
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
-
-    if(recording == NULL) {
-        ERRORLOG("GetMarks: recording not found !");
-        m_response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
-    }
-
-    cMarks marks;
-
-    if(!marks.Load(recording->FileName(), recording->FramesPerSecond(), recording->IsPesRecording())) {
-        INFOLOG("no marks found for: '%s'", recording->FileName());
-        m_response->put_U32(ROBOTV_RET_NOTSUPPORTED);
-        return true;
-    }
-
-    m_response->put_U32(ROBOTV_RET_OK);
-
-    m_response->put_U64(recording->FramesPerSecond() * 10000);
-
-#if VDRVERSNUM >= 10732
-
-    cMark* end = NULL;
-    cMark* begin = NULL;
-
-    while((begin = marks.GetNextBegin(end)) != NULL) {
-        end = marks.GetNextEnd(begin);
-
-        if(end != NULL) {
-            m_response->put_String("SCENE");
-            m_response->put_U64(begin->Position());
-            m_response->put_U64(end->Position());
-            m_response->put_String(begin->ToText());
-        }
-    }
-
-#endif
-
-    return true;
-}
-
 
 /** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
 
