@@ -1,5 +1,5 @@
 /*
- *      vdr-plugin-robotv - RoboTV server plugin for VDR
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
  *      Copyright (C) 2016 Alexander Pipelka
  *
@@ -26,8 +26,8 @@
 #include <vdr/plugin.h>
 #include "robotvserver.h"
 
-static const char* VERSION        = "1.0.0";
-static const char* DESCRIPTION    = "RoboTV Server";
+static const char* VERSION        = "0.9.97";
+static const char* DESCRIPTION    = "roboTV Server";
 
 class PluginRoboTVServer : public cPlugin {
 private:

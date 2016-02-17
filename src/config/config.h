@@ -1,5 +1,5 @@
 /*
- *      vdr-plugin-robotv - RoboTV server plugin for VDR
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
  *      Copyright (C) 2016 Alexander Pipelka
  *
@@ -33,19 +33,19 @@
 // log output configuration
 
 #ifdef CONSOLEDEBUG
-#define DEBUGLOG(format, ...) printf("RoboTV: " format, ##__VA_ARGS__)
+#define DEBUGLOG(format, ...) printf("roboTV: " format, ##__VA_ARGS__)
 #elif defined  DEBUG
-#define DEBUGLOG(format, ...) dsyslog("RoboTV: " format, ##__VA_ARGS__)
+#define DEBUGLOG(format, ...) dsyslog("roboTV: " format, ##__VA_ARGS__)
 #else
 #define DEBUGLOG(format, ...)
 #endif
 
 #ifdef CONSOLEDEBUG
-#define INFOLOG(format, ...) printf("RoboTV: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) printf("RoboTV-Error: " format, ##__VA_ARGS__)
+#define INFOLOG(format, ...) printf("roboTV: " format, ##__VA_ARGS__)
+#define ERRORLOG(format, ...) printf("roboTV-Error: " format, ##__VA_ARGS__)
 #else
-#define INFOLOG(format, ...) isyslog("RoboTV: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) esyslog("RoboTV-Error: " format, ##__VA_ARGS__)
+#define INFOLOG(format, ...) isyslog("roboTV: " format, ##__VA_ARGS__)
+#define ERRORLOG(format, ...) esyslog("roboTV-Error: " format, ##__VA_ARGS__)
 #endif
 
 // default settings

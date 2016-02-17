@@ -1,5 +1,5 @@
 /*
- *      vdr-plugin-robotv - RoboTV server plugin for VDR
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
  *      Copyright (C) 2016 Aleaxander Pipelka
  *

@@ -1,5 +1,5 @@
 /*
- *      vdr-plugin-robotv - RoboTV server plugin for VDR
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
  *      Copyright (C) 2016 Alexander Pipelka
  *
@@ -73,7 +73,7 @@ public:
     }
 };
 
-RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_config(RoboTVServerConfig::instance()) {
+RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_config(RoboTVServerConfig::instance()) {
     m_ipv4Fallback = false;
     m_serverPort  = listenPort;
 
@@ -128,7 +128,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_con
 
     if(x < 0) {
         close(m_serverFd);
-        INFOLOG("Unable to start RoboTV Server, port already in use ?");
+        INFOLOG("Unable to start roboTV Server, port already in use ?");
         m_serverFd = -1;
         return;
     }
@@ -137,7 +137,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("VDR RoboTV Server"), m_con
 
     Start();
 
-    INFOLOG("RoboTV Server started");
+    INFOLOG("roboTV Server started");
     INFOLOG("Channel streaming timeout: %i seconds", m_config.stream_timeout);
     return;
 }
@@ -149,7 +149,7 @@ RoboTVServer::~RoboTVServer() {
         delete(*i);
     }
 
-    INFOLOG("RoboTV Server stopped");
+    INFOLOG("roboTV Server stopped");
 }
 
 void RoboTVServer::clientConnected(int fd) {

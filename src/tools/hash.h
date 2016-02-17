@@ -1,5 +1,5 @@
 /*
- *      vdr-plugin-robotv - RoboTV server plugin for VDR
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
  *      Copyright (C) 1986 Gary S. Brown (CRC32 code)
  *      Copyright (C) 2011 Alexander Pipelka
