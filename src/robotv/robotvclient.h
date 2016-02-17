@@ -42,6 +42,7 @@
 #include "controllers/channelcontroller.h"
 #include "controllers/timercontroller.h"
 #include "controllers/moviecontroller.h"
+#include "controllers/logincontroller.h"
 
 class cChannel;
 class cDevice;
@@ -55,23 +56,13 @@ private:
 
     int m_socket;
 
-    bool m_loggedIn = false;
-
-    bool m_statusInterfaceEnabled = false;
-
     MsgPacket* m_request = NULL;
 
     MsgPacket* m_response = NULL;
 
     cCharSetConv m_toUtf8;
 
-    uint32_t m_protocolVersion;
-
-    int m_compressionLevel;
-
     int m_timeout = 3000;
-
-    std::string m_clientName;
 
     std::queue<MsgPacket*> m_queue;
 
@@ -90,6 +81,8 @@ private:
     TimerController m_timerController;
 
     MovieController m_movieController;
+
+    LoginController m_loginController;
 
     std::list<Controller*> m_controllers;
 
@@ -118,25 +111,15 @@ public:
 
     void sendStatusMessage(const char* Message);
 
-    unsigned int getID() {
+    unsigned int getId() const {
         return m_id;
     }
 
-    const std::string& getClientName() {
-        return m_clientName;
-    }
-
-    int getSocket() {
+    int getSocket() const {
         return m_socket;
     }
 
 private:
-
-    //
-
-    bool processLogin();
-
-    bool processUpdateChannels();
 
     //
 

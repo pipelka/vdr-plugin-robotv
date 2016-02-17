@@ -60,7 +60,8 @@ RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
         &m_recordingController,
         &m_channelController,
         &m_timerController,
-        &m_movieController
+        &m_movieController,
+        &m_loginController
     };
 
     Start();
@@ -138,7 +139,7 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
 void RoboTvClient::ChannelChange(const cChannel* Channel) {
     m_streamController.processChannelChange(Channel);
 
-    if(!m_statusInterfaceEnabled) {
+    if(!m_loginController.statusEnabled()) {
         return;
     }
 
@@ -149,7 +150,7 @@ void RoboTvClient::ChannelChange(const cChannel* Channel) {
 }
 
 void RoboTvClient::sendTimerChange() {
-    if(!m_statusInterfaceEnabled) {
+    if(!m_loginController.statusEnabled()) {
         return;
     }
 
@@ -160,7 +161,7 @@ void RoboTvClient::sendTimerChange() {
 }
 
 void RoboTvClient::sendMoviesChange() {
-    if(!m_statusInterfaceEnabled) {
+    if(!m_loginController.statusEnabled()) {
         return;
     }
 
@@ -169,7 +170,7 @@ void RoboTvClient::sendMoviesChange() {
 }
 
 void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
-    if(!m_statusInterfaceEnabled) {
+    if(!m_loginController.statusEnabled()) {
         return;
     }
 
@@ -196,7 +197,7 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
 }
 
 void RoboTvClient::OsdStatusMessage(const char* Message) {
-    if(!m_statusInterfaceEnabled || Message == NULL) {
+    if(!m_loginController.statusEnabled() || Message == NULL) {
         return;
     }
 
@@ -281,11 +282,11 @@ bool RoboTvClient::processRequest() {
     // protocol version
 
     if(m_request->getMsgID() != ROBOTV_LOGIN) {
-        m_request->setProtocolVersion(m_protocolVersion);
+        m_request->setProtocolVersion(m_loginController.protocolVersion());
     }
 
     m_response = new MsgPacket(m_request->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, m_request->getUID());
-    m_response->setProtocolVersion(m_protocolVersion);
+    m_response->setProtocolVersion(m_loginController.protocolVersion());
 
     bool result = false;
 
@@ -297,15 +298,6 @@ bool RoboTvClient::processRequest() {
     }
 
     switch(m_request->getMsgID()) {
-            /** OPCODE 1 - 19: RoboTV network functions for general purpose */
-        case ROBOTV_LOGIN:
-            result = processLogin();
-            break;
-
-        case ROBOTV_UPDATECHANNELS:
-            result = processUpdateChannels();
-            break;
-
         case ROBOTV_ARTWORK_GET:
             result = processArtworkGet();
             break;
@@ -331,53 +323,6 @@ bool RoboTvClient::processRequest() {
 
     return result;
 }
-
-
-/** OPCODE 1 - 19: RoboTV network functions for general purpose */
-
-bool RoboTvClient::processLogin() { /* OPCODE 1 */
-    m_protocolVersion = m_request->getProtocolVersion();
-    m_compressionLevel = m_request->get_U8();
-    m_clientName = m_request->get_String();
-    m_statusInterfaceEnabled = m_request->get_U8();
-
-    if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 7) {
-        ERRORLOG("Client '%s' has unsupported protocol version '%u', terminating client", m_clientName.c_str(), m_protocolVersion);
-        return false;
-    }
-
-    INFOLOG("Welcome client '%s' with protocol version '%u'", m_clientName.c_str(), m_protocolVersion);
-
-    // Send the login reply
-    time_t timeNow = time(NULL);
-    struct tm* timeStruct = localtime(&timeNow);
-    int timeOffset = timeStruct->tm_gmtoff;
-
-    m_response->setProtocolVersion(m_protocolVersion);
-    m_response->put_U32(timeNow);
-    m_response->put_S32(timeOffset);
-    m_response->put_String("roboTV VDR Server");
-    m_response->put_String(ROBOTV_VERSION);
-
-    m_loggedIn = true;
-    return true;
-}
-
-bool RoboTvClient::processUpdateChannels() {
-    uint8_t updatechannels = m_request->get_U8();
-
-    if(updatechannels <= 5) {
-        Setup.UpdateChannels = updatechannels;
-        INFOLOG("Setting channel update method: %i", updatechannels);
-        m_response->put_U32(ROBOTV_RET_OK);
-    }
-    else {
-        m_response->put_U32(ROBOTV_RET_DATAINVALID);
-    }
-
-    return true;
-}
-
 
 bool RoboTvClient::processArtworkGet() {
     const char* title = m_request->get_String();
@@ -524,18 +469,16 @@ bool RoboTvClient::processEPG_GetForChannel() { /* OPCODE 120 */
         m_response->put_String(m_toUtf8.Convert(thisEventDescription));
 
         // add epg artwork
-        if(m_protocolVersion >= 6) {
-            std::string posterUrl;
-            std::string backgroundUrl;
+        std::string posterUrl;
+        std::string backgroundUrl;
 
-            if(m_artwork.get(thisEventContent, m_toUtf8.Convert(thisEventTitle), posterUrl, backgroundUrl)) {
-                m_response->put_String(posterUrl.c_str());
-                m_response->put_String(backgroundUrl.c_str());
-            }
-            else {
-                m_response->put_String("x");
-                m_response->put_String("x");
-            }
+        if(m_artwork.get(thisEventContent, m_toUtf8.Convert(thisEventTitle), posterUrl, backgroundUrl)) {
+            m_response->put_String(posterUrl.c_str());
+            m_response->put_String(backgroundUrl.c_str());
+        }
+        else {
+            m_response->put_String("x");
+            m_response->put_String("x");
         }
 
         atLeastOneEvent = true;
@@ -548,8 +491,6 @@ bool RoboTvClient::processEPG_GetForChannel() { /* OPCODE 120 */
         m_response->put_U32(0);
         DEBUGLOG("Written 0 because no data");
     }
-
-    m_response->compress(m_compressionLevel);
 
     return true;
 }

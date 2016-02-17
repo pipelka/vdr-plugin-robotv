@@ -264,7 +264,7 @@ void RoboTVServer::Action(void) {
             for(ClientList::iterator i = m_clients.begin(); i != m_clients.end();) {
 
                 if(!(*i)->Active()) {
-                    INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->getID());
+                    INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->getId());
                     delete(*i);
                     i = m_clients.erase(i);
                     bChanged = true;
