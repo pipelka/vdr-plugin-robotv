@@ -29,8 +29,6 @@
 #include <fstream>
 #include <string>
 
-#include "net/msgpacket.h"
-
 class StreamInfo {
 public:
 
@@ -129,7 +127,7 @@ protected:
 
     int m_width; // width of the stream reported by the demuxer
 
-    float m_aspect; // display aspect of stream
+    int m_aspect; // display aspect of stream (*10000 : 1,7777 = 17777)
 
     int m_channels; // number of audio channels (e.g. 6 for 5.1)
 
@@ -158,16 +156,12 @@ protected:
     int m_ppsLength;     // PPS length
     int m_vpsLength;     // VPS length
 
-    friend MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs);
-    friend MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs);
+    friend class ChannelCache;
 
 private:
 
     void Initialize();
 
 };
-
-MsgPacket& operator>> (MsgPacket& lhs, StreamInfo& rhs);
-MsgPacket& operator<< (MsgPacket& lhs, const StreamInfo& rhs);
 
 #endif // ROBOTV_STREAMINFO_H

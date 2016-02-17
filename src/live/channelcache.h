@@ -25,16 +25,15 @@
 #ifndef ROBOTV_CHANNELCACHE_H
 #define ROBOTV_CHANNELCACHE_H
 
+#include <thread>
+#include <string>
+
 #include "config/config.h"
 #include "db/storage.h"
 #include "demuxer/streambundle.h"
 
 class ChannelCache : public RoboTV::Storage {
 public:
-
-    void load();
-
-    void save();
 
     void add(uint32_t channeluid, const StreamBundle& channel);
 
@@ -52,17 +51,11 @@ protected:
 
 private:
 
-    void lock() {
-        m_access.Lock();
-    }
+    void addDb(uint32_t channeluid, const StreamBundle& channel);
 
-    void unlock() {
-        m_access.Unlock();
-    }
+    void createDb();
 
-    std::map<uint32_t, StreamBundle> m_cache;
-
-    cMutex m_access;
+    std::string createStringLiteral(uint8_t* data, int length);
 
 };
 

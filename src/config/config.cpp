@@ -31,7 +31,6 @@
 #include <vdr/videodir.h>
 
 #include "config.h"
-#include "live/channelcache.h"
 #include "live/livequeue.h"
 
 RoboTVServerConfig::RoboTVServerConfig() : listen_port(LISTEN_PORT), stream_timeout(3) {
@@ -51,7 +50,6 @@ void RoboTVServerConfig::Load() {
     }
 
     LiveQueue::removeTimeShiftFiles();
-    ChannelCache::instance().load();
 }
 
 bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {

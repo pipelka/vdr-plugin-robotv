@@ -127,7 +127,7 @@ int ParserH265::parsePayload(unsigned char* data, int length) {
     m_rate = 50;
     m_scale = 1;
 
-    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, DAR, pixelaspect.num, pixelaspect.den);
+    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
     return length;
 }
 

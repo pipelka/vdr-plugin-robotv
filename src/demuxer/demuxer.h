@@ -101,7 +101,7 @@ public:
     }
 
     /* Video Stream Information */
-    void setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den);
+    void setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, int Aspect, int num, int den);
 
     uint32_t getFpsScale() const {
         return m_fpsScale;
@@ -119,7 +119,7 @@ public:
         return m_width;
     }
 
-    double getAspect() const {
+    int getAspect() const {
         return m_aspect;
     }
 

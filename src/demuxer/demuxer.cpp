@@ -164,7 +164,7 @@ bool TsDemuxer::processTsPacket(unsigned char* data) const {
     return true;
 }
 
-void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, float Aspect, int num, int den) {
+void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, int Aspect, int num, int den) {
     // check for sane picture information
     if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0) {
         return;
@@ -188,7 +188,7 @@ void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int W
         INFOLOG("Unknown Display Aspect Ratio");
     }
     else {
-        INFOLOG("Display Aspect Ratio: %.2f", Aspect);
+        INFOLOG("Display Aspect Ratio: %.2f", (double)Aspect / 10000);
     }
 
     if(FpsScale != 0 && FpsRate != 0) {

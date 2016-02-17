@@ -418,11 +418,9 @@ void LiveStreamer::sendStreamChange() {
     DEBUGLOG("sendStreamChange");
 
     StreamBundle cache;
-    INFOLOG("Stored channel information in cache:");
 
     for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
         cache.addStream(*(*i));
-        (*i)->info();
     }
 
     ChannelCache::instance().add(m_uid, cache);

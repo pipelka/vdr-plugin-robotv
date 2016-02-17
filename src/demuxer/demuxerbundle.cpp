@@ -222,7 +222,7 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                 resp->put_U32(stream->getFpsRate());
                 resp->put_U32(stream->getHeight());
                 resp->put_U32(stream->getWidth());
-                resp->put_S64(stream->getAspect() * 10000.0);
+                resp->put_S64(stream->getAspect());
 
                 // send decoder specific data SPS / PPS / VPS ... (Protocol Version 6)
                 if(protocolVersion >= 6) {

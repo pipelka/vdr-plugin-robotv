@@ -179,5 +179,5 @@ void ParserMpeg2Video::parseSequenceStart(unsigned char* data, int length) {
     int index = bs.GetBits(4);
     m_duration = framedurations[index];
 
-    m_demuxer->setVideoInformation(framerates[index][1], framerates[index][0], height, width, DAR, 1, 1);
+    m_demuxer->setVideoInformation(framerates[index][1], framerates[index][0], height, width, (int)(DAR * 10000), 1, 1);
 }

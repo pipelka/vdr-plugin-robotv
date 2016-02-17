@@ -59,7 +59,4 @@ private:
 
 };
 
-MsgPacket& operator<< (MsgPacket& lhs, const StreamBundle& rhs);
-MsgPacket& operator>> (MsgPacket& lhs, StreamBundle& rhs);
-
 #endif // ROBOTV_STREAMBUNDLE_H

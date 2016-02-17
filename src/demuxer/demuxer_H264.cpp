@@ -188,7 +188,7 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
     double PAR = (double)pixelaspect.num / (double)pixelaspect.den;
     double DAR = (PAR * width) / height;
 
-    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, DAR, pixelaspect.num, pixelaspect.den);
+    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
     return length;
 }
 

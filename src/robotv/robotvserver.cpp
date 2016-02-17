@@ -222,12 +222,9 @@ void RoboTVServer::clientConnected(int fd) {
 void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
-    cTimeMs channelCacheTimer;
     cTimeMs recordingReloadTimer;
 
     bool recordingReloadTrigger = false;
-
-    SetPriority(19);
 
     // artwork
     Artwork artwork;
@@ -281,12 +278,6 @@ void RoboTVServer::Action(void) {
             // reset inactivity timeout as long as there are clients connected
             if(m_clients.size() > 0) {
                 ShutdownHandler.SetUserInactiveTimeout();
-            }
-
-            // store channel cache
-            if(m_clients.size() > 0 && channelCacheTimer.Elapsed() >= 60 * 1000) {
-                ChannelCache::instance().save();
-                channelCacheTimer.Set(0);
             }
 
             // check for recording changes

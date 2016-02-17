@@ -213,26 +213,3 @@ StreamBundle StreamBundle::createFromChannel(const cChannel* channel) {
 
     return item;
 }
-
-MsgPacket& operator<< (MsgPacket& lhs, const StreamBundle& rhs) {
-    lhs.put_U32((int)rhs.size());
-
-    for(StreamBundle::const_iterator i = rhs.begin(); i != rhs.end(); i++) {
-        lhs << i->second;
-    }
-
-    return lhs;
-}
-
-MsgPacket& operator>> (MsgPacket& lhs, StreamBundle& rhs) {
-    rhs.clear();
-    uint32_t c = lhs.get_U32();
-
-    for(uint32_t i = 0; i < c; i++) {
-        StreamInfo s;
-        lhs >> s;
-        rhs.addStream(s);
-    }
-
-    return lhs;
-}
