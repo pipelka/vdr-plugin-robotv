@@ -61,15 +61,14 @@ RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
         &m_channelController,
         &m_timerController,
         &m_movieController,
-        &m_loginController
+        &m_loginController,
+        &m_epgController
     };
 
     Start();
 }
 
 RoboTvClient::~RoboTvClient() {
-    DEBUGLOG("%s", __FUNCTION__);
-
     // shutdown connection
     shutdown(m_socket, SHUT_RDWR);
     Cancel(10);
@@ -306,11 +305,6 @@ bool RoboTvClient::processRequest() {
             result = processArtworkSet();
             break;
 
-            /** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
-        case ROBOTV_EPG_GETFORCHANNEL:
-            result = processEPG_GetForChannel();
-            break;
-
         default:
             break;
     }
@@ -352,146 +346,6 @@ bool RoboTvClient::processArtworkSet() {
 
     INFOLOG("set artwork: %s (%i): %s", title, content, background);
     m_artwork.set(content, title, poster, background, externalId);
-    return true;
-}
-
-/** OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
-
-bool RoboTvClient::processEPG_GetForChannel() { /* OPCODE 120 */
-    uint32_t channelUID = m_request->get_U32();
-    uint32_t startTime  = m_request->get_U32();
-    uint32_t duration   = m_request->get_U32();
-
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-
-    const cChannel* channel = NULL;
-
-    channel = findChannelByUid(channelUID);
-
-    if(channel != NULL) {
-        DEBUGLOG("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
-    }
-
-    if(!channel) {
-        m_response->put_U32(0);
-        c.unlock();
-
-        ERRORLOG("written 0 because channel = NULL");
-        return true;
-    }
-
-    cSchedulesLock MutexLock;
-    const cSchedules* Schedules = cSchedules::Schedules(MutexLock);
-
-    if(!Schedules) {
-        m_response->put_U32(0);
-        c.unlock();
-
-        DEBUGLOG("written 0 because Schedule!s! = NULL");
-        return true;
-    }
-
-    const cSchedule* Schedule = Schedules->GetSchedule(channel->GetChannelID());
-
-    if(!Schedule) {
-        m_response->put_U32(0);
-        c.unlock();
-
-        DEBUGLOG("written 0 because Schedule = NULL");
-        return true;
-    }
-
-    bool atLeastOneEvent = false;
-
-    uint32_t thisEventID;
-    uint32_t thisEventTime;
-    uint32_t thisEventDuration;
-    uint32_t thisEventContent;
-    uint32_t thisEventRating;
-    const char* thisEventTitle;
-    const char* thisEventSubTitle;
-    const char* thisEventDescription;
-
-    for(const cEvent* event = Schedule->Events()->First(); event; event = Schedule->Events()->Next(event)) {
-        thisEventID           = event->EventID();
-        thisEventTitle        = event->Title();
-        thisEventSubTitle     = event->ShortText();
-        thisEventDescription  = event->Description();
-        thisEventTime         = event->StartTime();
-        thisEventDuration     = event->Duration();
-#if defined(USE_PARENTALRATING) || defined(PARENTALRATINGCONTENTVERSNUM)
-        thisEventContent      = event->Contents();
-        thisEventRating       = 0;
-#elif APIVERSNUM >= 10711
-        thisEventContent      = event->Contents();
-        thisEventRating       = event->ParentalRating();
-#else
-        thisEventContent      = 0;
-        thisEventRating       = 0;
-#endif
-
-        //in the past filter
-        if((thisEventTime + thisEventDuration) < (uint32_t)time(NULL)) {
-            continue;
-        }
-
-        //start time filter
-        if((thisEventTime + thisEventDuration) <= startTime) {
-            continue;
-        }
-
-        //duration filter
-        if(duration != 0 && thisEventTime >= (startTime + duration)) {
-            continue;
-        }
-
-        if(!thisEventTitle) {
-            thisEventTitle        = "";
-        }
-
-        if(!thisEventSubTitle) {
-            thisEventSubTitle     = "";
-        }
-
-        if(!thisEventDescription) {
-            thisEventDescription  = "";
-        }
-
-        m_response->put_U32(thisEventID);
-        m_response->put_U32(thisEventTime);
-        m_response->put_U32(thisEventDuration);
-        m_response->put_U32(thisEventContent);
-        m_response->put_U32(thisEventRating);
-
-        m_response->put_String(m_toUtf8.Convert(thisEventTitle));
-        m_response->put_String(m_toUtf8.Convert(thisEventSubTitle));
-        m_response->put_String(m_toUtf8.Convert(thisEventDescription));
-
-        // add epg artwork
-        std::string posterUrl;
-        std::string backgroundUrl;
-
-        if(m_artwork.get(thisEventContent, m_toUtf8.Convert(thisEventTitle), posterUrl, backgroundUrl)) {
-            m_response->put_String(posterUrl.c_str());
-            m_response->put_String(backgroundUrl.c_str());
-        }
-        else {
-            m_response->put_String("x");
-            m_response->put_String("x");
-        }
-
-        atLeastOneEvent = true;
-    }
-
-    c.unlock();
-    DEBUGLOG("Got all event data");
-
-    if(!atLeastOneEvent) {
-        m_response->put_U32(0);
-        DEBUGLOG("Written 0 because no data");
-    }
-
     return true;
 }
 

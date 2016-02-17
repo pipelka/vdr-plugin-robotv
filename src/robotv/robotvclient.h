@@ -43,6 +43,7 @@
 #include "controllers/timercontroller.h"
 #include "controllers/moviecontroller.h"
 #include "controllers/logincontroller.h"
+#include "controllers/epgcontroller.h"
 
 class cChannel;
 class cDevice;
@@ -83,6 +84,8 @@ private:
     MovieController m_movieController;
 
     LoginController m_loginController;
+
+    EpgController m_epgController;
 
     std::list<Controller*> m_controllers;
 
@@ -127,9 +130,6 @@ private:
 
     bool processArtworkSet();
 
-    //
-
-    bool processEPG_GetForChannel();
 };
 
 #endif // ROBOTV_CLIENT_H

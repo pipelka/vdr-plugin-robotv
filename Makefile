@@ -98,6 +98,7 @@ OBJS = \
 	src/robotv/controllers/timercontroller.o \
 	src/robotv/controllers/moviecontroller.o \
 	src/robotv/controllers/logincontroller.o \
+	src/robotv/controllers/epgcontroller.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \
 	src/robotv/robotvserver.o \
