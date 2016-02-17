@@ -57,9 +57,9 @@
 #define CHANNEL_CACHE_FILE  "channelcache.data"
 #define STORAGE_DB_FILE     "storage.db"
 
-#define LISTEN_PORT       34891
-#define LISTEN_PORT_S    "34891"
-#define DISCOVERY_PORT    34891
+#define LISTEN_PORT       34892
+#define LISTEN_PORT_S    "34892"
+#define DISCOVERY_PORT    34892
 
 // backward compatibility
 
