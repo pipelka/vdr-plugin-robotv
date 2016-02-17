@@ -44,6 +44,7 @@
 #include "controllers/moviecontroller.h"
 #include "controllers/logincontroller.h"
 #include "controllers/epgcontroller.h"
+#include "controllers/artworkcontroller.h"
 
 class cChannel;
 class cDevice;
@@ -87,6 +88,8 @@ private:
 
     EpgController m_epgController;
 
+    ArtworkController m_artworkController;
+
     std::list<Controller*> m_controllers;
 
 protected:
@@ -121,14 +124,6 @@ public:
     int getSocket() const {
         return m_socket;
     }
-
-private:
-
-    //
-
-    bool processArtworkGet();
-
-    bool processArtworkSet();
 
 };
 

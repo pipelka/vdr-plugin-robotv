@@ -62,7 +62,8 @@ RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
         &m_timerController,
         &m_movieController,
         &m_loginController,
-        &m_epgController
+        &m_epgController,
+        &m_artworkController
     };
 
     Start();
@@ -287,66 +288,14 @@ bool RoboTvClient::processRequest() {
     m_response = new MsgPacket(m_request->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, m_request->getUID());
     m_response->setProtocolVersion(m_loginController.protocolVersion());
 
-    bool result = false;
-
     for(auto i : m_controllers) {
         if(i->process(m_request, m_response)) {
-            result = true;
-            break;
+            queueMessage(m_response);
+            return true;
         }
     }
 
-    switch(m_request->getMsgID()) {
-        case ROBOTV_ARTWORK_GET:
-            result = processArtworkGet();
-            break;
-
-        case ROBOTV_ARTWORK_SET:
-            result = processArtworkSet();
-            break;
-
-        default:
-            break;
-    }
-
-    if(result) {
-        queueMessage(m_response);
-    }
-
-    m_response = NULL;
-
-    return result;
-}
-
-bool RoboTvClient::processArtworkGet() {
-    const char* title = m_request->get_String();
-    uint32_t content = m_request->get_U32();
-
-    std::string poster;
-    std::string background;
-
-    if(!m_artwork.get(content, title, poster, background)) {
-        poster = "x";
-        background = "x";
-    }
-
-    m_response->put_String(poster.c_str());
-    m_response->put_String(background.c_str());
-    m_response->put_U32(0); // TODO - externalId
-
-    return true;
-}
-
-bool RoboTvClient::processArtworkSet() {
-    const char* title = m_request->get_String();
-    uint32_t content = m_request->get_U32();
-    const char* poster = m_request->get_String();
-    const char* background = m_request->get_String();
-    uint32_t externalId = m_request->get_U32();
-
-    INFOLOG("set artwork: %s (%i): %s", title, content, background);
-    m_artwork.set(content, title, poster, background, externalId);
-    return true;
+    return false;
 }
 
 void RoboTvClient::queueMessage(MsgPacket* p) {

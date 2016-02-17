@@ -234,7 +234,7 @@ void RoboTVServer::Action(void) {
     cTimeMs artworkCleanupTimer;
 
     INFOLOG("removing outdated artwork");
-    artwork.cleanup();
+    artwork.triggerCleanup();
 
     // get initial state of the recordings
     int recState = -1;
@@ -259,30 +259,22 @@ void RoboTVServer::Action(void) {
 
         if(r == 0) {
             // remove disconnected clients
-            bool bChanged = false;
-
             for(ClientList::iterator i = m_clients.begin(); i != m_clients.end();) {
 
                 if(!(*i)->Active()) {
                     INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->getId());
                     delete(*i);
                     i = m_clients.erase(i);
-                    bChanged = true;
                 }
                 else {
                     i++;
                 }
             }
 
-            // store channel cache
-            if(bChanged) {
-                ChannelCache::instance().save();
-            }
-
             // artwork cleanup (every 12 hours)
             if(artworkCleanupTimer.Elapsed() >= 12 * 60 * 60 * 1000) {
                 INFOLOG("removing outdated artwork");
-                artwork.cleanup();
+                artwork.triggerCleanup();
                 artworkCleanupTimer.Set(0);
             }
 
@@ -293,10 +285,7 @@ void RoboTVServer::Action(void) {
 
             // store channel cache
             if(m_clients.size() > 0 && channelCacheTimer.Elapsed() >= 60 * 1000) {
-                if(!bChanged) {
-                    ChannelCache::instance().save();
-                }
-
+                ChannelCache::instance().save();
                 channelCacheTimer.Set(0);
             }
 

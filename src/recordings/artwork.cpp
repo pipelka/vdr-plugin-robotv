@@ -22,6 +22,7 @@
  *
  */
 
+#include <thread>
 #include "recordings/artwork.h"
 #include "config/config.h"
 
@@ -99,4 +100,12 @@ void Artwork::cleanup(int afterDays) {
         "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > %i AND backgroundurl=''",
         afterDays
     );
+}
+
+void Artwork::triggerCleanup(int afterDays) {
+    std::thread t([ = ]() {
+        cleanup(afterDays);
+    });
+
+    t.detach();
 }

@@ -22,33 +22,34 @@
  *
  */
 
-#ifndef ROBOTV_ARTWORK_H
-#define	ROBOTV_ARTWORK_H
+#ifndef ROBOTV_ARTWORKCONTROLLER_H
+#define ROBOTV_ARTWORKCONTROLLER_H
 
-#include "db/storage.h"
-#include <string>
+#include "controller.h"
+#include "recordings/artwork.h"
 
-class Artwork {
+class MsgPacket;
+
+class ArtworkController : public Controller {
 public:
 
-    Artwork();
+    ArtworkController();
 
-    virtual ~Artwork();
+    virtual ~ArtworkController();
 
-    bool get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl);
+    bool process(MsgPacket* request, MsgPacket* response);
 
-    bool set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId);
+protected:
 
-    void cleanup(int afterDays = 4);
+    bool processGet(MsgPacket* request, MsgPacket* response);
 
-    void triggerCleanup(int afterDays = 4);
+    bool processSet(MsgPacket* request, MsgPacket* response);
 
 private:
 
-    void createDb();
+    ArtworkController(const ArtworkController& orig);
 
-    RoboTV::Storage& m_storage;
-
+    Artwork m_artwork;
 };
 
-#endif	// ROBOTV_ARTWORK_H
+#endif // ROBOTV_ARTWORKCONTROLLER_H
