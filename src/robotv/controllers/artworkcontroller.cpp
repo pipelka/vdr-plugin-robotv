@@ -73,7 +73,6 @@ bool ArtworkController::processSet(MsgPacket* request, MsgPacket* response) {
     const char* background = request->get_String();
     uint32_t externalId = request->get_U32();
 
-    INFOLOG("set artwork: %s (%i): %s", title, content, background);
     m_artwork.set(content, title, poster, background, externalId);
     return true;
 }

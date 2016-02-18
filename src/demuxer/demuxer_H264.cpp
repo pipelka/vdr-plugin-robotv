@@ -144,7 +144,6 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
 
         // remove filler data
         else if(nal_type == 0x0C) {
-            INFOLOG("H264: removed %i filler bytes", length - (o - 4));
             length = o - 4;
         }
     }
