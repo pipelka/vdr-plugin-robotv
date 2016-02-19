@@ -74,10 +74,6 @@ private:
 
     uint32_t m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
 
-    cTimeMs m_lastTick;
-
-    bool m_signalLost;
-
     int m_languageIndex;
 
     StreamInfo::Type m_langStreamType;

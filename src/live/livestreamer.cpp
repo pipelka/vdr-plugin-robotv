@@ -27,7 +27,6 @@
 #include <time.h>
 #include <string.h>
 #include <map>
-#include <vdr/i18n.h>
 #include <vdr/remux.h>
 #include <vdr/channels.h>
 #include <vdr/timers.h>
@@ -56,7 +55,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     , m_scanTimeout(10)
     , m_parent(parent) {
     m_startup = true;
-    m_signalLost = false;
     m_langStreamType = StreamInfo::stMPEG2AUDIO;
     m_languageIndex = -1;
     m_uid = createChannelUid(channel);
@@ -137,14 +135,10 @@ void LiveStreamer::tryChannelSwitch() {
         return;
     }
 
-    // time limit not exceeded -> relax & exit
-    if(m_lastTick.Elapsed() < (uint64_t)(m_scanTimeout * 1000)) {
-        cCondWait::SleepMs(10);
-        return;
-    }
+    cCondWait::SleepMs(100);
 
-    // push notification after timeout
-    switch(rc) {
+    // TODO - push notification after timeout
+    /*switch(rc) {
         case ROBOTV_RET_ENCRYPTED:
             ERRORLOG("Unable to decrypt channel %i - %s", channel->Number(), channel->Name());
             m_parent->sendStatusMessage(tr("Unable to decrypt channel"));
@@ -164,9 +158,7 @@ void LiveStreamer::tryChannelSwitch() {
             ERRORLOG("Error switching to channel %i - %s", channel->Number(), channel->Name());
             m_parent->sendStatusMessage(tr("Failed to switch"));
             break;
-    }
-
-    m_lastTick.Set(0);
+    }*/
 }
 
 void LiveStreamer::Action(void) {
@@ -174,23 +166,15 @@ void LiveStreamer::Action(void) {
     unsigned char* buf = NULL;
     m_startup = true;
 
-    // reset timer
-    m_lastTick.Set(0);
-
     INFOLOG("streamer thread started.");
 
     while(Running()) {
-        size = 0;
-        buf = Get(size);
-
         // try to switch channel if we aren't attached yet
         tryChannelSwitch();
 
-        if(!isStarting() && (m_lastTick.Elapsed() > (uint64_t)(m_scanTimeout * 1000)) && !m_signalLost) {
-            INFOLOG("timeout. signal lost!");
-            sendStatus(ROBOTV_STREAM_STATUS_SIGNALLOST);
-            m_signalLost = true;
-        }
+        // get transport stream data
+        size = 0;
+        buf = Get(size);
 
         // not enough data
         if(buf == NULL) {
@@ -346,7 +330,6 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
         }
 
         INFOLOG("streaming of channel started");
-        m_lastTick.Set(0);
         m_requestStreamChange = true;
         m_startup = false;
     }
@@ -362,20 +345,6 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     }
 
     m_waitForKeyFrame = false;
-
-    // if a audio or video packet was sent, the signal is restored
-    if(m_signalLost && (pkt->content == StreamInfo::scVIDEO || pkt->content == StreamInfo::scAUDIO)) {
-        INFOLOG("signal restored");
-        sendStatus(ROBOTV_STREAM_STATUS_SIGNALRESTORED);
-        m_signalLost = false;
-        m_requestStreamChange = true;
-        m_lastTick.Set(0);
-        return;
-    }
-
-    if(m_signalLost) {
-        return;
-    }
 
     // initialise stream packet
     MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_MUXPKT, ROBOTV_CHANNEL_STREAM);
@@ -405,7 +374,6 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     packet->put_Blob(pkt->data, pkt->size);
 
     m_queue->add(packet, pkt->content);
-    m_lastTick.Set(0);
 }
 
 void LiveStreamer::sendDetach() {

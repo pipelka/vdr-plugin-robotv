@@ -112,7 +112,7 @@ LIBS =
 
 ### The main target:
 
-all: $(SOFILE) i18n
+all: $(SOFILE)
 
 ### Implicit rules:
 
@@ -133,31 +133,6 @@ $(DEPFILE): Makefile
 
 -include $(DEPFILE)
 
-### Internationalization (I18N):
-
-PODIR     = po
-I18Npo    = $(wildcard $(PODIR)/*.po)
-I18Nmo    = $(addsuffix .mo, $(foreach file, $(I18Npo), $(basename $(file))))
-I18Nmsgs  = $(addprefix $(DESTDIR)$(LOCDIR)/, $(addsuffix /LC_MESSAGES/vdr-$(PLUGIN).mo, $(notdir $(foreach file, $(I18Npo), $(basename $(file))))))
-I18Npot   = $(PODIR)/$(PLUGIN).pot
-
-%.mo: %.po
-	msgfmt -c -o $@ $<
-
-$(I18Npot): $(wildcard src/*/*.cpp)
-	xgettext -C -cTRANSLATORS --no-wrap --no-location -k -ktr -ktrNOOP --package-name=vdr-$(PLUGIN) --package-version=$(VERSION) --msgid-bugs-address='<see README>' -o $@ `find ./src -name *.cpp`
-
-%.po: $(I18Npot)
-	msgmerge -U --no-wrap --no-location --backup=none -q -N $@ $<
-	@touch $@
-
-$(I18Nmsgs): $(DESTDIR)$(LOCDIR)/%/LC_MESSAGES/vdr-$(PLUGIN).mo: $(PODIR)/%.mo
-	install -D -m644 $< $@
-
-i18n: $(I18Nmo) $(I18Npot)
-
-install-i18n: $(I18Nmsgs)
-
 ### Targets:
 
 $(SOFILE): $(OBJS) $(SQLITE_OBJS)
@@ -171,7 +146,7 @@ install-conf:
 	install -Dm644 $(PLUGIN)/allowed_hosts.conf $(DESTDIR)$(CFGDIR)/allowed_hosts.conf
 	install -Dm644 $(PLUGIN)/$(PLUGIN).conf $(DESTDIR)$(CFGDIR)/$(PLUGIN).conf
 
-install: install-lib install-i18n
+install: install-lib
 
 dist: $(I18Npo) clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)
