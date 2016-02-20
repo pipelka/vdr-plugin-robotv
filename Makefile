@@ -117,12 +117,12 @@ all: $(SOFILE)
 ### Implicit rules:
 
 src/db/sqlite3.o: src/db/sqlite3.c
-	@$(CC) $(CFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
 	@echo "CC $<"
+	@$(CC) $(CFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
 
 %.o: %.cpp
-	@$(CXX) $(CXXFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
 	@echo "CXX $<"
+	@$(CXX) $(CXXFLAGS) -fPIC -c $(DEFINES) $(INCLUDES) -o $@ $<
 
 ### Dependencies:
 
@@ -136,8 +136,8 @@ $(DEPFILE): Makefile
 ### Targets:
 
 $(SOFILE): $(OBJS) $(SQLITE_OBJS)
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(SQLITE_OBJS) $(LIBS) -o $@
 	@echo "LINK $@"
+	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $(OBJS) $(SQLITE_OBJS) $(LIBS) -o $@
 
 install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
