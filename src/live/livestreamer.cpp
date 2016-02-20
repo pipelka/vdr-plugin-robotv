@@ -207,25 +207,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         detach();
     }
 
-    // check if any device is able to decrypt the channel - code taken from VDR
-    int NumUsableSlots = 0;
-
-    if(channel->Ca() >= CA_ENCRYPTED_MIN) {
-        for(cCamSlot* CamSlot = CamSlots.First(); CamSlot; CamSlot = CamSlots.Next(CamSlot)) {
-            if(CamSlot->ModuleStatus() == msReady) {
-                if(CamSlot->ProvidesCa(channel->Caids())) {
-                    if(!ChannelCamRelations.CamChecked(channel->GetChannelID(), CamSlot->SlotNumber())) {
-                        NumUsableSlots++;
-                    }
-                }
-            }
-        }
-
-        if(!NumUsableSlots) {
-            return ROBOTV_RET_ENCRYPTED;
-        }
-    }
-
     // get device for this channel
     m_device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
 
@@ -306,13 +287,22 @@ bool LiveStreamer::attach(void) {
         return false;
     }
 
-    return m_device->AttachReceiver(this);
+    if(m_device->AttachReceiver(this)) {
+        INFOLOG("device attached to receiver");
+        return true;
+    }
+
+    ERRORLOG("failed to attach receiver !");
+    return false;
 }
 
 void LiveStreamer::detach(void) {
-    if(m_device) {
-        m_device->Detach(this);
+    if(m_device == NULL) {
+        return;
     }
+
+    m_device->Detach(this);
+    INFOLOG("device detached");
 }
 
 void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
