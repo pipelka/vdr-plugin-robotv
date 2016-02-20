@@ -55,19 +55,15 @@ class cAllowedHosts : public cSVDRPhosts {
 public:
     cAllowedHosts(const cString& AllowedHostsFile) {
         if(!Load(AllowedHostsFile, true, true)) {
-            ERRORLOG("Invalid or missing '%s'. falling back to 'svdrphosts.conf'.", *AllowedHostsFile);
-            cString Base = cString::sprintf("%s/../svdrphosts.conf", RoboTVServerConfig::instance().ConfigDirectory.c_str());
+            ERRORLOG("Invalid or missing %s. Disabling access restrictions !!!.", *AllowedHostsFile);
+            ERRORLOG("Please create the file as soon as possible.");
+            cSVDRPhost* localhost = new cSVDRPhost;
 
-            if(!Load(Base, true, true)) {
-                ERRORLOG("Invalid or missing %s. Adding 127.0.0.1 to list of allowed hosts.", *Base);
-                cSVDRPhost* localhost = new cSVDRPhost;
-
-                if(localhost->Parse("127.0.0.1")) {
-                    Add(localhost);
-                }
-                else {
-                    delete localhost;
-                }
+            if(localhost->Parse("0.0.0.0:0")) {
+                Add(localhost);
+            }
+            else {
+                delete localhost;
             }
         }
     }
