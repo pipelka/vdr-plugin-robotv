@@ -37,7 +37,7 @@ public:
 
     void add(uint32_t channeluid, const StreamBundle& channel);
 
-    void add(const cChannel* channel);
+    StreamBundle add(const cChannel* channel);
 
     StreamBundle lookup(uint32_t channeluid);
 

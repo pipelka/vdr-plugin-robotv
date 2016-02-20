@@ -241,8 +241,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     // channel not found in cache -> add it from vdr
     else {
         INFOLOG("adding channel to cache");
-        cache.add(channel);
-        bundle = cache.lookup(m_uid);
+        bundle = cache.add(channel);
     }
 
     // recheck cache item
