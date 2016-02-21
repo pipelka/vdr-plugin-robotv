@@ -49,7 +49,6 @@
 
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS)
     : cThread("LiveStreamer stream processor")
-    , cRingBufferLinear(MEGABYTE(10), TS_SIZE, true)
     , cReceiver(NULL, priority)
     , m_demuxers(this)
     , m_scanTimeout(10)
@@ -70,7 +69,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     m_queue = new LiveQueue(m_parent->getSocket());
     m_queue->Start();
 
-    SetTimeouts(0, 10);
     Start();
 }
 
@@ -134,8 +132,6 @@ void LiveStreamer::tryChannelSwitch() {
         return;
     }
 
-    cCondWait::SleepMs(100);
-
     // TODO - push notification after timeout
     /*switch(rc) {
         case ROBOTV_RET_ENCRYPTED:
@@ -161,34 +157,14 @@ void LiveStreamer::tryChannelSwitch() {
 }
 
 void LiveStreamer::Action(void) {
-    int size = 0;
-    unsigned char* buf = NULL;
-
     INFOLOG("streamer thread started.");
 
     while(Running()) {
         // try to switch channel if we aren't attached yet
         tryChannelSwitch();
 
-        // get transport stream data
-        size = 0;
-        buf = Get(size);
-
-        // not enough data
-        if(buf == NULL) {
-            continue;
-        }
-
-        while(size >= TS_SIZE) {
-            if(!Running()) {
-                break;
-            }
-
-            m_demuxers.processTsPacket(buf);
-
-            buf += TS_SIZE;
-            size -= TS_SIZE;
-            Del(TS_SIZE);
+        if(Running()) {
+            cCondWait::SleepMs(10);
         }
     }
 
@@ -265,7 +241,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     }
 
     // clear cached data
-    Clear();
     m_queue->cleanup();
 
     m_uid = createChannelUid(channel);
@@ -512,11 +487,7 @@ void LiveStreamer::Receive(uchar* Data, int Length)
 void LiveStreamer::Receive(const uchar* Data, int Length)
 #endif
 {
-    int p = Put(Data, Length);
-
-    if(p != Length) {
-        ReportOverflow(Length - p);
-    }
+    m_demuxers.processTsPacket(Data);
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {

@@ -45,7 +45,7 @@ class MsgPacket;
 class LiveQueue;
 class RoboTvClient;
 
-class LiveStreamer : public cThread, public cRingBufferLinear, public cReceiver, public TsDemuxer::Listener {
+class LiveStreamer : public cThread, public cReceiver, public TsDemuxer::Listener {
 private:
     friend class TsDemuxer;
     friend class ChannelCache;
