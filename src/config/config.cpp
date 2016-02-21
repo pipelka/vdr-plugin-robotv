@@ -33,13 +33,13 @@
 #include "config.h"
 #include "live/livequeue.h"
 
-RoboTVServerConfig::RoboTVServerConfig() : listen_port(LISTEN_PORT), stream_timeout(3) {
+RoboTVServerConfig::RoboTVServerConfig() : listenPort(LISTEN_PORT) {
 }
 
 void RoboTVServerConfig::Load() {
     LiveQueue::setTimeShiftDir(cVideoDirectory::Name());
 
-    if(!cConfig<cSetupLine>::Load(AddDirectory(ConfigDirectory.c_str(), GENERAL_CONFIG_FILE), true, false)) {
+    if(!cConfig<cSetupLine>::Load(AddDirectory(configDirectory.c_str(), GENERAL_CONFIG_FILE), true, false)) {
         return;
     }
 
@@ -60,10 +60,10 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
         LiveQueue::setBufferSize(strtoull(Value, NULL, 10));
     }
     else if(!strcasecmp(Name, "PiconsURL")) {
-        PiconsURL = Value;
+        piconsUrl = Value;
     }
     else if(!strcasecmp(Name, "ReorderCmd")) {
-        ReorderCmd = Value;
+        reorderCmd = Value;
     }
     else {
         return false;

@@ -51,7 +51,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     : cThread("LiveStreamer stream processor")
     , cReceiver(NULL, priority)
     , m_demuxers(this)
-    , m_scanTimeout(10)
     , m_parent(parent) {
     m_langStreamType = StreamInfo::stMPEG2AUDIO;
     m_languageIndex = -1;
@@ -60,10 +59,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     m_waitForKeyFrame = false;
     m_rawPTS = rawPTS;
     m_requestStreamChange = false;
-
-    if(m_scanTimeout == 0) {
-        m_scanTimeout = RoboTVServerConfig::instance().stream_timeout;
-    }
 
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
@@ -95,10 +90,6 @@ LiveStreamer::~LiveStreamer() {
     m_device = NULL;
 
     DEBUGLOG("Finished to delete live streamer (took %llu ms)", t.Elapsed());
-}
-
-void LiveStreamer::setTimeout(uint32_t timeout) {
-    m_scanTimeout = timeout;
 }
 
 void LiveStreamer::setProtocolVersion(uint32_t protocolVersion) {

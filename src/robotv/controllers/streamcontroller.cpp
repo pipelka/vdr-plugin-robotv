@@ -95,8 +95,6 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
         INFOLOG("Preferred language: %s / type: %i", I18nLanguageCode(m_languageIndex), (int)m_langStreamType);
     }
 
-    uint32_t timeout = RoboTVServerConfig::instance().stream_timeout;
-
     stopStreaming();
 
     RoboTVChannels& c = RoboTVChannels::instance();
@@ -122,14 +120,13 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
     int status = startStreaming(
                      request->getProtocolVersion(),
                      channel,
-                     timeout,
                      priority,
                      waitForKeyFrame,
                      rawPts);
 
     if(status == ROBOTV_RET_OK) {
         INFOLOG("--------------------------------------");
-        INFOLOG("Started streaming of channel %s (timeout %i seconds, priority %i)", channel->Name(), timeout, priority);
+        INFOLOG("Started streaming of channel %s (priority %i)", channel->Name(), priority);
     }
     else {
         DEBUGLOG("Can't stream channel %s", channel->Name());
@@ -179,12 +176,11 @@ void StreamController::processChannelChange(const cChannel* Channel) {
     }
 }
 
-int StreamController::startStreaming(int version, const cChannel* channel, uint32_t timeout, int32_t priority, bool waitForKeyFrame, bool rawPts) {
+int StreamController::startStreaming(int version, const cChannel* channel, int32_t priority, bool waitForKeyFrame, bool rawPts) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     m_streamer = new LiveStreamer(m_parent, channel, priority, rawPts);
     m_streamer->setLanguage(m_languageIndex, m_langStreamType);
-    m_streamer->setTimeout(timeout);
     m_streamer->setWaitForKeyFrame(waitForKeyFrame);
     m_streamer->setProtocolVersion(version);
 

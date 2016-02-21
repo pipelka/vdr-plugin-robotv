@@ -40,27 +40,6 @@ const char* PluginRoboTVServer::CommandLineHelp(void) {
 
 bool PluginRoboTVServer::ProcessArgs(int argc, char* argv[]) {
     // Implement command line argument processing here if applicable.
-    static struct option long_options[] = {
-        { "timeout",  required_argument, NULL, 't' },
-        { NULL,       no_argument,       NULL,  0  }
-    };
-
-    int c;
-
-    while((c = getopt_long(argc, argv, "t:", long_options, NULL)) != -1) {
-        switch(c) {
-            case 't':
-                if(optarg != NULL) {
-                    RoboTVServerConfig::instance().stream_timeout = atoi(optarg);
-                }
-
-                break;
-
-            default:
-                return false;
-        }
-    }
-
     return true;
 }
 
@@ -68,15 +47,15 @@ bool PluginRoboTVServer::Initialize(void) {
     // Initialize any background activities the plugin shall perform.
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-    config.ConfigDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
-    config.CacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
+    config.configDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
+    config.cacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
     config.Load();
 
     return true;
 }
 
 bool PluginRoboTVServer::Start(void) {
-    m_server = new RoboTVServer(RoboTVServerConfig::instance().listen_port);
+    m_server = new RoboTVServer(RoboTVServerConfig::instance().listenPort);
 
     return true;
 }

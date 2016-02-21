@@ -70,8 +70,6 @@ private:
 
     bool m_requestStreamChange;
 
-    uint32_t m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
-
     int m_languageIndex;
 
     StreamInfo::Type m_langStreamType;
@@ -123,8 +121,6 @@ public:
     bool getTimeShiftMode();
 
     void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
-
-    void setTimeout(uint32_t timeout);
 
     void setProtocolVersion(uint32_t protocolVersion);
 

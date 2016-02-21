@@ -278,7 +278,7 @@ cString ChannelController::createServiceReference(const cChannel* channel) {
 }
 
 cString ChannelController::createLogoUrl(const cChannel* channel) {
-    std::string url = RoboTVServerConfig::instance().PiconsURL;
+    std::string url = RoboTVServerConfig::instance().piconsUrl;
 
     if(url.empty()) {
         return "";

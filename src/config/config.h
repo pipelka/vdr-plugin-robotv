@@ -51,15 +51,10 @@
 // default settings
 
 #define ALLOWED_HOSTS_FILE  "allowed_hosts.conf"
-#define FRONTEND_DEVICE     "/dev/dvb/adapter%d/frontend%d"
 #define GENERAL_CONFIG_FILE "robotv.conf"
-#define RESUME_DATA_FILE    "resume.data"
-#define CHANNEL_CACHE_FILE  "channelcache.data"
 #define STORAGE_DB_FILE     "storage.db"
 
 #define LISTEN_PORT       34892
-#define LISTEN_PORT_S    "34892"
-#define DISCOVERY_PORT    34892
 
 // backward compatibility
 
@@ -82,12 +77,11 @@ public:
     static RoboTVServerConfig& instance();
 
     // Remote server settings
-    std::string ConfigDirectory;      // config directory path
-    std::string CacheDirectory;       // cache directory path
-    uint16_t listen_port;         // Port of remote server
-    uint16_t stream_timeout;      // timeout in seconds for stream data
-    std::string PiconsURL;
-    std::string ReorderCmd;
+    std::string configDirectory; // config directory path
+    std::string cacheDirectory; // cache directory path
+    uint16_t listenPort; // Port of remote server
+    std::string piconsUrl;
+    std::string reorderCmd;
 };
 
 #endif // ROBOTV_CONFIG_H

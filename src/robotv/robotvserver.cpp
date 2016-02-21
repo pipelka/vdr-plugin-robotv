@@ -73,8 +73,8 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
     m_ipv4Fallback = false;
     m_serverPort  = listenPort;
 
-    if(!m_config.ConfigDirectory.empty()) {
-        m_allowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.ConfigDirectory.c_str());
+    if(!m_config.configDirectory.empty()) {
+        m_allowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.configDirectory.c_str());
     }
     else {
         ERRORLOG("RoboTVServer: missing ConfigDirectory!");
@@ -134,7 +134,6 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
     Start();
 
     INFOLOG("roboTV Server started");
-    INFOLOG("Channel streaming timeout: %i seconds", m_config.stream_timeout);
     return;
 }
 

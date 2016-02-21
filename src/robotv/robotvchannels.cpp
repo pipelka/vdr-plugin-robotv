@@ -56,7 +56,7 @@ cChannels* RoboTVChannels::get() {
 }
 
 cChannels* RoboTVChannels::reorder(cChannels* channels) {
-    std::string reorderCmd = RoboTVServerConfig::instance().ReorderCmd;
+    std::string reorderCmd = RoboTVServerConfig::instance().reorderCmd;
 
     if(reorderCmd.empty()) {
         return channels;
