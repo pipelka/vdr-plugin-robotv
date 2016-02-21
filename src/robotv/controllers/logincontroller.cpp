@@ -41,8 +41,8 @@ bool LoginController::process(MsgPacket* request, MsgPacket* response) {
         case ROBOTV_LOGIN:
             return processLogin(request, response);
 
-        case ROBOTV_UPDATECHANNELS:
-            return processUpdateChannels(request, response);
+        case ROBOTV_GETCONFIG:
+            return processGetConfig(request, response);
     }
 
     return false;
@@ -76,16 +76,13 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
     return true;
 }
 
-bool LoginController::processUpdateChannels(MsgPacket* request, MsgPacket* response) {
-    uint8_t updateChannels = request->get_U8();
+bool LoginController::processGetConfig(MsgPacket* request, MsgPacket* response) {
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-    if(updateChannels <= 5) {
-        Setup.UpdateChannels = updateChannels;
-        INFOLOG("Setting channel update method: %i", updateChannels);
-        response->put_U32(ROBOTV_RET_OK);
-    }
-    else {
-        response->put_U32(ROBOTV_RET_DATAINVALID);
+    const char* key = request->get_String();
+
+    if(!strcasecmp(key, "EpgImageUrl")) {
+        response->put_String(config.epgImageUrl.c_str());
     }
 
     return true;

@@ -65,6 +65,10 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
     else if(!strcasecmp(Name, "ReorderCmd")) {
         reorderCmd = Value;
     }
+    else if(!strcasecmp(Name, "EpgImageUrl")) {
+        INFOLOG("EPG images template URL: %s", Value);
+        epgImageUrl = Value;
+    }
     else {
         return false;
     }

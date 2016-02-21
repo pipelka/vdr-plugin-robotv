@@ -43,7 +43,7 @@
 #define ROBOTV_GETTIME               2
 #define ROBOTV_ENABLESTATUSINTERFACE 3
 #define ROBOTV_PING                  7
-#define ROBOTV_UPDATECHANNELS        8
+#define ROBOTV_GETCONFIG             8
 #define ROBOTV_CHANNELFILTER         9
 
 /* OPCODE 20 - 39: RoboTV network functions for live streaming */

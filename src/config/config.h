@@ -82,6 +82,7 @@ public:
     uint16_t listenPort; // Port of remote server
     std::string piconsUrl;
     std::string reorderCmd;
+    std::string epgImageUrl;
 };
 
 #endif // ROBOTV_CONFIG_H

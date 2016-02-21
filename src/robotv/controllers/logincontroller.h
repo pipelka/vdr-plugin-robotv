@@ -55,7 +55,7 @@ protected:
 
     bool processLogin(MsgPacket* request, MsgPacket* response);
 
-    bool processUpdateChannels(MsgPacket* request, MsgPacket* response);
+    bool processGetConfig(MsgPacket* request, MsgPacket* response);
 
 private:
 
