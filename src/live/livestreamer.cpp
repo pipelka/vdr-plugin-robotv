@@ -54,7 +54,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
     , m_demuxers(this)
     , m_scanTimeout(10)
     , m_parent(parent) {
-    m_startup = true;
     m_langStreamType = StreamInfo::stMPEG2AUDIO;
     m_languageIndex = -1;
     m_uid = createChannelUid(channel);
@@ -164,7 +163,6 @@ void LiveStreamer::tryChannelSwitch() {
 void LiveStreamer::Action(void) {
     int size = 0;
     unsigned char* buf = NULL;
-    m_startup = true;
 
     INFOLOG("streamer thread started.");
 
@@ -273,7 +271,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     m_uid = createChannelUid(channel);
 
     if(!attach()) {
-        INFOLOG("Unable to attach receiver !");
         return ROBOTV_RET_DATALOCKED;
     }
 
@@ -305,26 +302,18 @@ void LiveStreamer::detach(void) {
 }
 
 void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
-    bool bReady = m_demuxers.isReady();
-
-    if(!bReady || pkt == NULL || pkt->size == 0) {
+    // skip empty packets
+    if(pkt == NULL || pkt->size == 0) {
         return;
     }
 
-    // Send stream information as the first packet on startup
-    if(isStarting() && bReady) {
-        // wait for AV frames (we start with an audio or video packet)
-        if(!(pkt->content == StreamInfo::scAUDIO || pkt->content == StreamInfo::scVIDEO)) {
-            return;
-        }
-
-        INFOLOG("streaming of channel started");
-        m_requestStreamChange = true;
-        m_startup = false;
+    // skip non audio / video packets
+    if(!(pkt->content == StreamInfo::scAUDIO || pkt->content == StreamInfo::scVIDEO)) {
+        return;
     }
 
     // send stream change on demand
-    if(m_requestStreamChange) {
+    if(m_requestStreamChange && m_demuxers.isReady()) {
         sendStreamChange();
     }
 
@@ -351,9 +340,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
         packet->put_S64(pkt->dts);
     }
 
-    if(m_protocolVersion >= 5) {
-        packet->put_U32(pkt->duration);
-    }
+    packet->put_U32(pkt->duration);
 
     // write frame type into unused header field clientid
     packet->setClientID((uint16_t)pkt->frameType);
@@ -372,7 +359,7 @@ void LiveStreamer::sendDetach() {
 }
 
 void LiveStreamer::sendStreamChange() {
-    DEBUGLOG("sendStreamChange");
+    INFOLOG("stream change notification");
 
     StreamBundle cache;
 

@@ -68,8 +68,6 @@ private:
 
     DemuxerBundle m_demuxers;
 
-    bool m_startup;
-
     bool m_requestStreamChange;
 
     uint32_t m_scanTimeout;                  /*!> Channel scanning timeout (in seconds) */
@@ -117,10 +115,6 @@ public:
     LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
 
     virtual ~LiveStreamer();
-
-    bool isStarting() const {
-        return m_startup;
-    }
 
     void processChannelChange(const cChannel* Channel);
 
