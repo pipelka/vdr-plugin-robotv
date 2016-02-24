@@ -236,15 +236,19 @@ uint8_t* MsgPacket::consume(uint32_t length) {
 }
 
 const char* MsgPacket::get_String() {
-    int length = strlen((char*)&m_packet[m_readposition]);
-
-    if((m_readposition + length) > m_usage) {
+    if(m_readposition >= m_usage) {
         return "";
     }
 
     const char* value = (char*)&m_packet[m_readposition];
+    size_t maxlen = m_usage - m_readposition;
+    size_t length = strnlen(value, maxlen);
 
     m_readposition += length + 1;
+
+    if(length == 0 || length == maxlen) {
+        return "";
+    }
 
     return value;
 }
