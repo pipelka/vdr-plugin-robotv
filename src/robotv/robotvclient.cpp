@@ -137,6 +137,10 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
 }
 
 void RoboTvClient::ChannelChange(const cChannel* Channel) {
+    if(!Running()) {
+        return;
+    }
+
     m_streamController.processChannelChange(Channel);
 
     if(!m_loginController.statusEnabled()) {
