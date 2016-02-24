@@ -182,9 +182,8 @@ int StreamController::startStreaming(int version, const cChannel* channel, int32
     m_streamer = new LiveStreamer(m_parent, channel, priority, rawPts);
     m_streamer->setLanguage(m_languageIndex, m_langStreamType);
     m_streamer->setWaitForKeyFrame(waitForKeyFrame);
-    m_streamer->setProtocolVersion(version);
 
-    return ROBOTV_RET_OK;
+    return m_streamer->switchChannel(channel);
 }
 
 void StreamController::stopStreaming() {

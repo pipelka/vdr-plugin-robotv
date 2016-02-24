@@ -45,10 +45,8 @@ class MsgPacket;
 class LiveQueue;
 class RoboTvClient;
 
-class LiveStreamer : public cThread, public cReceiver, public TsDemuxer::Listener {
+class LiveStreamer : public cReceiver, public TsDemuxer::Listener {
 private:
-    friend class TsDemuxer;
-    friend class ChannelCache;
 
     void detach(void);
 
@@ -66,29 +64,23 @@ private:
 
     cDevice* m_device = NULL;              /*!> The receiving device the channel depents to */
 
-    DemuxerBundle m_demuxers;
-
-    bool m_requestStreamChange;
-
-    int m_languageIndex;
-
-    StreamInfo::Type m_langStreamType;
+    DemuxerBundle m_demuxers = NULL;
 
     LiveQueue* m_queue = NULL;
 
+    RoboTvClient* m_parent = NULL;
+
+    bool m_requestStreamChange = false;
+
+    int m_languageIndex = -1;
+
+    StreamInfo::Type m_langStreamType = StreamInfo::stAC3;
+
     uint32_t m_uid;
 
-    bool m_ready;
-
-    uint32_t m_protocolVersion;
-
-    bool m_waitForKeyFrame;
-
-    RoboTvClient* m_parent;
+    bool m_waitForKeyFrame = false;
 
     bool m_rawPTS;
-
-    std::mutex m_mutex;
 
 protected:
 
@@ -101,10 +93,6 @@ protected:
 #endif
 
 private:
-
-    int switchChannel(const cChannel* channel);
-
-    void tryChannelSwitch();
 
     void createDemuxers(StreamBundle* bundle);
 
@@ -122,8 +110,6 @@ public:
 
     void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
 
-    void setProtocolVersion(uint32_t protocolVersion);
-
     void setWaitForKeyFrame(bool waitForKeyFrame);
 
     void pause(bool on);
@@ -131,6 +117,8 @@ public:
     void requestPacket();
 
     void requestSignalInfo();
+
+    int switchChannel(const cChannel* channel);
 
     // TsDemuxer::Listener implementation
 

@@ -48,52 +48,27 @@
 #include "channelcache.h"
 
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS)
-    : cThread("LiveStreamer stream processor")
-    , cReceiver(NULL, priority)
+    : cReceiver(NULL, priority)
     , m_demuxers(this)
     , m_parent(parent) {
-    m_langStreamType = StreamInfo::stMPEG2AUDIO;
-    m_languageIndex = -1;
     m_uid = createChannelUid(channel);
-    m_protocolVersion = ROBOTV_PROTOCOLVERSION;
-    m_waitForKeyFrame = false;
     m_rawPTS = rawPTS;
-    m_requestStreamChange = false;
 
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
     m_queue->Start();
-
-    Start();
 }
 
 LiveStreamer::~LiveStreamer() {
-    DEBUGLOG("Started to delete live streamer");
-
-    cTimeMs t;
-
-    DEBUGLOG("Stopping streamer thread ...");
-    Cancel(5);
-    DEBUGLOG("Done.");
-
-    DEBUGLOG("Detaching");
-
-    if(IsAttached()) {
-        detach();
-    }
+    detach();
 
     m_demuxers.clear();
-
     delete m_queue;
 
     m_uid = 0;
     m_device = NULL;
 
-    DEBUGLOG("Finished to delete live streamer (took %llu ms)", t.Elapsed());
-}
-
-void LiveStreamer::setProtocolVersion(uint32_t protocolVersion) {
-    m_protocolVersion = protocolVersion;
+    DEBUGLOG("Finished to delete live streamer");
 }
 
 void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
@@ -104,73 +79,13 @@ void LiveStreamer::requestStreamChange() {
     m_requestStreamChange = true;
 }
 
-void LiveStreamer::tryChannelSwitch() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    // we're already attached to receiver ?
-    if(IsAttached()) {
-        return;
-    }
-
-    // find channel from uid
-    const cChannel* channel = findChannelByUid(m_uid);
-
-    // try to switch channel
-    int rc = switchChannel(channel);
-
-    // succeeded -> exit
-    if(rc == ROBOTV_RET_OK) {
-        return;
-    }
-
-    // TODO - push notification after timeout
-    /*switch(rc) {
-        case ROBOTV_RET_ENCRYPTED:
-            ERRORLOG("Unable to decrypt channel %i - %s", channel->Number(), channel->Name());
-            m_parent->sendStatusMessage(tr("Unable to decrypt channel"));
-            break;
-
-        case ROBOTV_RET_DATALOCKED:
-            ERRORLOG("Can't get device for channel %i - %s", channel->Number(), channel->Name());
-            m_parent->sendStatusMessage(tr("All tuners busy"));
-            break;
-
-        case ROBOTV_RET_RECRUNNING:
-            ERRORLOG("Active recording blocking channel %i - %s", channel->Number(), channel->Name());
-            m_parent->sendStatusMessage(tr("Blocked by active recording"));
-            break;
-
-        case ROBOTV_RET_ERROR:
-            ERRORLOG("Error switching to channel %i - %s", channel->Number(), channel->Name());
-            m_parent->sendStatusMessage(tr("Failed to switch"));
-            break;
-    }*/
-}
-
-void LiveStreamer::Action(void) {
-    INFOLOG("streamer thread started.");
-
-    while(Running()) {
-        // try to switch channel if we aren't attached yet
-        tryChannelSwitch();
-
-        if(Running()) {
-            cCondWait::SleepMs(10);
-        }
-    }
-
-    INFOLOG("streamer thread ended.");
-}
-
 int LiveStreamer::switchChannel(const cChannel* channel) {
 
     if(channel == NULL) {
         return ROBOTV_RET_ERROR;
     }
 
-    if(IsAttached()) {
-        detach();
-    }
+    detach();
 
     // get device for this channel
     m_device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
@@ -249,6 +164,10 @@ bool LiveStreamer::attach(void) {
         return false;
     }
 
+    if(IsAttached()) {
+        return true;
+    }
+
     if(m_device->AttachReceiver(this)) {
         INFOLOG("device attached to receiver");
         return true;
@@ -260,6 +179,10 @@ bool LiveStreamer::attach(void) {
 
 void LiveStreamer::detach(void) {
     if(m_device == NULL) {
+        return;
+    }
+
+    if(!IsAttached()) {
         return;
     }
 
@@ -338,7 +261,7 @@ void LiveStreamer::sendStreamChange() {
     // reorder streams as preferred
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
-    MsgPacket* resp = m_demuxers.createStreamChangePacket(m_protocolVersion);
+    MsgPacket* resp = m_demuxers.createStreamChangePacket();
     m_queue->add(resp, StreamInfo::scSTREAMINFO);
 
     m_requestStreamChange = false;
@@ -351,7 +274,7 @@ void LiveStreamer::sendStatus(int status) {
 }
 
 void LiveStreamer::requestSignalInfo() {
-    if(!Running() || m_device == NULL) {
+    if(m_device == NULL || !IsAttached()) {
         return;
     }
 
@@ -372,17 +295,11 @@ void LiveStreamer::requestSignalInfo() {
         Quality = m_device->SignalQuality();
     }
 
-    resp->put_String(*cString::sprintf("%s #%d - %s",
-#if VDRVERSNUM < 10728
-#warning "VDR versions < 1.7.28 do not support all features"
-                                       "Unknown",
-                                       DeviceNumber,
-                                       "Unknown"));
-#else
-                                       (const char*)m_device->DeviceType(),
-                                       DeviceNumber,
-                                       (const char*)m_device->DeviceName()));
-#endif
+    resp->put_String(*cString::sprintf(
+                         "%s #%d - %s",
+                         (const char*)m_device->DeviceType(),
+                         DeviceNumber,
+                         (const char*)m_device->DeviceName()));
 
     // Quality:
     // 4 - NO LOCK
@@ -398,13 +315,14 @@ void LiveStreamer::requestSignalInfo() {
         resp->put_String("UNKNOWN (Incompatible device)");
         Quality = 0;
     }
-    else
+    else {
         resp->put_String(*cString::sprintf("%s:%s:%s:%s:%s",
                                            (Quality > 4) ? "LOCKED" : "-",
                                            (Quality > 0) ? "SIGNAL" : "-",
                                            (Quality > 1) ? "CARRIER" : "-",
                                            (Quality > 2) ? "VITERBI" : "-",
                                            (Quality > 3) ? "SYNC" : "-"));
+    }
 
     resp->put_U32((Strength << 16) / 100);
     resp->put_U32((Quality << 16) / 100);
@@ -482,9 +400,7 @@ void LiveStreamer::Receive(const uchar* Data, int Length)
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if(createChannelUid(channel) != m_uid || !Running()) {
+    if(createChannelUid(channel) != m_uid) {
         return;
     }
 
