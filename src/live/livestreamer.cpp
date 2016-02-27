@@ -26,7 +26,6 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <string.h>
-#include <map>
 #include <vdr/remux.h>
 #include <vdr/channels.h>
 #include <vdr/timers.h>
@@ -47,6 +46,11 @@
 #include "livequeue.h"
 #include "channelcache.h"
 
+#include <map>
+#include <chrono>
+
+using namespace std::chrono;
+
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS)
     : cReceiver(NULL, priority)
     , m_demuxers(this)
@@ -56,7 +60,6 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
 
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
-    m_queue->Start();
 }
 
 LiveStreamer::~LiveStreamer() {
@@ -151,9 +154,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         INFOLOG("Will wait for first key frame ...");
     }
 
-    // clear cached data
-    m_queue->cleanup();
-
     m_uid = createChannelUid(channel);
 
     if(!attach()) {
@@ -243,7 +243,10 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     packet->put_U32(pkt->size);
     packet->put_Blob(pkt->data, pkt->size);
 
-    m_queue->add(packet, pkt->content);
+    // add timestamp (wallclock time in ms)
+    packet->put_S64(LiveQueue::currentTimeMillis().count());
+
+    m_queue->add(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME));
 }
 
 void LiveStreamer::sendDetach() {
@@ -267,7 +270,7 @@ void LiveStreamer::sendStreamChange() {
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
     MsgPacket* resp = m_demuxers.createStreamChangePacket();
-    m_queue->add(resp, StreamInfo::scSTREAMINFO);
+    m_queue->add(resp, StreamInfo::scSTREAMINFO, false);
 
     m_requestStreamChange = false;
 }
@@ -295,10 +298,8 @@ void LiveStreamer::requestSignalInfo() {
     int Strength = 0;
     int Quality = 0;
 
-    if(!getTimeShiftMode()) {
-        Strength = m_device->SignalStrength();
-        Quality = m_device->SignalQuality();
-    }
+    Strength = m_device->SignalStrength();
+    Quality = m_device->SignalQuality();
 
     resp->put_String(*cString::sprintf(
                          "%s #%d - %s",
@@ -313,10 +314,7 @@ void LiveStreamer::requestSignalInfo() {
     // 1 - NO CARRIER
     // 0 - NO SIGNAL
 
-    if(getTimeShiftMode()) {
-        resp->put_String("TIMESHIFT");
-    }
-    else if(Quality == -1) {
+    if(Quality == -1) {
         resp->put_String("UNKNOWN (Incompatible device)");
         Quality = 0;
     }
@@ -351,7 +349,7 @@ void LiveStreamer::requestSignalInfo() {
     }
 
     DEBUGLOG("RequestSignalInfo");
-    m_queue->add(resp, StreamInfo::scNONE);
+    m_queue->add(resp, StreamInfo::scNONE, false);
 }
 
 void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {
@@ -371,14 +369,6 @@ bool LiveStreamer::isPaused() {
     return m_queue->isPaused();
 }
 
-bool LiveStreamer::getTimeShiftMode() {
-    if(m_queue == NULL) {
-        return false;
-    }
-
-    return m_queue->getTimeShiftMode();
-}
-
 void LiveStreamer::pause(bool on) {
     if(m_queue == NULL) {
         return;
@@ -387,12 +377,29 @@ void LiveStreamer::pause(bool on) {
     m_queue->pause(on);
 }
 
-void LiveStreamer::requestPacket() {
-    if(m_queue == NULL) {
-        return;
+MsgPacket* LiveStreamer::requestPacket() {
+    auto sendStartPosition = [&]() {
+        MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_POSITIONS, ROBOTV_CHANNEL_STREAM);
+        resp->put_S64(m_queue->getTimeshiftStartPosition());
+        m_parent->queueMessage(resp);
+    };
+
+    MsgPacket* p = m_queue->request();
+
+    if(p == NULL) {
+        if(m_queue->isPaused()) {
+            sendStartPosition();
+        }
+
+        return NULL;
     }
 
-    m_queue->request();
+    // send timeshift start position on every keyframe
+    if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
+        sendStartPosition();
+    }
+
+    return p;
 }
 
 #if VDRVERSNUM < 20300
@@ -430,4 +437,8 @@ void LiveStreamer::createDemuxers(StreamBundle* bundle) {
         TsDemuxer* dmx = *i;
         AddPid(dmx->getPid());
     }
+}
+
+void LiveStreamer::seek(int64_t wallclockPositionMs) {
+    m_queue->seek(wallclockPositionMs);
 }

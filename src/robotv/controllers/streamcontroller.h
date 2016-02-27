@@ -56,6 +56,8 @@ protected:
 
     bool processSignal(MsgPacket* request, MsgPacket* response);
 
+    bool processSeek(MsgPacket* request, MsgPacket* response);
+
 private:
 
     StreamController(const StreamController& orig);

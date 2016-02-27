@@ -61,6 +61,9 @@ bool StreamController::process(MsgPacket* request, MsgPacket* response) {
 
         case ROBOTV_CHANNELSTREAM_SIGNAL:
             return processSignal(request, response);
+
+        case ROBOTV_CHANNELSTREAM_SEEK:
+            return processSeek(request, response);
     }
 
     return false;
@@ -142,12 +145,24 @@ bool StreamController::processClose(MsgPacket* request, MsgPacket* response) {
 }
 
 bool StreamController::processRequest(MsgPacket* request, MsgPacket* response) {
-    if(m_streamer != NULL) {
-        m_streamer->requestPacket();
+    if(m_streamer == NULL) {
+        return false;
     }
 
-    // no response needed for the request
-    return false;
+    MsgPacket* p = m_streamer->requestPacket();
+
+    if(p == NULL) {
+        return true;
+    }
+
+    int packetLen = p->getPayloadLength();
+    uint8_t* packetData = p->consume(packetLen);
+
+    response->setMsgID(p->getMsgID());
+    response->put_Blob(packetData, packetLen);
+    delete p;
+
+    return true;
 }
 
 bool StreamController::processPause(MsgPacket* request, MsgPacket* response) {
@@ -193,3 +208,10 @@ void StreamController::stopStreaming() {
     m_streamer = NULL;
 }
 
+bool StreamController::processSeek(MsgPacket* request, MsgPacket* response) {
+    std::lock_guard<std::mutex> lock(m_lock);
+
+    int64_t position = request->get_S64();
+    m_streamer->seek(position);
+    return true;
+}

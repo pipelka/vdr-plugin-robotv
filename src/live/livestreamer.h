@@ -108,19 +108,19 @@ public:
 
     bool isPaused();
 
-    bool getTimeShiftMode();
-
     void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
 
     void setWaitForKeyFrame(bool waitForKeyFrame);
 
     void pause(bool on);
 
-    void requestPacket();
+    MsgPacket* requestPacket();
 
     void requestSignalInfo();
 
     int switchChannel(const cChannel* channel);
+
+    void seek(int64_t wallclockPositionMs);
 
     // TsDemuxer::Listener implementation
 

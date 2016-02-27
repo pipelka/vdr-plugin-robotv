@@ -28,25 +28,26 @@
 #include <queue>
 #include <vdr/thread.h>
 #include "demuxer/streaminfo.h"
+#include <chrono>
+#include <mutex>
+#include <list>
 
 class MsgPacket;
 
-class LiveQueue : public cThread, protected std::queue<MsgPacket*> {
+class LiveQueue {
 public:
 
     LiveQueue(int s);
 
     virtual ~LiveQueue();
 
-    bool add(MsgPacket* p, StreamInfo::Content content);
+    bool add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts = 0);
 
-    void request();
+    MsgPacket* request();
 
     bool pause(bool on = true);
 
     bool isPaused();
-
-    bool getTimeShiftMode();
 
     static void setTimeShiftDir(const cString& dir);
 
@@ -56,11 +57,25 @@ public:
 
     void cleanup();
 
+    int64_t seek(int64_t wallclockPositionMs);
+
+    int64_t getTimeshiftStartPosition();
+
+    static std::chrono::milliseconds currentTimeMillis();
+
 protected:
 
-    void Action();
+    struct PacketIndex {
+        off_t filePosition;
+        std::chrono::milliseconds wallclockTime;
+        int64_t pts;
+    };
 
     void close();
+
+    void removeUpToFileposition(off_t position);
+
+    std::list<struct PacketIndex> m_indexList;
 
     int m_socket;
 
@@ -70,13 +85,15 @@ protected:
 
     bool m_pause;
 
-    cMutex m_lock;
-
-    cCondWait m_cond;
+    std::mutex m_mutex;
 
     cString m_storage;
 
-    size_type m_queueSize;
+    std::chrono::milliseconds m_queueStartTime;
+
+    bool m_wrapped = false;
+
+    bool m_hasWrapped = false;
 
     static cString m_timeShiftDir;
 

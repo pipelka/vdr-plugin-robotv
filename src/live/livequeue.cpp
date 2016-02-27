@@ -33,155 +33,123 @@
 cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
-LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readFd(-1), m_writeFd(-1), m_queueSize(400) {
-    m_pause = false;
+LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readFd(-1), m_writeFd(-1) {
+    cleanup();
 }
 
 LiveQueue::~LiveQueue() {
     DEBUGLOG("Deleting LiveQueue");
-    m_cond.Signal();
-    Cancel(3);
-    cleanup();
     close();
 }
 
 void LiveQueue::cleanup() {
-    cMutexLock lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-    while(!empty()) {
-        delete front();
-        pop();
+    m_pause = false;
+
+    m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
+    DEBUGLOG("timeshift file: %s", (const char*)m_storage);
+
+    m_writeFd = open(m_storage, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    m_readFd = open(m_storage, O_CREAT | O_RDONLY, 0644);
+
+    if(m_readFd == -1) {
+        ERRORLOG("Failed to create timeshift ringbuffer !");
     }
+
+    lseek(m_readFd, 0, SEEK_SET);
+    lseek(m_writeFd, 0, SEEK_SET);
+
 }
 
-void LiveQueue::request() {
-    cMutexLock lock(&m_lock);
+MsgPacket* LiveQueue::request() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if(m_pause) {
+        return NULL;
+    }
+
+    // check if read position wrapped
+
+    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
+    off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
+
+    if(readPosition >= (off_t)m_bufferSize) {
+        INFOLOG("timeshift: read buffer wrap");
+        lseek(m_readFd, 0, SEEK_SET);
+        readPosition = 0;
+        m_wrapped = !m_wrapped;
+        INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
+    }
+
+    // check if read position is still behind write position (if not wrapped))
+    // if not -> skip packet (as we would start reading from the beginning of
+    // the buffer)
+
+    if(readPosition >= writePosition && !m_wrapped) {
+        return NULL;
+    }
 
     // read packet from storage
-    MsgPacket* p = MsgPacket::read(m_readFd, 1000);
-
-    // check for buffer overrun
-    if(p == NULL) {
-        // ring-buffer overrun ?
-        off_t pos = lseek(m_readFd, 0, SEEK_CUR);
-
-        if(pos < (off_t)m_bufferSize) {
-            return;
-        }
-
-        lseek(m_readFd, 0, SEEK_SET);
-        p = MsgPacket::read(m_readFd, 1000);
-    }
-
-    // no packet
-    if(p == NULL) {
-        return;
-    }
-
-    // put packet into queue
-    push(p);
-
-    m_cond.Signal();
+    return MsgPacket::read(m_readFd, 1000);
 }
 
 bool LiveQueue::isPaused() {
-    cMutexLock lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_pause;
 }
 
-bool LiveQueue::getTimeShiftMode() {
-    cMutexLock lock(&m_lock);
-    return (m_pause || (!m_pause && m_writeFd != -1));
-}
+bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts) {
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content) {
-    cMutexLock lock(&m_lock);
+    auto timeStamp = currentTimeMillis();
 
-    // in timeshift mode ?
-    if(m_pause || (!m_pause && m_writeFd != -1)) {
-        // write packet
-        if(!p->write(m_writeFd, 1000)) {
-            ERRORLOG("Unable to write packet into timeshift ringbuffer !");
-            delete p;
-            return false;
-        }
+    // set queue start time
 
-        // ring-buffer overrun ?
-        off_t length = lseek(m_writeFd, 0, SEEK_CUR);
+    if(m_queueStartTime.count() == 0) {
+        m_queueStartTime = timeStamp;
+    }
 
-        if(length >= (off_t)m_bufferSize) {
-            // truncate to current position
-            if(ftruncate(m_writeFd, length) == 0) {
-                lseek(m_writeFd, 0, SEEK_SET);
-            }
-        }
+    // ring-buffer overrun ?
 
+    off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
+    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
+
+    if(writePosition >= (off_t)m_bufferSize) {
+        INFOLOG("timeshift: write buffer wrap");
+        lseek(m_writeFd, 0, SEEK_SET);
+        writePosition = 0;
+
+        m_wrapped = !m_wrapped;
+        m_hasWrapped = true;
+
+        INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
+    }
+
+    // check if write position if still behind read position (if wrapped)
+    // if not -> skip packet (as we would overwrite our read position)
+
+    if(writePosition >= readPosition && m_wrapped) {
+        return NULL;
+    }
+
+    // add keyframe to map
+
+    if(keyFrame && content == StreamInfo::Content::scVIDEO) {
+        m_indexList.push_back({writePosition, timeStamp, pts});
+        removeUpToFileposition(writePosition + p->getPacketLength());
+    }
+
+    // write packet
+
+    if(!p->write(m_writeFd, 1000)) {
+        ERRORLOG("Unable to write packet into timeshift ringbuffer !");
         delete p;
-        return true;
+        return false;
     }
 
-    // discard teletext / signalinfo packets if the buffer fills up, ...
-    if(size() > (m_queueSize / 2)) {
-        if(content == StreamInfo::scTELETEXT || content == StreamInfo::scNONE) {
-            delete p;
-            m_cond.Signal();
-            return true;
-        }
-    }
-
-    // add packet to queue
-    push(p);
-
-    // queue too long ?
-    while(size() > m_queueSize) {
-        p = front();
-        pop();
-    }
-
-    m_cond.Signal();
-
+    delete p;
     return true;
-}
-
-void LiveQueue::Action() {
-    INFOLOG("LiveQueue started");
-
-    // wait for first packet
-    m_cond.Wait(0);
-
-    while(Running()) {
-        MsgPacket* p = NULL;
-
-        m_lock.Lock();
-
-        // just wait if we are paused
-        if(m_pause) {
-            m_lock.Unlock();
-            m_cond.Wait(0);
-            m_lock.Lock();
-        }
-
-        // check packet queue
-        if(size() > 0) {
-            p = front();
-        }
-
-        m_lock.Unlock();
-
-        // no packets to send
-        if(p == NULL) {
-            m_cond.Wait(3000);
-            continue;
-        }
-        // send packet
-        else if(p->write(m_socket, 1000)) {
-            pop();
-            delete p;
-        }
-
-    }
-
-    INFOLOG("LiveQueue stopped");
 }
 
 void LiveQueue::close() {
@@ -195,49 +163,31 @@ void LiveQueue::close() {
     }
 }
 
-bool LiveQueue::pause(bool on) {
-    cMutexLock lock(&m_lock);
-
-    // deactivate timeshift
-    if(!on) {
-        m_pause = false;
-        m_cond.Signal();
-        return true;
+void LiveQueue::removeUpToFileposition(off_t position) {
+    if(!m_hasWrapped) {
+        return;
     }
 
-    if(m_pause) {
+    auto i = m_indexList.begin();
+
+    while(i != m_indexList.end() && i->filePosition < position) {
+        i = m_indexList.erase(i);
+    }
+
+    if(m_indexList.size() > 0) {
+        auto i = m_indexList.begin();
+        m_queueStartTime = i->wallclockTime;
+    }
+}
+
+bool LiveQueue::pause(bool on) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if(m_pause == on) {
         return false;
     }
 
-    // create offline storage
-    if(m_readFd == -1) {
-        m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
-        DEBUGLOG("FILE: %s", (const char*)m_storage);
-
-        m_readFd = open(m_storage, O_CREAT | O_RDONLY, 0644);
-        m_writeFd = open(m_storage, O_CREAT | O_WRONLY, 0644);
-        lseek(m_readFd, 0, SEEK_SET);
-        lseek(m_writeFd, 0, SEEK_SET);
-
-        if(m_readFd == -1) {
-            ERRORLOG("Failed to create timeshift ringbuffer !");
-        }
-    }
-
-    m_pause = true;
-
-    // push all packets from the queue to the offline storage
-    DEBUGLOG("Writing %i packets into timeshift buffer", size());
-
-    while(!empty()) {
-        MsgPacket* p = front();
-
-        if(p->write(m_writeFd, 1000)) {
-            delete p;
-            pop();
-        }
-    }
-
+    m_pause = on;
     return true;
 }
 
@@ -248,7 +198,7 @@ void LiveQueue::setTimeShiftDir(const cString& dir) {
 
 void LiveQueue::setBufferSize(uint64_t s) {
     m_bufferSize = s;
-    DEBUGLOG("BUFFSERIZE: %llu bytes", m_bufferSize);
+    INFOLOG("timeshift buffersize: %lu bytes", m_bufferSize);
 }
 
 void LiveQueue::removeTimeShiftFiles() {
@@ -268,4 +218,55 @@ void LiveQueue::removeTimeShiftFiles() {
     }
 
     closedir(dir);
+}
+
+int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    INFOLOG("seek: %lu", wallclockPositionMs);
+
+    auto s = m_indexList.rbegin();
+    auto e = m_indexList.rend();
+    auto h = m_indexList.begin();
+
+    if(s == e) {
+        ERRORLOG("empty timeshift queue - unable to seek");
+        return 0;
+    }
+
+    // ahead of buffer
+    if(wallclockPositionMs >= s->wallclockTime.count()) {
+        lseek(m_readFd, s->filePosition, SEEK_SET);
+        return s->pts;
+    }
+
+    // behind buffer
+    else if(wallclockPositionMs <= h->wallclockTime.count()) {
+        lseek(m_readFd, h->filePosition, SEEK_SET);
+        return h->pts;
+    }
+
+    // in between ?
+    while(s != e) {
+        if(s->wallclockTime.count() <= wallclockPositionMs) {
+            lseek(m_readFd, s->filePosition, SEEK_SET);
+            return s->pts;
+        }
+
+        s++;
+    }
+
+    // not found
+    ERRORLOG("fileposition not found!");
+    return 0;
+}
+
+int64_t LiveQueue::getTimeshiftStartPosition() {
+    return m_queueStartTime.count();
+}
+
+std::chrono::milliseconds LiveQueue::currentTimeMillis() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::system_clock::now().time_since_epoch()
+           );
 }

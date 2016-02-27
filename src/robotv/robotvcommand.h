@@ -52,6 +52,7 @@
 #define ROBOTV_CHANNELSTREAM_REQUEST 22
 #define ROBOTV_CHANNELSTREAM_PAUSE   23
 #define ROBOTV_CHANNELSTREAM_SIGNAL  24
+#define ROBOTV_CHANNELSTREAM_SEEK    25
 
 /* OPCODE 40 - 59: RoboTV network functions for recording streaming */
 #define ROBOTV_RECSTREAM_OPEN        40
@@ -109,6 +110,7 @@
 #define ROBOTV_STREAM_MUXPKT       4
 #define ROBOTV_STREAM_SIGNALINFO   5
 #define ROBOTV_STREAM_DETACH       7
+#define ROBOTV_STREAM_POSITIONS    8
 
 /** Stream status codes */
 #define ROBOTV_STREAM_STATUS_SIGNALLOST     111
