@@ -100,6 +100,7 @@ OBJS = \
 	src/robotv/controllers/logincontroller.o \
 	src/robotv/controllers/epgcontroller.o \
 	src/robotv/controllers/artworkcontroller.o \
+	src/robotv/svdrp/channelcmds.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \
 	src/robotv/robotvserver.o \

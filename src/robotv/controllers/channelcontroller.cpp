@@ -106,16 +106,7 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
             continue;
         }
 
-        response->put_U32(channel->Number());
-        response->put_String(m_toUtf8.Convert(channel->Name()));
-        response->put_U32(createChannelUid(channel));
-        response->put_U32(channel->Ca());
-
-        // logo url
-        response->put_String((const char*)createLogoUrl(channel));
-
-        // service reference
-        response->put_String((const char*)createServiceReference(channel));
+        addChannelToPacket(channel, response);
     }
 
     c.unlock();
@@ -234,7 +225,7 @@ bool ChannelController::isChannelWanted(cChannel* channel, int type) {
     return false;
 }
 
-cString ChannelController::createServiceReference(const cChannel* channel) {
+std::string ChannelController::createServiceReference(const cChannel* channel) {
     int hash = 0;
 
     if(cSource::IsSat(channel->Source())) {
@@ -274,24 +265,26 @@ cString ChannelController::createServiceReference(const cChannel* channel) {
                                           channel->Nid(),
                                           hash);
 
-    return serviceref;
+    return (const char*)serviceref;
 }
 
-cString ChannelController::createLogoUrl(const cChannel* channel) {
-    std::string url = RoboTVServerConfig::instance().piconsUrl;
+std::string ChannelController::createLogoUrl(const cChannel* channel) {
+    return createLogoUrl(channel, RoboTVServerConfig::instance().piconsUrl);
+}
 
-    if(url.empty()) {
+std::string ChannelController::createLogoUrl(const cChannel* channel, const std::string& baseUrl) {
+    if(baseUrl.empty()) {
         return "";
     }
 
-    std::string filename = (const char*)createServiceReference(channel);
+    std::string filename = createServiceReference(channel);
 
-    if(url.size() > 4 && url.substr(0, 4) == "http") {
+    if(baseUrl.size() > 4 && baseUrl.substr(0, 4) == "http") {
         filename = urlEncode(filename);
     }
 
-    cString piconurl = AddDirectory(url.c_str(), filename.c_str());
-    return cString::sprintf("%s.png", (const char*)piconurl);
+    cString piconurl = AddDirectory(baseUrl.c_str(), filename.c_str());
+    return (const char*)cString::sprintf("%s.png", (const char*)piconurl);
 }
 
 void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
@@ -301,10 +294,10 @@ void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p
     p->put_U32(channel->Ca());
 
     // logo url
-    p->put_String((const char*)createLogoUrl(channel));
+    p->put_String(createLogoUrl(channel).c_str());
 
     // service reference
-    p->put_String((const char*)createServiceReference(channel));
+    p->put_String(createServiceReference(channel).c_str());
 }
 
 bool ChannelController::isRadio(const cChannel* channel) {

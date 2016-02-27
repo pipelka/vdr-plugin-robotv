@@ -24,6 +24,8 @@
 
 #include <getopt.h>
 #include <vdr/plugin.h>
+#include "svdrp/channelcmds.h"
+
 #include "robotvserver.h"
 
 static const char* VERSION        = "0.9.97";
@@ -33,6 +35,8 @@ class PluginRoboTVServer : public cPlugin {
 private:
 
     RoboTVServer* m_server;
+
+    ChannelCmds m_channels;
 
 public:
 

@@ -43,6 +43,12 @@ public:
 
     void addChannelToPacket(const cChannel*, MsgPacket*);
 
+    static std::string createLogoUrl(const cChannel* channel, const std::string& baseUrl);
+
+    static std::string createServiceReference(const cChannel* channel);
+
+    static bool isRadio(const cChannel* channel);
+
 protected:
 
     bool processGetChannels(MsgPacket* request, MsgPacket* response);
@@ -53,11 +59,7 @@ private:
 
     bool isChannelWanted(cChannel* channel, int type = 0);
 
-    cString createLogoUrl(const cChannel* channel);
-
-    cString createServiceReference(const cChannel* channel);
-
-    static bool isRadio(const cChannel* channel);
+    std::string createLogoUrl(const cChannel* channel);
 
     ChannelController(const ChannelController& orig);
 

@@ -100,13 +100,18 @@ bool PluginRoboTVServer::Service(const char* Id, void* Data) {
 }
 
 const char** PluginRoboTVServer::SVDRPHelpPages(void) {
-    // Return help text for SVDRP commands this plugin implements
-    return NULL;
+    static const char* HelpPages[] = {
+        "LSCJ\n"
+        "    List all channels activated for roboTV in JSON format.",
+        NULL
+    };
+
+    return HelpPages;
 }
 
 cString PluginRoboTVServer::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
     // Process SVDRP commands this plugin implements
-    return NULL;
+    return m_channels.SVDRPCommand(Command, Option, ReplyCode);
 }
 
 VDRPLUGINCREATOR(PluginRoboTVServer); // Don't touch this!
