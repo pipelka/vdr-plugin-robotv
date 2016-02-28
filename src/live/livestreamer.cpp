@@ -60,10 +60,15 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
 }
 
 LiveStreamer::~LiveStreamer() {
-    detach();
+    // wait for pending channelchange
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        detach();
+        m_demuxers.clear();
+        delete m_queue;
+    }
 
-    m_demuxers.clear();
-    delete m_queue;
+    std::this_thread::yield();
 
     m_uid = 0;
     m_device = NULL;
@@ -400,6 +405,12 @@ void LiveStreamer::Receive(const uchar* Data, int Length)
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if(!IsAttached()) {
+        return;
+    }
+
     if(createChannelUid(channel) != m_uid) {
         return;
     }

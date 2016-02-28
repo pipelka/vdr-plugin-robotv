@@ -82,6 +82,8 @@ private:
 
     bool m_rawPTS;
 
+    std::mutex m_mutex;
+
 protected:
 
     void Action(void);
