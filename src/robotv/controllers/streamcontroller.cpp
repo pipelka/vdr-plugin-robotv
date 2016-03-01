@@ -205,6 +205,10 @@ void StreamController::stopStreaming() {
 bool StreamController::processSeek(MsgPacket* request, MsgPacket* response) {
     std::lock_guard<std::mutex> lock(m_lock);
 
+    if(m_streamer == NULL) {
+        return false;
+    }
+
     int64_t position = request->get_S64();
     m_streamer->seek(position);
     return true;
