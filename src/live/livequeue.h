@@ -61,8 +61,6 @@ public:
 
     int64_t getTimeshiftStartPosition();
 
-    static std::chrono::milliseconds currentTimeMillis();
-
 protected:
 
     struct PacketIndex {

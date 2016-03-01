@@ -91,6 +91,7 @@ OBJS = \
 	src/recordings/recplayer.o \
 	src/tools/hash.o \
 	src/tools/recid2uid.o \
+	src/tools/time.o \
 	src/tools/urlencode.o \
 	src/robotv/controllers/streamcontroller.o \
 	src/robotv/controllers/recordingcontroller.o \

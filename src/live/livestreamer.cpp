@@ -41,6 +41,7 @@
 #include "robotv/robotvcommand.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
+#include "tools/time.h"
 
 #include "livestreamer.h"
 #include "livequeue.h"
@@ -237,7 +238,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     packet->put_Blob(pkt->data, pkt->size);
 
     // add timestamp (wallclock time in ms)
-    packet->put_S64(LiveQueue::currentTimeMillis().count());
+    packet->put_S64(roboTV::currentTimeMillis().count());
 
     m_queue->add(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME), pkt->rawPts);
 }

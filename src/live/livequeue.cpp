@@ -29,6 +29,7 @@
 #include "config/config.h"
 #include "net/msgpacket.h"
 #include "livequeue.h"
+#include "tools/time.h"
 
 cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
@@ -116,7 +117,7 @@ bool LiveQueue::isPaused() {
 bool LiveQueue::write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    auto timeStamp = currentTimeMillis();
+    auto timeStamp = roboTV::currentTimeMillis();
 
     // set queue start time
 
@@ -279,10 +280,4 @@ int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
 
 int64_t LiveQueue::getTimeshiftStartPosition() {
     return m_queueStartTime.count();
-}
-
-std::chrono::milliseconds LiveQueue::currentTimeMillis() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::system_clock::now().time_since_epoch()
-           );
 }
