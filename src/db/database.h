@@ -31,7 +31,7 @@
 #include <mutex>
 #include <string>
 
-namespace RoboTV {
+namespace roboTV {
 
 /** @short Database backend.
  * This class build the interface to SQLite

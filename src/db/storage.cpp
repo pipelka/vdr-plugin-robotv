@@ -26,7 +26,7 @@
 #include "config/config.h"
 #include "vdr/tools.h"
 
-using namespace RoboTV;
+using namespace roboTV;
 
 Storage::Storage() : m_config(RoboTVServerConfig::instance()) {
     cString filename = AddDirectory(m_config.cacheDirectory.c_str(), STORAGE_DB_FILE);

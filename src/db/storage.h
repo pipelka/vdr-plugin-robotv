@@ -28,7 +28,7 @@
 #include "config/config.h"
 #include "database.h"
 
-namespace RoboTV {
+namespace roboTV {
 
 class Storage : public Database {
 protected:

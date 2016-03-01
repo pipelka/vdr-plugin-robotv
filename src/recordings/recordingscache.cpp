@@ -31,7 +31,7 @@
 #include "tools/hash.h"
 #include <string>
 
-RecordingsCache::RecordingsCache() : m_storage(RoboTV::Storage::getInstance()) {
+RecordingsCache::RecordingsCache() : m_storage(roboTV::Storage::getInstance()) {
     // create db schema
     createDb();
 

@@ -28,7 +28,7 @@
 #include <chrono>
 #include <stdlib.h>
 
-using namespace RoboTV;
+using namespace roboTV;
 
 Database::Database() : m_db(NULL) {
 }

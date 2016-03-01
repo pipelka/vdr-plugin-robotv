@@ -32,7 +32,7 @@
 #include "db/storage.h"
 #include "demuxer/streambundle.h"
 
-class ChannelCache : public RoboTV::Storage {
+class ChannelCache : public roboTV::Storage {
 public:
 
     void add(uint32_t channeluid, const StreamBundle& channel);

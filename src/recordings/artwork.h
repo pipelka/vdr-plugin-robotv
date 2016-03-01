@@ -47,7 +47,7 @@ private:
 
     void createDb();
 
-    RoboTV::Storage& m_storage;
+    roboTV::Storage& m_storage;
 
 };
 

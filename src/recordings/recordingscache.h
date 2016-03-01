@@ -75,7 +75,7 @@ protected:
 
 private:
 
-    RoboTV::Storage& m_storage;
+    roboTV::Storage& m_storage;
 };
 
 
