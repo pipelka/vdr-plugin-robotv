@@ -33,7 +33,7 @@
 cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
-LiveQueue::LiveQueue(int sock) : m_socket(sock), m_readFd(-1), m_writeFd(-1) {
+LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket) {
     cleanup();
 }
 
@@ -62,13 +62,27 @@ void LiveQueue::cleanup() {
 
 }
 
-MsgPacket* LiveQueue::request() {
+MsgPacket* LiveQueue::read(bool keyFrameMode) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if(m_pause) {
         return NULL;
     }
 
+    MsgPacket* p = internalRead();
+
+    if(!keyFrameMode) {
+        return p;
+    }
+
+    while(p != NULL && p->getClientID() != StreamInfo::FrameType::ftIFRAME) {
+        p = internalRead();
+    }
+
+    return p;
+}
+
+MsgPacket* LiveQueue::internalRead() {
     // check if read position wrapped
 
     off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
@@ -99,7 +113,7 @@ bool LiveQueue::isPaused() {
     return m_pause;
 }
 
-bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts) {
+bool LiveQueue::write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     auto timeStamp = currentTimeMillis();
@@ -126,18 +140,22 @@ bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, in
         INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
     }
 
-    // check if write position if still behind read position (if wrapped)
-    // if not -> skip packet (as we would overwrite our read position)
+    off_t packetEndPosition = writePosition + p->getPacketLength();
 
-    if(writePosition >= readPosition && m_wrapped) {
-        return NULL;
+    // check if write position if still behind read position (if wrapped)
+    // if not -> shift read position forward
+
+    while(packetEndPosition >= readPosition && m_wrapped) {
+        if(internalRead() == NULL) {
+            return NULL;
+        }
     }
 
     // add keyframe to map
 
     if(keyFrame && content == StreamInfo::Content::scVIDEO) {
         m_indexList.push_back({writePosition, timeStamp, pts});
-        removeUpToFileposition(writePosition + p->getPacketLength());
+        trim(packetEndPosition);
     }
 
     // write packet
@@ -154,16 +172,14 @@ bool LiveQueue::add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, in
 
 void LiveQueue::close() {
     ::close(m_readFd);
-    m_readFd = -1;
     ::close(m_writeFd);
-    m_writeFd = -1;
 
     if(*m_storage) {
         unlink(m_storage);
     }
 }
 
-void LiveQueue::removeUpToFileposition(off_t position) {
+void LiveQueue::trim(off_t position) {
     if(!m_hasWrapped) {
         return;
     }

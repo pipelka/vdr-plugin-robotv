@@ -37,13 +37,15 @@ class MsgPacket;
 class LiveQueue {
 public:
 
-    LiveQueue(int s);
+    LiveQueue(int socket);
 
     virtual ~LiveQueue();
 
-    bool add(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts = 0);
+    bool write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts = 0);
 
-    MsgPacket* request();
+    MsgPacket* read(bool keyFrameMode = false);
+
+    int64_t seek(int64_t wallclockPositionMs);
 
     bool pause(bool on = true);
 
@@ -56,8 +58,6 @@ public:
     static void removeTimeShiftFiles();
 
     void cleanup();
-
-    int64_t seek(int64_t wallclockPositionMs);
 
     int64_t getTimeshiftStartPosition();
 
@@ -73,15 +73,17 @@ protected:
 
     void close();
 
-    void removeUpToFileposition(off_t position);
+    void trim(off_t position);
+
+    MsgPacket* internalRead();
 
     std::list<struct PacketIndex> m_indexList;
-
-    int m_socket;
 
     int m_readFd;
 
     int m_writeFd;
+
+    int m_socket;
 
     bool m_pause;
 

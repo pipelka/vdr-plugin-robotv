@@ -80,9 +80,9 @@ private:
 
     bool m_waitForKeyFrame = false;
 
-    bool m_rawPTS;
-
     std::mutex m_mutex;
+
+    MsgPacket* m_streamPacket = NULL;
 
 protected:
 
@@ -100,7 +100,7 @@ private:
 
 public:
 
-    LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS = false);
+    LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority);
 
     virtual ~LiveStreamer();
 

@@ -46,17 +46,17 @@
 #include "livequeue.h"
 #include "channelcache.h"
 
-#include <map>
 #include <chrono>
+
+#define MIN_PACKET_SIZE (128 * 1024)
 
 using namespace std::chrono;
 
-LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool rawPTS)
+LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority)
     : cReceiver(NULL, priority)
     , m_demuxers(this)
     , m_parent(parent) {
     m_uid = createChannelUid(channel);
-    m_rawPTS = rawPTS;
 
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
@@ -75,6 +75,7 @@ LiveStreamer::~LiveStreamer() {
 
     m_uid = 0;
     m_device = NULL;
+    delete m_streamPacket;
 
     DEBUGLOG("Finished to delete live streamer");
 }
@@ -224,16 +225,8 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
 
     // write stream data
     packet->put_U16(pkt->pid);
-
-    if(m_rawPTS) {
-        packet->put_S64(pkt->rawPts);
-        packet->put_S64(pkt->rawDts);
-    }
-    else {
-        packet->put_S64(pkt->pts);
-        packet->put_S64(pkt->dts);
-    }
-
+    packet->put_S64(pkt->rawPts);
+    packet->put_S64(pkt->rawDts);
     packet->put_U32(pkt->duration);
 
     // write frame type into unused header field clientid
@@ -246,7 +239,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     // add timestamp (wallclock time in ms)
     packet->put_S64(LiveQueue::currentTimeMillis().count());
 
-    m_queue->add(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME));
+    m_queue->add(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME), pkt->rawPts);
 }
 
 void LiveStreamer::sendDetach() {
@@ -378,28 +371,54 @@ void LiveStreamer::pause(bool on) {
 }
 
 MsgPacket* LiveStreamer::requestPacket() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     auto sendStartPosition = [&]() {
         MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_POSITIONS, ROBOTV_CHANNEL_STREAM);
         resp->put_S64(m_queue->getTimeshiftStartPosition());
         m_parent->queueMessage(resp);
     };
 
-    MsgPacket* p = m_queue->request();
+    // create payload packet
+    if(m_streamPacket == NULL) {
+        m_streamPacket = new MsgPacket();
+    }
 
-    if(p == NULL) {
-        if(m_queue->isPaused()) {
+    // request packet from queue
+    MsgPacket* p = NULL;
+
+    while(p = m_queue->request()) {
+
+        // send timeshift start position on every keyframe
+        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
             sendStartPosition();
         }
 
-        return NULL;
+        // add data
+        m_streamPacket->put_U16(p->getMsgID());
+        m_streamPacket->put_U16(p->getClientID());
+
+        // add payload
+        uint8_t* data = p->getPayload();
+        int length = p->getPayloadLength();
+        m_streamPacket->put_Blob(data, length);
+
+        delete p;
+
+        // send payload packet if it's big enough
+        if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
+            MsgPacket* result = m_streamPacket;
+            m_streamPacket = NULL;
+
+            return result;
+        }
     }
 
-    // send timeshift start position on every keyframe
-    if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
+    if(m_queue->isPaused()) {
         sendStartPosition();
     }
 
-    return p;
+    return NULL;
 }
 
 #if VDRVERSNUM < 20300

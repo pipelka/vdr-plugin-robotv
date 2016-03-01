@@ -190,12 +190,10 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
 MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
 
+    resp->put_U8(this->size());
+
     for(auto idx = begin(); idx != end(); idx++) {
         TsDemuxer* stream = (*idx);
-
-        if(stream == NULL) {
-            continue;
-        }
 
         int streamid = stream->getPid();
         resp->put_U32(streamid);
@@ -204,19 +202,15 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
             case StreamInfo::scAUDIO:
                 resp->put_String(stream->typeName());
                 resp->put_String(stream->getLanguage());
-
-                if(protocolVersion >= 5) {
-                    resp->put_U32(stream->getChannels());
-                    resp->put_U32(stream->getSampleRate());
-                    resp->put_U32(stream->getBlockAlign());
-                    resp->put_U32(stream->getBitRate());
-                    resp->put_U32(stream->getBitsPerSample());
-                }
+                resp->put_U32(stream->getChannels());
+                resp->put_U32(stream->getSampleRate());
+                resp->put_U32(stream->getBlockAlign());
+                resp->put_U32(stream->getBitRate());
+                resp->put_U32(stream->getBitsPerSample());
 
                 break;
 
             case StreamInfo::scVIDEO:
-                // H265 is supported on protocol version 6 or higher, ...
                 resp->put_String(stream->typeName());
                 resp->put_U32(stream->getFpsScale());
                 resp->put_U32(stream->getFpsRate());
@@ -224,8 +218,7 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                 resp->put_U32(stream->getWidth());
                 resp->put_S64(stream->getAspect());
 
-                // send decoder specific data SPS / PPS / VPS ... (Protocol Version 6)
-                if(protocolVersion >= 6) {
+                {
                     int length = 0;
 
                     // put SPS
@@ -252,7 +245,6 @@ MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
                         resp->put_Blob(vps, length);
                     }
                 }
-
                 break;
 
             case StreamInfo::scSUBTITLE:
