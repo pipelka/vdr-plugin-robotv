@@ -114,7 +114,7 @@ public:
 
     void pause(bool on);
 
-    MsgPacket* requestPacket();
+    MsgPacket* requestPacket(bool keyFrameMode = false);
 
     void requestSignalInfo();
 

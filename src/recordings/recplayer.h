@@ -58,6 +58,8 @@ protected:
 
     uint64_t m_totalLength;
 
+    cVector<Segment*> m_segments;
+
 private:
 
     void cleanup();
@@ -73,8 +75,6 @@ private:
     int m_file;
 
     int m_fileOpen;
-
-    cVector<Segment*> m_segments;
 
     char* m_recordingFilename;
 

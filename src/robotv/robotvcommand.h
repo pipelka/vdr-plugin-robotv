@@ -59,8 +59,8 @@
 #define ROBOTV_RECSTREAM_CLOSE       41
 #define ROBOTV_RECSTREAM_GETBLOCK    42
 #define ROBOTV_RECSTREAM_UPDATE      46
-#define ROBOTV_RECSTREAM_GETPACKET   47
-#define ROBOTV_RECSTREAM_SEEK        48
+#define ROBOTV_RECSTREAM_REQUEST     22 // same id as for channelstream
+#define ROBOTV_RECSTREAM_SEEK        25 // same id as for channelstream
 
 /* OPCODE 60 - 79: RoboTV network functions for channel access */
 #define ROBOTV_CHANNELS_GETCOUNT     61

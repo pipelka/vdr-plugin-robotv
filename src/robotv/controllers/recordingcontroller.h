@@ -48,7 +48,7 @@ protected:
 
     bool processGetBlock(MsgPacket* request, MsgPacket* response);
 
-    bool processGetPacket(MsgPacket* request, MsgPacket* response);
+    bool processRequest(MsgPacket* request, MsgPacket* response);
 
     bool processUpdate(MsgPacket* request, MsgPacket* response);
 
@@ -62,6 +62,9 @@ private:
     RoboTvClient* m_parent;
 
     PacketPlayer* m_recPlayer;
+
+    int m_packetCount = 0;
+
 };
 
 #endif	// ROBOTV_RECORDINGCONTROLLER_H

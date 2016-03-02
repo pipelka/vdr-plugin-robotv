@@ -32,6 +32,7 @@
 
 #include "vdr/remux.h"
 #include <deque>
+#include <chrono>
 
 class PacketPlayer : public RecPlayer, protected TsDemuxer::Listener {
 public:
@@ -40,13 +41,23 @@ public:
 
     virtual ~PacketPlayer();
 
-    MsgPacket* getPacket();
+    MsgPacket* requestPacket(bool keyFrameMode);
 
-    int64_t seek(uint64_t position);
+    int64_t seek(int64_t position);
+
+    const std::chrono::milliseconds& startTime() const {
+        return m_startTime;
+    }
+
+    const std::chrono::milliseconds& endTime() const {
+        return m_endTime;
+    }
 
 protected:
 
     MsgPacket* getNextPacket();
+
+    MsgPacket* getPacket();
 
     void sendStreamPacket(StreamPacket* p);
 
@@ -56,9 +67,15 @@ protected:
 
     void reset();
 
+    int64_t filePositionFromClock(int64_t wallclockTimeMs);
+
 private:
 
     cPatPmtParser m_parser;
+
+    cIndexFile* m_index;
+
+    cRecording* m_recording;
 
     DemuxerBundle m_demuxers;
 
@@ -75,6 +92,14 @@ private:
     int m_pmtVersion = -1;
 
     std::deque<MsgPacket*> m_queue;
+
+    MsgPacket* m_streamPacket = NULL;
+
+    std::chrono::milliseconds m_startTime;
+
+    std::chrono::milliseconds m_endTime;
+
+    int64_t m_startPts = 0;
 
 };
 

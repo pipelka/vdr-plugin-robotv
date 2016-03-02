@@ -52,8 +52,8 @@ bool RecordingController::process(MsgPacket* request, MsgPacket* response) {
         case ROBOTV_RECSTREAM_GETBLOCK:
             return processGetBlock(request, response);
 
-        case ROBOTV_RECSTREAM_GETPACKET:
-            return processGetPacket(request, response);
+        case ROBOTV_RECSTREAM_REQUEST:
+            return processRequest(request, response);
 
         case ROBOTV_RECSTREAM_UPDATE:
             return processUpdate(request, response);
@@ -87,6 +87,7 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
         ERRORLOG("%s - unable to start recording !", __FUNCTION__);
     }
 
+    m_packetCount = 0;
     return true;
 }
 
@@ -120,18 +121,35 @@ bool RecordingController::processGetBlock(MsgPacket* request, MsgPacket* respons
     return true;
 }
 
-bool RecordingController::processGetPacket(MsgPacket* request, MsgPacket* response) {
+bool RecordingController::processRequest(MsgPacket* request, MsgPacket* response) {
     if(!m_recPlayer) {
         return false;
     }
 
-    MsgPacket* p = m_recPlayer->getPacket();
+    bool keyFrameMode = request->get_U8();
+
+    MsgPacket* p = m_recPlayer->requestPacket(keyFrameMode);
 
     if(p == NULL) {
         return true;
     }
 
-    m_parent->queueMessage(p);
+    int packetLen = p->getPayloadLength();
+    uint8_t* packetData = p->consume(packetLen);
+
+    response->put_Blob(packetData, packetLen);
+    delete p;
+
+    m_packetCount++;
+
+    // send position information
+    if(m_packetCount % 20 == 0) {
+        MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_POSITIONS, ROBOTV_CHANNEL_STREAM);
+        resp->put_S64(m_recPlayer->startTime().count());
+        resp->put_S64(m_recPlayer->endTime().count());
+        m_parent->queueMessage(resp);
+    }
+
     return true;
 }
 
@@ -148,14 +166,13 @@ bool RecordingController::processUpdate(MsgPacket* request, MsgPacket* response)
 }
 
 bool RecordingController::processSeek(MsgPacket* request, MsgPacket* response) {
-    if(!m_recPlayer) {
+    if(m_recPlayer == NULL) {
         return false;
     }
 
-    uint64_t position = request->get_U64();
+    int64_t position = request->get_S64();
     int64_t pts = m_recPlayer->seek(position);
 
-    response->put_U64(pts);
-
+    response->put_S64(pts);
     return true;
 }

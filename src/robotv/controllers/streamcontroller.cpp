@@ -143,7 +143,9 @@ bool StreamController::processRequest(MsgPacket* request, MsgPacket* response) {
         return false;
     }
 
-    MsgPacket* p = m_streamer->requestPacket();
+    bool keyFrameMode = request->get_U8();
+
+    MsgPacket* p = m_streamer->requestPacket(keyFrameMode);
 
     if(p == NULL) {
         return true;

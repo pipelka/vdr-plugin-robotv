@@ -24,14 +24,20 @@
 
 #include "config/config.h"
 #include "packetplayer.h"
+#include "tools/time.h"
+
+#define MIN_PACKET_SIZE (128 * 1024)
 
 PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_requestStreamChange = true;
     m_firstKeyFrameSeen = false;
+    m_index = new cIndexFile(rec->FileName(), false);
+    m_recording = rec;
 }
 
 PacketPlayer::~PacketPlayer() {
     clearQueue();
+    delete m_index;
 }
 
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
@@ -71,6 +77,24 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     packet->put_Blob(p->data, p->size);
     packet->put_U64(m_position);
     packet->put_U64(m_totalLength);
+
+    int64_t currentTime = 0;
+    int64_t currentPts = p->rawPts;
+
+    // set initial pts
+    if(m_startPts == 0) {
+        m_startPts = currentPts;
+    }
+
+    // pts wrap ?
+    if(currentPts < m_startPts) {
+        currentPts += 0x200000000ULL;
+    }
+
+    currentTime = m_startTime.count() + (currentPts - m_startPts) / 90;
+
+    // add timestamp (wallclock time in ms starting at m_startTime)
+    packet->put_S64(currentTime);
 
     m_queue.push_back(packet);
 }
@@ -160,11 +184,61 @@ MsgPacket* PacketPlayer::getPacket() {
     MsgPacket* p = NULL;
 
     // process data until the next packet drops out
-    while(p == NULL && m_position < m_totalLength) {
+    while(m_position < m_totalLength && p == NULL) {
         p = getNextPacket();
     }
 
     return p;
+}
+
+MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
+    MsgPacket* p = NULL;
+
+    // initial start / end time
+    if(m_startTime.count() == 0) {
+        m_startTime = roboTV::currentTimeMillis();
+        m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
+    }
+
+    // create payload packet
+    if(m_streamPacket == NULL) {
+        m_streamPacket = new MsgPacket();
+    }
+
+    while(p = getPacket()) {
+
+        if(keyFrameMode && p->getClientID() != StreamInfo::FrameType::ftIFRAME) {
+            delete p;
+            continue;
+        }
+
+        // send recording position on every keyframe
+        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
+            int64_t durationMs = (int)(((double)m_index->Last() * 1000.0) / m_recording->FramesPerSecond());
+            m_endTime = m_startTime + std::chrono::milliseconds(durationMs);
+        }
+
+        // add data
+        m_streamPacket->put_U16(p->getMsgID());
+        m_streamPacket->put_U16(p->getClientID());
+
+        // add payload
+        uint8_t* data = p->getPayload();
+        int length = p->getPayloadLength();
+        m_streamPacket->put_Blob(data, length);
+
+        delete p;
+
+        // send payload packet if it's big enough
+        if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
+            MsgPacket* result = m_streamPacket;
+            m_streamPacket = NULL;
+
+            return result;
+        }
+    }
+
+    return NULL;
 }
 
 void PacketPlayer::clearQueue() {
@@ -190,9 +264,28 @@ void PacketPlayer::reset() {
     clearQueue();
 }
 
-int64_t PacketPlayer::seek(uint64_t position) {
+int64_t PacketPlayer::filePositionFromClock(int64_t wallclockTimeMs) {
+    double offsetMs = wallclockTimeMs - m_startTime.count();
+    double fps = m_recording->FramesPerSecond();
+    int frames = (int)((offsetMs * fps) / 1000.0);
+
+    int index = m_index->GetClosestIFrame(frames);
+
+    uint16_t fileNumber = 0;
+    off_t fileOffset = 0;
+
+    m_index->Get(index, &fileNumber, &fileOffset);
+
+    if(fileNumber == 0) {
+        return 0;
+    }
+
+    return m_segments[--fileNumber]->start + fileOffset;
+}
+
+int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
     // adujst position to TS packet borders
-    m_position = (position / TS_SIZE) * TS_SIZE;
+    m_position = filePositionFromClock(wallclockTimeMs);
 
     // invalid position ?
     if(m_position >= m_totalLength) {
@@ -206,6 +299,7 @@ int64_t PacketPlayer::seek(uint64_t position) {
 
     // first check for next video packet (PTS) after seek
     MsgPacket* p = NULL;
+    int64_t pts = 0;
 
     for(;;) {
         p = getPacket();
@@ -215,21 +309,22 @@ int64_t PacketPlayer::seek(uint64_t position) {
             return -1;
         }
 
-        // check for video pid
-        if(p->get_U16() == m_parser.Vpid()) {
-            break;
-        }
+        // get pid / pts
+        int pid = p->get_U16();
+        pts = p->get_U64();
 
         // delete packet
         delete p;
-    }
 
-    // get PTS of video packet
-    int64_t pts = p->get_U64();
+        // check for video pid
+        if(pid == m_parser.Vpid()) {
+            break;
+        }
+    }
 
     // reset again
     reset();
-    m_position = (position / TS_SIZE) * TS_SIZE;
+    m_position = filePositionFromClock(wallclockTimeMs);
 
     return pts;
 }

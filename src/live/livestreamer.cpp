@@ -240,7 +240,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     // add timestamp (wallclock time in ms)
     packet->put_S64(roboTV::currentTimeMillis().count());
 
-    m_queue->add(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME), pkt->rawPts);
+    m_queue->write(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME), pkt->rawPts);
 }
 
 void LiveStreamer::sendDetach() {
@@ -264,7 +264,7 @@ void LiveStreamer::sendStreamChange() {
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
     MsgPacket* resp = m_demuxers.createStreamChangePacket();
-    m_queue->add(resp, StreamInfo::scSTREAMINFO, false);
+    m_queue->write(resp, StreamInfo::scSTREAMINFO, false);
 
     m_requestStreamChange = false;
 }
@@ -343,7 +343,7 @@ void LiveStreamer::requestSignalInfo() {
     }
 
     DEBUGLOG("RequestSignalInfo");
-    m_queue->add(resp, StreamInfo::scNONE, false);
+    m_queue->write(resp, StreamInfo::scNONE, false);
 }
 
 void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {
@@ -371,7 +371,7 @@ void LiveStreamer::pause(bool on) {
     m_queue->pause(on);
 }
 
-MsgPacket* LiveStreamer::requestPacket() {
+MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     auto sendStartPosition = [&]() {
@@ -388,7 +388,7 @@ MsgPacket* LiveStreamer::requestPacket() {
     // request packet from queue
     MsgPacket* p = NULL;
 
-    while(p = m_queue->request()) {
+    while(p = m_queue->read(keyFrameMode)) {
 
         // send timeshift start position on every keyframe
         if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
