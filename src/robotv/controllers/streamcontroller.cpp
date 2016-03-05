@@ -162,6 +162,10 @@ bool StreamController::processRequest(MsgPacket* request, MsgPacket* response) {
 }
 
 bool StreamController::processPause(MsgPacket* request, MsgPacket* response) {
+    if(m_streamer == 0) {
+        return false;
+    }
+
     bool on = request->get_U32();
     INFOLOG("LIVESTREAM: %s", on ? "PAUSED" : "TIMESHIFT");
 

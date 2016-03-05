@@ -81,8 +81,6 @@ private:
 
     uint64_t m_position = 0;
 
-    uint64_t m_positionMarker = 0;
-
     bool m_requestStreamChange;
 
     bool m_firstKeyFrameSeen;

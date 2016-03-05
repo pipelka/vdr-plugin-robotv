@@ -60,6 +60,9 @@ bool RecordingController::process(MsgPacket* request, MsgPacket* response) {
 
         case ROBOTV_RECSTREAM_SEEK:
             return processSeek(request, response);
+
+        case ROBOTV_RECSTREAM_PAUSE:
+            return processPause(request, response);
     }
 
     return false;
@@ -174,5 +177,13 @@ bool RecordingController::processSeek(MsgPacket* request, MsgPacket* response) {
     int64_t pts = m_recPlayer->seek(position);
 
     response->put_S64(pts);
+    return true;
+}
+
+bool RecordingController::processPause(MsgPacket* request, MsgPacket* response) {
+    if(m_recPlayer == NULL) {
+        return false;
+    }
+
     return true;
 }

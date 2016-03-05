@@ -54,6 +54,7 @@ protected:
 
     bool processSeek(MsgPacket* request, MsgPacket* response);
 
+    bool processPause(MsgPacket* request, MsgPacket* response);
 
 private:
 

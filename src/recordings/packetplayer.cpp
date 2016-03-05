@@ -49,13 +49,18 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
 
     // skip non video / audio packets
     if(p->content != StreamInfo::scVIDEO && p->content != StreamInfo::scAUDIO) {
-        m_positionMarker = m_position;
         return;
     }
 
     // streaming starts with a key frame
     if(!m_firstKeyFrameSeen) {
         return;
+    }
+
+    // initial start / end time
+    if(m_startTime.count() == 0) {
+        m_startTime = roboTV::currentTimeMillis();
+        m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
     }
 
     // initialise stream packet
@@ -75,8 +80,6 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // write payload into stream packet
     packet->put_U32(p->size);
     packet->put_Blob(p->data, p->size);
-    packet->put_U64(m_position);
-    packet->put_U64(m_totalLength);
 
     int64_t currentTime = 0;
     int64_t currentPts = p->rawPts;
@@ -193,12 +196,6 @@ MsgPacket* PacketPlayer::getPacket() {
 
 MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
     MsgPacket* p = NULL;
-
-    // initial start / end time
-    if(m_startTime.count() == 0) {
-        m_startTime = roboTV::currentTimeMillis();
-        m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
-    }
 
     // create payload packet
     if(m_streamPacket == NULL) {
