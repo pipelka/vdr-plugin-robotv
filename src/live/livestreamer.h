@@ -120,7 +120,7 @@ public:
 
     int switchChannel(const cChannel* channel);
 
-    void seek(int64_t wallclockPositionMs);
+    int64_t seek(int64_t wallclockPositionMs);
 
     // TsDemuxer::Listener implementation
 

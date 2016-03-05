@@ -459,6 +459,6 @@ void LiveStreamer::createDemuxers(StreamBundle* bundle) {
     }
 }
 
-void LiveStreamer::seek(int64_t wallclockPositionMs) {
-    m_queue->seek(wallclockPositionMs);
+int64_t LiveStreamer::seek(int64_t wallclockPositionMs) {
+    return m_queue->seek(wallclockPositionMs);
 }

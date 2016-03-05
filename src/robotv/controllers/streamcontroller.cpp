@@ -212,6 +212,8 @@ bool StreamController::processSeek(MsgPacket* request, MsgPacket* response) {
     }
 
     int64_t position = request->get_S64();
-    m_streamer->seek(position);
+    int64_t pts = m_streamer->seek(position);
+
+    response->put_S64(pts);
     return true;
 }
