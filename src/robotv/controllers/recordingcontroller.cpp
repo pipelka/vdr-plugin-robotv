@@ -79,14 +79,17 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
     if(recording && m_recPlayer == NULL) {
         m_recPlayer = new PacketPlayer(recording);
 
+        delete m_recPlayer->requestPacket(false);
+        m_recPlayer->reset();
+
+        uint32_t length = (m_recPlayer->endTime().count() - m_recPlayer->startTime().count()) / 1000;
+
         response->put_U32(ROBOTV_RET_OK);
         response->put_U32(0);
         response->put_U64(m_recPlayer->getLengthBytes());
         response->put_U8(recording->IsPesRecording());//added for TS
-        response->put_U32(recording->LengthInSeconds());
+        response->put_U32(length);
 
-        m_recPlayer->requestPacket(false);
-        m_recPlayer->reset();
     }
     else {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
