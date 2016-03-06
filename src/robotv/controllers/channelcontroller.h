@@ -41,7 +41,7 @@ public:
 
     bool process(MsgPacket* request, MsgPacket* response);
 
-    void addChannelToPacket(const cChannel*, MsgPacket*);
+    void addChannelToPacket(const cChannel* channel, MsgPacket* packet, const char* group = NULL);
 
     static std::string createLogoUrl(const cChannel* channel, const std::string& baseUrl);
 

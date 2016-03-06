@@ -100,13 +100,19 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     }
 
     cChannels* channels = c.get();
+    std::string groupName;
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+
+        if(channel->GroupSep()) {
+            groupName = m_toUtf8.Convert(channel->Name());
+        }
+
         if(!isChannelWanted(channel, type)) {
             continue;
         }
 
-        addChannelToPacket(channel, response);
+        addChannelToPacket(channel, response, groupName.c_str());
     }
 
     c.unlock();
@@ -287,7 +293,7 @@ std::string ChannelController::createLogoUrl(const cChannel* channel, const std:
     return (const char*)cString::sprintf("%s.png", (const char*)piconurl);
 }
 
-void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p) {
+void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p, const char* group) {
     p->put_U32(channel->Number());
     p->put_String(m_toUtf8.Convert(channel->Name()));
     p->put_U32(createChannelUid(channel));
@@ -298,6 +304,9 @@ void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p
 
     // service reference
     p->put_String(createServiceReference(channel).c_str());
+
+    // group
+    p->put_String(group == NULL ? "" : group);
 }
 
 bool ChannelController::isRadio(const cChannel* channel) {
