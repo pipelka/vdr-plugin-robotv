@@ -75,6 +75,8 @@ protected:
 
     MsgPacket* internalRead();
 
+    void seekNextKeyFrame();
+
     std::list<struct PacketIndex> m_indexList;
 
     int m_readFd;

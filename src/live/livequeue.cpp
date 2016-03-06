@@ -70,17 +70,11 @@ MsgPacket* LiveQueue::read(bool keyFrameMode) {
         return NULL;
     }
 
-    MsgPacket* p = internalRead();
-
-    if(!keyFrameMode) {
-        return p;
+    if(keyFrameMode) {
+        seekNextKeyFrame();
     }
 
-    while(p != NULL && p->getClientID() != StreamInfo::FrameType::ftIFRAME) {
-        p = internalRead();
-    }
-
-    return p;
+    return internalRead();
 }
 
 MsgPacket* LiveQueue::internalRead() {
@@ -276,6 +270,30 @@ int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
     // not found
     ERRORLOG("fileposition not found!");
     return 0;
+}
+
+void LiveQueue::seekNextKeyFrame() {
+    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
+
+    auto i = m_indexList.begin();
+    auto j = i;
+
+    while(i != m_indexList.end()) {
+        j++;
+
+        if(j == m_indexList.end()) {
+            return;
+        }
+
+        if(i->filePosition < readPosition && readPosition <= j->filePosition) {
+            readPosition = j->filePosition;
+            break;
+        }
+
+        i++;
+    }
+
+    lseek(m_readFd, readPosition, SEEK_SET);
 }
 
 int64_t LiveQueue::getTimeshiftStartPosition() {
