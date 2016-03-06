@@ -53,6 +53,8 @@ public:
         return m_endTime;
     }
 
+    void reset();
+
 protected:
 
     MsgPacket* getNextPacket();
@@ -64,8 +66,6 @@ protected:
     void requestStreamChange();
 
     void clearQueue();
-
-    void reset();
 
     int64_t filePositionFromClock(int64_t wallclockTimeMs);
 

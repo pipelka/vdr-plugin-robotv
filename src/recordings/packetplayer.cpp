@@ -256,6 +256,7 @@ void PacketPlayer::reset() {
     m_firstKeyFrameSeen = false;
     m_patVersion = -1;
     m_pmtVersion = -1;
+    m_position = 0;
 
     // remove pending packets
     clearQueue();
