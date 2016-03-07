@@ -134,23 +134,16 @@ bool MovieController::processGetList(MsgPacket* request, MsgPacket* response) {
         }
 
         // title
-        response->put_String(m_toUtf8.Convert(recname));
+        const char* title = recording->Info()->Title();
+        response->put_String(title ? m_toUtf8.Convert(title) : "");
 
         // subtitle
-        if(!isempty(recording->Info()->ShortText())) {
-            response->put_String(m_toUtf8.Convert(recording->Info()->ShortText()));
-        }
-        else {
-            response->put_String("");
-        }
+        const char* subTitle = recording->Info()->ShortText();
+        response->put_String(subTitle ? m_toUtf8.Convert(subTitle) : "");
 
         // description
-        if(!isempty(recording->Info()->Description())) {
-            response->put_String(m_toUtf8.Convert(recording->Info()->Description()));
-        }
-        else {
-            response->put_String("");
-        }
+        const char* description = recording->Info()->Description();
+        response->put_String(description ? m_toUtf8.Convert(description) : "");
 
         // directory
         if(directory != NULL) {
