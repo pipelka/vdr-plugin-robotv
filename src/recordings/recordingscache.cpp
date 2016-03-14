@@ -63,6 +63,14 @@ uint32_t RecordingsCache::add(cRecording* recording) {
         uid,
         (const char*)filename);
 
+    // insert full text search entry
+    m_storage.exec(
+        "INSERT OR IGNORE INTO fts_recordings(docid, title, subject, description) VALUES(%u, %Q, %Q, %Q);",
+        uid,
+        !isempty(recording->Info()->Title()) ? recording->Info()->Title() : "",
+        !isempty(recording->Info()->ShortText()) ? recording->Info()->ShortText() : "",
+        !isempty(recording->Info()->Description()) ? recording->Info()->Description() : "");
+
     return uid;
 }
 
@@ -244,9 +252,34 @@ void RecordingsCache::createDb() {
         "  externalid INTEGER\n"
         ");\n"
         "CREATE INDEX IF NOT EXISTS recordings_externalid on recordings(externalid);\n"
-        "CREATE UNIQUE INDEX IF NOT EXISTS recordings_filename on recordings(filename);\n";
+        "CREATE UNIQUE INDEX IF NOT EXISTS recordings_filename on recordings(filename);\n"
+        "CREATE VIRTUAL TABLE IF NOT EXISTS fts_recordings USING fts4(title, subject, description);\n";
 
     if(m_storage.exec(schema) != SQLITE_OK) {
         ERRORLOG("Unable to create database schema for recordings");
     }
+}
+
+void RecordingsCache::search(const char* searchTerm, std::function<void(uint32_t)> resultCallback) {
+    if(searchTerm == NULL) {
+        return;
+    }
+
+    auto stmt = m_storage.query(
+                    "SELECT docid "
+                    "FROM fts_recordings "
+                    "WHERE fts_recordings MATCH %Q "
+                    "LIMIT 100",
+                    searchTerm);
+
+    if(stmt == NULL) {
+        return;
+    }
+
+    while(sqlite3_step(stmt) == SQLITE_ROW) {
+        uint32_t recid = (uint32_t)sqlite3_column_int(stmt, 0);
+        resultCallback(recid);
+    }
+
+    sqlite3_finalize(stmt);
 }

@@ -29,7 +29,6 @@
 #include "config/config.h"
 #include "recordings/recordingscache.h"
 #include "vdr/videodir.h"
-#include "vdr/recording.h"
 #include "vdr/menu.h"
 
 MovieController::MovieController() {
@@ -69,6 +68,9 @@ bool MovieController::process(MsgPacket* request, MsgPacket* response) {
 
         case ROBOTV_RECORDINGS_GETMARKS:
             return processGetMarks(request, response);
+
+        case ROBOTV_RECORDINGS_SEARCH:
+            return processSearch(request, response);
     }
 
     return false;
@@ -87,106 +89,8 @@ bool MovieController::processGetDiskSpace(MsgPacket* request, MsgPacket* respons
 }
 
 bool MovieController::processGetList(MsgPacket* request, MsgPacket* response) {
-    RecordingsCache& cache = RecordingsCache::instance();
-
     for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
-        const cEvent* event = recording->Info()->GetEvent();
-
-        time_t recordingStart = event->StartTime();
-        int recordingDuration = event->Duration();
-
-        cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
-
-        if(rc) {
-            recordingStart    = rc->Timer()->StartTime();
-            recordingDuration = rc->Timer()->StopTime() - recordingStart;
-        }
-        else {
-            recordingStart = recording->Start();
-        }
-
-        // recording_time
-        response->put_U32(recordingStart);
-
-        // duration
-        response->put_U32(recordingDuration);
-
-        // priority
-        response->put_U32(recording->Priority());
-
-        // lifetime
-        response->put_U32(recording->Lifetime());
-
-        // channel_name
-        response->put_String(recording->Info()->ChannelName() ? m_toUtf8.Convert(recording->Info()->ChannelName()) : "");
-
-        char* fullname = strdup(recording->Name());
-        char* recname = strrchr(fullname, FOLDERDELIMCHAR);
-        char* directory = NULL;
-
-        if(recname == NULL) {
-            recname = fullname;
-        }
-        else {
-            *recname = 0;
-            recname++;
-            directory = fullname;
-        }
-
-        // title
-        const char* title = recording->Info()->Title();
-        response->put_String(title ? m_toUtf8.Convert(title) : "");
-
-        // subtitle
-        const char* subTitle = recording->Info()->ShortText();
-        response->put_String(subTitle ? m_toUtf8.Convert(subTitle) : "");
-
-        // description
-        const char* description = recording->Info()->Description();
-        response->put_String(description ? m_toUtf8.Convert(description) : "");
-
-        // directory
-        if(directory != NULL) {
-            char* p = directory;
-
-            while(*p != 0) {
-                if(*p == FOLDERDELIMCHAR) {
-                    *p = '/';
-                }
-
-                if(*p == '_') {
-                    *p = ' ';
-                }
-
-                p++;
-            }
-
-            while(*directory == '/') {
-                directory++;
-            }
-        }
-
-        response->put_String((isempty(directory)) ? "" : m_toUtf8.Convert(directory));
-
-        // filename / uid of recording
-        uint32_t uid = RecordingsCache::instance().add(recording);
-        char recid[9];
-        snprintf(recid, sizeof(recid), "%08x", uid);
-        response->put_String(recid);
-
-        // playcount
-        response->put_U32(cache.getPlayCount(uid));
-
-        // content
-        response->put_U32(event->Contents());
-
-        // thumbnail url - for future use
-        response->put_String((const char*)cache.getPosterUrl(uid));
-
-        // icon url - for future use
-        response->put_String((const char*)cache.getBackgroundUrl(uid));
-
-        free(fullname);
+        recordingToPacket(recording, response);
     }
 
     return true;
@@ -340,15 +244,136 @@ bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
 }
 
 bool MovieController::processSetUrls(MsgPacket* request, MsgPacket* response) {
+    RecordingsCache& cache = RecordingsCache::instance();
+
     const char* recid = request->get_String();
     const char* poster = request->get_String();
     const char* background = request->get_String();
     uint32_t id = request->get_U32();
 
     uint32_t uid = recid2uid(recid);
-    RecordingsCache::instance().setPosterUrl(uid, poster);
-    RecordingsCache::instance().setBackgroundUrl(uid, background);
-    RecordingsCache::instance().setMovieID(uid, id);
+    cache.setPosterUrl(uid, poster);
+    cache.setBackgroundUrl(uid, background);
+    cache.setMovieID(uid, id);
 
     return true;
+}
+
+bool MovieController::processSearch(MsgPacket* request, MsgPacket* response) {
+    RecordingsCache& cache = RecordingsCache::instance();
+
+    const char* searchTerm = request->get_String();
+
+    cache.search(searchTerm, [&](uint32_t recid) {
+        cRecording* recording = cache.lookup(recid);
+
+        if(recording == NULL) {
+            return;
+        }
+
+        recordingToPacket(recording, response);
+    });
+
+    return true;
+}
+
+void MovieController::recordingToPacket(cRecording* recording, MsgPacket* response) {
+    RecordingsCache& cache = RecordingsCache::instance();
+    const cEvent* event = recording->Info()->GetEvent();
+
+    time_t recordingStart = event->StartTime();
+    int recordingDuration = event->Duration();
+
+    cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
+
+    if(rc) {
+        recordingStart    = rc->Timer()->StartTime();
+        recordingDuration = rc->Timer()->StopTime() - recordingStart;
+    }
+    else {
+        recordingStart = recording->Start();
+    }
+
+    // recording_time
+    response->put_U32(recordingStart);
+
+    // duration
+    response->put_U32(recordingDuration);
+
+    // priority
+    response->put_U32(recording->Priority());
+
+    // lifetime
+    response->put_U32(recording->Lifetime());
+
+    // channel_name
+    response->put_String(recording->Info()->ChannelName() ? m_toUtf8.Convert(recording->Info()->ChannelName()) : "");
+
+    char* fullname = strdup(recording->Name());
+    char* recname = strrchr(fullname, FOLDERDELIMCHAR);
+    char* directory = NULL;
+
+    if(recname == NULL) {
+        recname = fullname;
+    }
+    else {
+        *recname = 0;
+        recname++;
+        directory = fullname;
+    }
+
+    // title
+    const char* title = recording->Info()->Title();
+    response->put_String(title ? m_toUtf8.Convert(title) : "");
+
+    // subtitle
+    const char* subTitle = recording->Info()->ShortText();
+    response->put_String(subTitle ? m_toUtf8.Convert(subTitle) : "");
+
+    // description
+    const char* description = recording->Info()->Description();
+    response->put_String(description ? m_toUtf8.Convert(description) : "");
+
+    // directory
+    if(directory != NULL) {
+        char* p = directory;
+
+        while(*p != 0) {
+            if(*p == FOLDERDELIMCHAR) {
+                *p = '/';
+            }
+
+            if(*p == '_') {
+                *p = ' ';
+            }
+
+            p++;
+        }
+
+        while(*directory == '/') {
+            directory++;
+        }
+    }
+
+    response->put_String((isempty(directory)) ? "" : m_toUtf8.Convert(directory));
+
+    // filename / uid of recording
+    uint32_t uid = RecordingsCache::instance().add(recording);
+    char recid[9];
+    snprintf(recid, sizeof(recid), "%08x", uid);
+    response->put_String(recid);
+
+    // playcount
+    response->put_U32(cache.getPlayCount(uid));
+
+    // content
+    response->put_U32(event->Contents());
+
+    // thumbnail url - for future use
+    response->put_String((const char*)cache.getPosterUrl(uid));
+
+    // icon url - for future use
+    response->put_String((const char*)cache.getBackgroundUrl(uid));
+
+    free(fullname);
 }

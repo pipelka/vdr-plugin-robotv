@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <map>
+#include <functional>
 #include <vdr/thread.h>
 #include <vdr/tools.h>
 #include <vdr/recording.h>
@@ -66,6 +67,8 @@ public:
     void setMovieID(uint32_t uid, uint32_t id);
 
     void gc();
+
+    void search(const char* searchTerm, std::function<void(uint32_t)> resultCallback);
 
 protected:
 

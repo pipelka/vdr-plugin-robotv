@@ -25,6 +25,7 @@
 #ifndef ROBOTV_MOVIECONTROLLER_H
 #define ROBOTV_MOVIECONTROLLER_H
 
+#include "vdr/recording.h"
 #include "vdr/tools.h"
 #include "controller.h"
 
@@ -59,9 +60,13 @@ protected:
 
     bool processSetUrls(MsgPacket* request, MsgPacket* response);
 
+    bool processSearch(MsgPacket* request, MsgPacket* response);
+
 private:
 
     MovieController(const MovieController& orig);
+
+    void recordingToPacket(cRecording* recording, MsgPacket* response);
 
     cCharSetConv m_toUtf8;
 

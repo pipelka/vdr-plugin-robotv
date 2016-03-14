@@ -232,7 +232,9 @@ void RoboTVServer::Action(void) {
     int recState = -1;
     int recStateOld = -1;
 
+    RecordingsCache& cache = RecordingsCache::instance();
     Recordings.StateChanged(recState);
+
     recStateOld = recState;
 
     while(Running()) {
@@ -290,7 +292,7 @@ void RoboTVServer::Action(void) {
 
                 // start gc
                 INFOLOG("Starting garbage collection in recordings cache");
-                RecordingsCache::instance().gc();
+                cache.gc();
 
                 // request clients to reload recordings
                 if(!m_clients.empty()) {
