@@ -27,7 +27,7 @@
 
 #include <list>
 #include <string>
-#include <queue>
+#include <deque>
 
 #include <vdr/thread.h>
 #include <vdr/tools.h>
@@ -35,6 +35,7 @@
 #include <vdr/status.h>
 
 #include "demuxer/streaminfo.h"
+#include "net/msgpacket.h"
 #include "recordings/artwork.h"
 
 #include "controllers/streamcontroller.h"
@@ -48,7 +49,6 @@
 
 class cChannel;
 class cDevice;
-class MsgPacket;
 class PacketPlayer;
 
 class RoboTvClient : public cThread, public cStatus {
@@ -66,7 +66,7 @@ private:
 
     int m_timeout = 3000;
 
-    std::queue<MsgPacket*> m_queue;
+    std::deque<MsgPacket*> m_queue;
 
     cMutex m_queueLock;
 

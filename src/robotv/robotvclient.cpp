@@ -39,7 +39,6 @@
 #include <vdr/sources.h>
 
 #include "config/config.h"
-#include "net/msgpacket.h"
 #include "tools/hash.h"
 #include "tools/urlencode.h"
 #include "tools/recid2uid.h"
@@ -83,7 +82,7 @@ RoboTvClient::~RoboTvClient() {
 
         while(!m_queue.empty()) {
             MsgPacket* p = m_queue.front();
-            m_queue.pop();
+            m_queue.pop_front();
             delete p;
         }
     }
@@ -107,7 +106,7 @@ void RoboTvClient::Action(void) {
                     break;
                 }
 
-                m_queue.pop();
+                m_queue.pop_front();
                 delete p;
             }
         }
@@ -304,5 +303,5 @@ bool RoboTvClient::processRequest() {
 
 void RoboTvClient::queueMessage(MsgPacket* p) {
     cMutexLock lock(&m_queueLock);
-    m_queue.push(p);
+    m_queue.push_back(p);
 }
