@@ -194,11 +194,6 @@ StreamBundle StreamBundle::createFromChannel(const cChannel* channel) {
                                   channel->Alang(i)));
     }
 
-    // add teletext stream
-    if(channel->Tpid() != 0) {
-        item.addStream(StreamInfo(channel->Tpid(), StreamInfo::stTELETEXT));
-    }
-
     // add subtitle streams
     for(int i = 0; channel->Spid(i) != 0; i++) {
         StreamInfo stream(channel->Spid(i), StreamInfo::stDVBSUB, channel->Slang(i));
