@@ -84,6 +84,9 @@ bool LoginController::processGetConfig(MsgPacket* request, MsgPacket* response) 
     if(!strcasecmp(key, "EpgImageUrl")) {
         response->put_String(config.epgImageUrl.c_str());
     }
+    else if(!strcasecmp(key, "SeriesFolder")) {
+        response->put_String(config.seriesFolder.c_str());
+    }
 
     return true;
 }

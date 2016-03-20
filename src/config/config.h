@@ -83,6 +83,7 @@ public:
     std::string piconsUrl;
     std::string reorderCmd;
     std::string epgImageUrl;
+    std::string seriesFolder;
 };
 
 #endif // ROBOTV_CONFIG_H

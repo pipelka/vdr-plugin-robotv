@@ -69,6 +69,10 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
         INFOLOG("EPG images template URL: %s", Value);
         epgImageUrl = Value;
     }
+    else if(!strcasecmp(Name, "SeriesFolder")) {
+        INFOLOG("Folder for TV shows: %s", Value);
+        seriesFolder = Value;
+    }
     else {
         return false;
     }
