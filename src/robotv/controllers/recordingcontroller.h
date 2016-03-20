@@ -46,8 +46,6 @@ protected:
 
     bool processClose(MsgPacket* request, MsgPacket* response);
 
-    bool processGetBlock(MsgPacket* request, MsgPacket* response);
-
     bool processRequest(MsgPacket* request, MsgPacket* response);
 
     bool processUpdate(MsgPacket* request, MsgPacket* response);

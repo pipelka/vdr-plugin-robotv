@@ -49,9 +49,6 @@ bool RecordingController::process(MsgPacket* request, MsgPacket* response) {
         case ROBOTV_RECSTREAM_CLOSE:
             return processClose(request, response);
 
-        case ROBOTV_RECSTREAM_GETBLOCK:
-            return processGetBlock(request, response);
-
         case ROBOTV_RECSTREAM_REQUEST:
             return processRequest(request, response);
 
@@ -107,26 +104,6 @@ bool RecordingController::processClose(MsgPacket* request, MsgPacket* response) 
     }
 
     response->put_U32(ROBOTV_RET_OK);
-    return true;
-}
-
-bool RecordingController::processGetBlock(MsgPacket* request, MsgPacket* response) {
-    if(!m_recPlayer) {
-        ERRORLOG("Get block called when no recording open");
-        return false;
-    }
-
-    uint64_t position = request->get_U64();
-    uint32_t amount = request->get_U32();
-
-    uint8_t* p = response->reserve(amount);
-    uint32_t amountReceived = m_recPlayer->getBlock(p, position, amount);
-
-    // smaller chunk ?
-    if(amountReceived < amount) {
-        response->unreserve(amount - amountReceived);
-    }
-
     return true;
 }
 
