@@ -279,10 +279,13 @@ bool MovieController::processSearch(MsgPacket* request, MsgPacket* response) {
 
 void MovieController::recordingToPacket(cRecording* recording, MsgPacket* response) {
     RecordingsCache& cache = RecordingsCache::instance();
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
+
     const cEvent* event = recording->Info()->GetEvent();
 
     time_t recordingStart = event->StartTime();
     int recordingDuration = event->Duration();
+    int content = event->Contents();
 
     cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
 
@@ -355,6 +358,12 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
         }
     }
 
+    if(!isempty(directory) && !config.seriesFolder.empty()) {
+        if(strncmp(directory, config.seriesFolder.c_str(), config.seriesFolder.length()) == 0) {
+            content = 0x15;
+        }
+    }
+
     response->put_String((isempty(directory)) ? "" : m_toUtf8.Convert(directory));
 
     // filename / uid of recording
@@ -367,7 +376,7 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
     response->put_U32(cache.getPlayCount(uid));
 
     // content
-    response->put_U32(event->Contents());
+    response->put_U32(content);
 
     // thumbnail url - for future use
     response->put_String((const char*)cache.getPosterUrl(uid));
