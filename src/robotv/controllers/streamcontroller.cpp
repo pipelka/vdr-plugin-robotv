@@ -89,7 +89,7 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
         m_langStreamType = (StreamInfo::Type)request->get_U8();
     }
 
-    if(!m_languageIndex != -1) {
+    if(m_languageIndex != -1) {
         INFOLOG("Preferred language: %s / type: %i", I18nLanguageCode(m_languageIndex), (int)m_langStreamType);
     }
 
