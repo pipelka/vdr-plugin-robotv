@@ -28,7 +28,6 @@
 #include <vdr/channels.h>
 #include <vdr/device.h>
 #include <vdr/receiver.h>
-#include <vdr/thread.h>
 #include <vdr/ringbuffer.h>
 
 #include "demuxer/demuxer.h"

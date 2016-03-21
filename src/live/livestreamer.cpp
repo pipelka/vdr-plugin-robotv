@@ -78,7 +78,7 @@ LiveStreamer::~LiveStreamer() {
     m_device = NULL;
     delete m_streamPacket;
 
-    DEBUGLOG("Finished to delete live streamer");
+    INFOLOG("live streamer terminated");
 }
 
 void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
@@ -240,7 +240,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     // add timestamp (wallclock time in ms)
     packet->put_S64(roboTV::currentTimeMillis().count());
 
-    m_queue->write(packet, pkt->content, (pkt->frameType == StreamInfo::FrameType::ftIFRAME), pkt->rawPts);
+    m_queue->queue(packet, pkt->content, pkt->rawPts);
 }
 
 void LiveStreamer::sendDetach() {
@@ -264,7 +264,7 @@ void LiveStreamer::sendStreamChange() {
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);
 
     MsgPacket* resp = m_demuxers.createStreamChangePacket();
-    m_queue->write(resp, StreamInfo::scSTREAMINFO, false);
+    m_queue->queue(resp, StreamInfo::scSTREAMINFO);
 
     m_requestStreamChange = false;
 }
@@ -343,7 +343,7 @@ void LiveStreamer::requestSignalInfo() {
     }
 
     DEBUGLOG("RequestSignalInfo");
-    m_queue->write(resp, StreamInfo::scNONE, false);
+    m_queue->queue(resp, StreamInfo::scNONE);
 }
 
 void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {

@@ -25,12 +25,14 @@
 #ifndef ROBOTV_LIVEQUEUE_H
 #define ROBOTV_LIVEQUEUE_H
 
-#include <queue>
-#include <vdr/thread.h>
 #include "demuxer/streaminfo.h"
+
+#include <deque>
 #include <chrono>
 #include <mutex>
 #include <list>
+#include <thread>
+#include <atomic>
 
 class MsgPacket;
 
@@ -41,7 +43,7 @@ public:
 
     virtual ~LiveQueue();
 
-    bool write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts = 0);
+    void queue(MsgPacket* p, StreamInfo::Content content, int64_t pts = 0);
 
     MsgPacket* read(bool keyFrameMode = false);
 
@@ -57,17 +59,25 @@ public:
 
     static void removeTimeShiftFiles();
 
-    void cleanup();
-
     int64_t getTimeshiftStartPosition();
 
 protected:
+
+    struct PacketData {
+        MsgPacket* p;
+        StreamInfo::Content content;
+        int64_t pts;
+    };
 
     struct PacketIndex {
         off_t filePosition;
         std::chrono::milliseconds wallclockTime;
         int64_t pts;
     };
+
+    bool write(const PacketData& data);
+
+    void cleanup();
 
     void close();
 
@@ -100,6 +110,17 @@ protected:
     static cString m_timeShiftDir;
 
     static uint64_t m_bufferSize;
+
+private:
+
+    std::thread* m_writeThread;
+
+    std::atomic<bool> m_writerRunning;
+
+    std::deque<PacketData> m_writerQueue;
+
+    std::mutex m_mutexQueue;
+
 };
 
 #endif // ROBOTV_LIVEQUEUE_H

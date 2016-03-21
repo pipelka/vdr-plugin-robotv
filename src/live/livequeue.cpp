@@ -31,16 +31,50 @@
 #include "livequeue.h"
 #include "tools/time.h"
 
+#include <chrono>
+
 cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
 LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket) {
     cleanup();
+
+    m_writerRunning = true;
+
+    m_writeThread = new std::thread([&]() {
+        while(m_writerRunning) {
+
+            while(m_writerRunning && !m_writerQueue.empty()) {
+                PacketData p;
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutexQueue);
+                    p = m_writerQueue.front();
+                    m_writerQueue.pop_front();
+                }
+
+                write(p);
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    });
 }
 
 LiveQueue::~LiveQueue() {
-    DEBUGLOG("Deleting LiveQueue");
+    m_writerRunning = false;
     close();
+
+    m_writeThread->join();
+
+    while(!m_writerQueue.empty()) {
+        const PacketData& p = m_writerQueue.front();
+        delete p.p;
+        m_writerQueue.pop_front();
+    }
+
+    delete m_writeThread;
+    INFOLOG("LiveQueue terminated");
 }
 
 void LiveQueue::cleanup() {
@@ -108,10 +142,24 @@ bool LiveQueue::isPaused() {
     return m_pause;
 }
 
-bool LiveQueue::write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, int64_t pts) {
+void LiveQueue::queue(MsgPacket* p, StreamInfo::Content content, int64_t pts) {
+    std::lock_guard<std::mutex> lock(m_mutexQueue);
+
+    if(m_writerQueue.size() >= 400) {
+        delete p;
+        return;
+    }
+
+    m_writerQueue.push_back({p, content, pts});
+}
+
+bool LiveQueue::write(const PacketData& data) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     auto timeStamp = roboTV::currentTimeMillis();
+    auto p = data.p;
+    auto content = data.content;
+    auto pts = data.pts;
 
     // set queue start time
 
@@ -147,6 +195,7 @@ bool LiveQueue::write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, 
     }
 
     // add keyframe to map
+    bool keyFrame = (p->getClientID() == StreamInfo::FrameType::ftIFRAME);
 
     if(keyFrame && content == StreamInfo::Content::scVIDEO) {
         m_indexList.push_back({writePosition, timeStamp, pts});
@@ -154,15 +203,14 @@ bool LiveQueue::write(MsgPacket* p, StreamInfo::Content content, bool keyFrame, 
     }
 
     // write packet
+    bool success = p->write(m_writeFd, 1000);
 
-    if(!p->write(m_writeFd, 1000)) {
+    if(!success) {
         ERRORLOG("Unable to write packet into timeshift ringbuffer !");
-        delete p;
-        return false;
     }
 
     delete p;
-    return true;
+    return success;
 }
 
 void LiveQueue::close() {
