@@ -126,7 +126,7 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
         INFOLOG("Started streaming of channel %s (priority %i)", channel->Name(), priority);
     }
     else {
-        DEBUGLOG("Can't stream channel %s", channel->Name());
+        ERRORLOG("Can't stream channel %s (status: %i)", channel->Name(), status);
     }
 
     response->put_U32(status);

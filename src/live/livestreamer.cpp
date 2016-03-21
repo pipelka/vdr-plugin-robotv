@@ -92,6 +92,7 @@ void LiveStreamer::requestStreamChange() {
 int LiveStreamer::switchChannel(const cChannel* channel) {
 
     if(channel == NULL) {
+        ERRORLOG("unknown channel !");
         return ROBOTV_RET_ERROR;
     }
 
@@ -106,10 +107,12 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
         for(cTimer* ti = Timers.First(); ti; ti = Timers.Next(ti)) {
             if(ti->Recording() && ti->Matches(now)) {
+                ERRORLOG("Recording running !");
                 return ROBOTV_RET_RECRUNNING;
             }
         }
 
+        ERRORLOG("No device available !");
         return ROBOTV_RET_DATALOCKED;
     }
 
