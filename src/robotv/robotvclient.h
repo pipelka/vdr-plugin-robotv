@@ -28,8 +28,8 @@
 #include <list>
 #include <string>
 #include <deque>
+#include <thread>
 
-#include <vdr/thread.h>
 #include <vdr/tools.h>
 #include <vdr/receiver.h>
 #include <vdr/status.h>
@@ -68,7 +68,7 @@ private:
 
     std::deque<MsgPacket*> m_queue;
 
-    cMutex m_queueLock;
+    std::mutex m_queueLock;
 
     Artwork m_artwork;
 

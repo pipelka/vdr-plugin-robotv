@@ -78,7 +78,7 @@ RoboTvClient::~RoboTvClient() {
 
     // delete messagequeue
     {
-        cMutexLock lock(&m_queueLock);
+        std::lock_guard<std::mutex> lock(m_queueLock);
 
         while(!m_queue.empty()) {
             MsgPacket* p = m_queue.front();
@@ -97,7 +97,7 @@ void RoboTvClient::Action(void) {
 
         // send pending messages
         {
-            cMutexLock lock(&m_queueLock);
+            std::lock_guard<std::mutex> lock(m_queueLock);
 
             while(!m_queue.empty()) {
                 MsgPacket* p = m_queue.front();
@@ -302,6 +302,6 @@ bool RoboTvClient::processRequest() {
 }
 
 void RoboTvClient::queueMessage(MsgPacket* p) {
-    cMutexLock lock(&m_queueLock);
+    std::lock_guard<std::mutex> lock(m_queueLock);
     m_queue.push_back(p);
 }
