@@ -43,7 +43,7 @@
 RecPlayer::RecPlayer(cRecording* rec) {
     m_file = -1;
     m_fileOpen = -1;
-    m_rescanInterval = 2000; // 2000 ms rescan interval
+    m_rescanInterval = 0;
     m_recordingFilename = strdup(rec->FileName());
     m_totalLength = 0;
 
@@ -100,16 +100,17 @@ void RecPlayer::scan() {
     }
 }
 
-void RecPlayer::update() {
+bool RecPlayer::update() {
     // do not rescan too often
     if(m_rescanTime.Elapsed() < m_rescanInterval) {
-        return;
+        return false;
     }
 
-    DEBUGLOG("%s", __FUNCTION__);
+    m_rescanInterval = 10000; // 10s rescan interval
     m_rescanTime.Set(0);
-
     scan();
+
+    return true;
 }
 
 char* RecPlayer::fileNameFromIndex(int index) {

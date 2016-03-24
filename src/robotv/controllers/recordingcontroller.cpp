@@ -52,9 +52,6 @@ bool RecordingController::process(MsgPacket* request, MsgPacket* response) {
         case ROBOTV_RECSTREAM_REQUEST:
             return processRequest(request, response);
 
-        case ROBOTV_RECSTREAM_UPDATE:
-            return processUpdate(request, response);
-
         case ROBOTV_RECSTREAM_SEEK:
             return processSeek(request, response);
 
@@ -135,18 +132,6 @@ bool RecordingController::processRequest(MsgPacket* request, MsgPacket* response
         resp->put_S64(m_recPlayer->endTime().count());
         m_parent->queueMessage(resp);
     }
-
-    return true;
-}
-
-bool RecordingController::processUpdate(MsgPacket* request, MsgPacket* response) {
-    if(m_recPlayer == NULL) {
-        return false;
-    }
-
-    m_recPlayer->update();
-    response->put_U32(0);
-    response->put_U64(m_recPlayer->getLengthBytes());
 
     return true;
 }

@@ -209,8 +209,8 @@ MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
             continue;
         }
 
-        // send recording position on every keyframe
-        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
+        // recheck recording duration
+        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME && update()) {
             int64_t durationMs = (int)(((double)m_index->Last() * 1000.0) / m_recording->FramesPerSecond());
             m_endTime = m_startTime + std::chrono::milliseconds(durationMs);
         }

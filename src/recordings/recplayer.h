@@ -50,17 +50,17 @@ public:
 
     void closeFile();
 
-    void scan();
-
-    void update();
-
 protected:
+
+    bool update();
 
     uint64_t m_totalLength;
 
     cVector<Segment*> m_segments;
 
 private:
+
+    void scan();
 
     void cleanup();
 

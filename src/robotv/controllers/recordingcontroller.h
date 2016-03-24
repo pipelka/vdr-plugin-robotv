@@ -48,8 +48,6 @@ protected:
 
     bool processRequest(MsgPacket* request, MsgPacket* response);
 
-    bool processUpdate(MsgPacket* request, MsgPacket* response);
-
     bool processSeek(MsgPacket* request, MsgPacket* response);
 
     bool processPause(MsgPacket* request, MsgPacket* response);
