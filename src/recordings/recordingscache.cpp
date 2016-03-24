@@ -216,6 +216,8 @@ uint64_t RecordingsCache::getLastPlayedPosition(uint32_t uid) {
 }
 
 void RecordingsCache::gc() {
+    m_storage.exec("DELETE FROM fts_recordings;");
+
     update();
 
     sqlite3_stmt* s = m_storage.query("SELECT recid, filename FROM recordings;");
