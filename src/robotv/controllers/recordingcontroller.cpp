@@ -25,10 +25,7 @@
 #include "recordingcontroller.h"
 #include "recordings/packetplayer.h"
 #include "recordings/recordingscache.h"
-#include "net/msgpacket.h"
-#include "robotv/robotvcommand.h"
 #include "robotv/robotvclient.h"
-#include "config/config.h"
 #include "tools/recid2uid.h"
 
 RecordingController::RecordingController(RoboTvClient* parent) : m_parent(parent), m_recPlayer(NULL) {

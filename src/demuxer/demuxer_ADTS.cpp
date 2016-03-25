@@ -23,7 +23,6 @@
  */
 
 #include "demuxer_ADTS.h"
-#include "vdr/tools.h"
 #include "aaccommon.h"
 
 ParserAdts::ParserAdts(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) {

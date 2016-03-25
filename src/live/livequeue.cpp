@@ -31,8 +31,6 @@
 #include "livequeue.h"
 #include "tools/time.h"
 
-#include <chrono>
-
 cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 

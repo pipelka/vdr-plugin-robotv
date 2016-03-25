@@ -23,7 +23,6 @@
  */
 
 #include "demuxer_LATM.h"
-#include "vdr/tools.h"
 #include "aaccommon.h"
 
 static uint32_t LATMGetValue(cBitStream* bs) {

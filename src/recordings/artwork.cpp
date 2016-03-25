@@ -24,7 +24,6 @@
 
 #include <thread>
 #include "recordings/artwork.h"
-#include "config/config.h"
 
 Artwork::Artwork() : m_storage(roboTV::Storage::getInstance()) {
     createDb();

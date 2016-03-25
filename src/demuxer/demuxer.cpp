@@ -26,7 +26,6 @@
 
 #include "config/config.h"
 #include "live/livestreamer.h"
-#include "demuxer.h"
 #include "parser.h"
 #include "pes.h"
 #include "demuxer_LATM.h"
@@ -36,7 +35,6 @@
 #include "demuxer_H265.h"
 #include "demuxer_MPEGAudio.h"
 #include "demuxer_MPEGVideo.h"
-#include "demuxer_PES.h"
 #include "demuxer_Subtitle.h"
 
 #define DVD_TIME_BASE 1000000

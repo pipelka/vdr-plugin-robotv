@@ -23,7 +23,6 @@
  */
 
 #include "demuxer_MPEGVideo.h"
-#include "vdr/tools.h"
 #include "pes.h"
 
 #define MPEG2_SEQUENCE_START 0x000001B3

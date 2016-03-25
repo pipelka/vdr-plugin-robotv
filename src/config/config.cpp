@@ -22,12 +22,10 @@
  *
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include <vdr/plugin.h>
-#include <vdr/tools.h>
 #include <vdr/videodir.h>
 
 #include "config.h"

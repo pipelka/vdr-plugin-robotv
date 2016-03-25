@@ -27,8 +27,6 @@
 #include "robotv/robotvcommand.h"
 #include "robotv/robotvchannels.h"
 #include "tools/hash.h"
-#include "config/config.h"
-#include "vdr/epg.h"
 
 EpgController::EpgController() {
 }

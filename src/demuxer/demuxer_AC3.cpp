@@ -23,7 +23,6 @@
  */
 
 #include "demuxer_AC3.h"
-#include "vdr/tools.h"
 #include "ac3common.h"
 
 ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {

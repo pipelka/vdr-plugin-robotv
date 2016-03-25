@@ -23,28 +23,15 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <map>
-#include <string>
 
 #include <vdr/recording.h>
-#include <vdr/channels.h>
-#include <vdr/i18n.h>
 #include <vdr/plugin.h>
 #include <vdr/menu.h>
-#include <vdr/device.h>
-#include <vdr/sources.h>
 
 #include "config/config.h"
-#include "tools/hash.h"
-#include "tools/urlencode.h"
-#include "tools/recid2uid.h"
-
-#include "robotv/robotvchannels.h"
-
 #include "robotvcommand.h"
 #include "robotvclient.h"
 #include "robotvserver.h"

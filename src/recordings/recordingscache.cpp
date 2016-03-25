@@ -22,14 +22,12 @@
  *
  */
 
-#include <stdio.h>
 #define __STDC_FORMAT_MACROS // Required for format specifiers
 #include <inttypes.h>
 
 #include "config/config.h"
 #include "recordingscache.h"
 #include "tools/hash.h"
-#include <string>
 
 RecordingsCache::RecordingsCache() : m_storage(roboTV::Storage::getInstance()) {
     // create db schema

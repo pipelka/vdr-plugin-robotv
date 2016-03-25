@@ -23,8 +23,6 @@
  */
 
 #include "storage.h"
-#include "config/config.h"
-#include "vdr/tools.h"
 
 using namespace roboTV;
 

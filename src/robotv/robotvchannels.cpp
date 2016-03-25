@@ -1,7 +1,6 @@
 #include <sys/wait.h>
 #include "config/config.h"
 #include "tools/hash.h"
-#include "vdr/tools.h"
 #include "robotvchannels.h"
 
 RoboTVChannels::RoboTVChannels() {

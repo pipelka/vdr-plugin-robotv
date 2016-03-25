@@ -25,9 +25,6 @@
 #include "database.h"
 #include "config/config.h"
 
-#include <chrono>
-#include <stdlib.h>
-
 using namespace roboTV;
 
 Database::Database() : m_db(NULL) {

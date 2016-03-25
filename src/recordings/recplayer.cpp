@@ -22,18 +22,7 @@
  *
  */
 
-/*
- * This code is taken from VOMP for VDR plugin.
- */
-
 #include "recplayer.h"
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#define __STDC_FORMAT_MACROS // Required for format specifiers
-#include <inttypes.h>
-
 #include "config/config.h"
 
 #ifndef O_NOATIME
@@ -46,13 +35,7 @@ RecPlayer::RecPlayer(cRecording* rec) {
     m_rescanInterval = 0;
     m_recordingFilename = strdup(rec->FileName());
     m_totalLength = 0;
-
-    // FIXME find out max file path / name lengths
-#if VDRVERSNUM < 10703
-    m_pesrecording = true;
-#else
     m_pesrecording = rec->IsPesRecording();
-#endif
 
     scan();
     m_rescanTime.Set(0);

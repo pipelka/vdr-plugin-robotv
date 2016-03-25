@@ -24,7 +24,6 @@
 
 #include "streaminfo.h"
 #include "config/config.h"
-#include <string.h>
 
 static const char* contentnames[] = {
     "NONE", "VIDEO", "AUDIO", "SUBTITLE", "TELETEXT"

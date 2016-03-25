@@ -25,9 +25,6 @@
 #include "config/config.h"
 #include "demuxerbundle.h"
 
-#include <map>
-#include <vdr/remux.h>
-
 DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
 }
 

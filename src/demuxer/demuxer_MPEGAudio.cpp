@@ -23,7 +23,6 @@
  */
 
 #include "demuxer_MPEGAudio.h"
-#include "config/config.h"
 
 #define MPA_MONO 3
 

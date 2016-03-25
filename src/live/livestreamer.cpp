@@ -23,11 +23,7 @@
  */
 
 #include <stdlib.h>
-#include <sys/ioctl.h>
-#include <time.h>
-#include <string.h>
 #include <vdr/remux.h>
-#include <vdr/channels.h>
 #include <vdr/timers.h>
 
 #ifdef __FreeBSD__

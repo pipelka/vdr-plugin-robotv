@@ -24,9 +24,7 @@
 
 #include <thread>
 #include "channelcache.h"
-#include "config/config.h"
 #include "tools/hash.h"
-#include "robotv/robotvchannels.h"
 
 ChannelCache::ChannelCache() {
     createDb();
