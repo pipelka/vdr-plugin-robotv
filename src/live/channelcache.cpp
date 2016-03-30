@@ -82,7 +82,12 @@ void ChannelCache::createDb() {
         "  vps BLOB,\n"
         "  PRIMARY KEY (channeluid, pid)"
         ");\n"
-        "CREATE INDEX IF NOT EXISTS channelcache_channeluid ON channelcache(channeluid);\n";
+        "CREATE INDEX IF NOT EXISTS channelcache_channeluid ON channelcache(channeluid);\n"
+        "CREATE TABLE IF NOT EXISTS enabledchannels (\n"
+        "  channeluid INT NOT NULL,\n"
+        "  enabled INT DEFAULT 0 NOT NULL,\n"
+        "  PRIMARY KEY (channeluid)\n"
+        ");\n";
 
     if(exec(schema) != SQLITE_OK) {
         ERRORLOG("Unable to create database schema for channelcache");
@@ -248,4 +253,41 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
 
     sqlite3_finalize(s);
     return bundle;
+}
+
+void ChannelCache::enable(const cChannel* channel, bool enabled) {
+    enable(createChannelUid(channel), enabled);
+}
+
+void ChannelCache::enable(uint32_t channeluid, bool enabled) {
+    exec(
+        "INSERT OR REPLACE INTO enabledchannels(channeluid, enabled) VALUES(%i, %i)",
+        channeluid,
+        (int)enabled
+    );
+}
+
+bool ChannelCache::isEnabled(const cChannel* channel) {
+    return isEnabled(createChannelUid(channel));
+}
+
+bool ChannelCache::isEnabled(uint32_t channeluid) {
+    sqlite3_stmt* s = query(
+                          "SELECT enabled WHERE channeluid=%i",
+                          channeluid
+                      );
+
+    if(s == NULL) {
+        return false;
+    }
+
+    if(sqlite3_step(s) != SQLITE_ROW) {
+        sqlite3_finalize(s);
+        return false;
+    }
+
+    bool rc = (sqlite3_column_int(s, 0) == 1);
+
+    sqlite3_finalize(s);
+    return rc;
 }

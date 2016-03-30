@@ -41,6 +41,14 @@ public:
 
     StreamBundle lookup(uint32_t channeluid);
 
+    void enable(const cChannel* channel, bool enabled = true);
+
+    void enable(uint32_t channeluid, bool enabled = true);
+
+    bool isEnabled(const cChannel* channel);
+
+    bool isEnabled(uint32_t channeluid);
+
     void gc();
 
     static ChannelCache& instance();

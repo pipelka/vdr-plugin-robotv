@@ -42,7 +42,7 @@ private:
 
     cString processListChannelsJson(const char* Option, int& ReplyCode);
 
-    nlohmann::json jsonFromChannel(const cChannel* channel);
+    nlohmann::json jsonFromChannel(const cChannel* channel, const char* groupName = NULL, bool enabled = true);
 
     ChannelCmds(const ChannelCmds& orig);
 

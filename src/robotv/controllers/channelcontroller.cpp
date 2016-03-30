@@ -22,8 +22,7 @@
  *
  */
 
-#include "vdr/channels.h"
-#include "config/config.h"
+#include <live/channelcache.h>
 #include "channelcontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
@@ -51,6 +50,10 @@ bool ChannelController::process(MsgPacket* request, MsgPacket* response) {
 }
 
 bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* response) {
+    RoboTVChannels& c = RoboTVChannels::instance();
+    ChannelCache& channelCache = ChannelCache::instance();
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
+
     INFOLOG("Fetching channels ...");
 
     int type = request->get_U32();
@@ -91,8 +94,6 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     }
 
     m_languageIndex = I18nLanguageIndex(language);
-
-    RoboTVChannels& c = RoboTVChannels::instance();
     m_channelCount = channelCount();
 
     if(!c.lock(false)) {
@@ -106,6 +107,12 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
 
         if(channel->GroupSep()) {
             groupName = m_toUtf8.Convert(channel->Name());
+            continue;
+        }
+
+        // skip disabled channels if filtering is enabled
+        if(config.filterChannels && !channelCache.isEnabled(channel)) {
+            continue;
         }
 
         if(!isChannelWanted(channel, type)) {

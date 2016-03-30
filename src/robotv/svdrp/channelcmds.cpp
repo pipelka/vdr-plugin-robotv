@@ -26,6 +26,7 @@
 #include "robotv/controllers/channelcontroller.h"
 #include "config/config.h"
 #include "tools/hash.h"
+#include "live/channelcache.h"
 
 using json = nlohmann::json;
 
@@ -49,6 +50,7 @@ cString ChannelCmds::SVDRPCommand(const char* Command, const char* Option, int& 
 
 cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode) {
     RoboTVChannels& c = RoboTVChannels::instance();
+    ChannelCache& channelCache = ChannelCache::instance();
 
     if(!c.lock(false)) {
         ReplyCode = 500;
@@ -57,9 +59,15 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
 
     cChannels* channels = c.get();
     json list = json::array();
+    std::string groupName;
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
-        list.push_back(jsonFromChannel(channel));
+        if(channel->GroupSep()) {
+            groupName = m_toUtf8.Convert(channel->Name());
+            continue;
+        }
+
+        list.push_back(jsonFromChannel(channel, groupName.c_str(), channelCache.isEnabled(channel)));
     }
 
     c.Unlock();
@@ -67,15 +75,17 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
     return cString(list.dump().c_str());
 }
 
-json ChannelCmds::jsonFromChannel(const cChannel* channel) {
+json ChannelCmds::jsonFromChannel(const cChannel* channel, const char* groupName, bool enabled) {
     json j = {
         {"number", channel->Number()},
         {"name", m_toUtf8.Convert(channel->Name())},
+        {"shortName", m_toUtf8.Convert(channel->ShortName())},
         {"uid", createChannelUid(channel)},
         {"logoUrl", ChannelController::createLogoUrl(channel, RoboTVServerConfig::instance().piconsUrl).c_str()},
         {"serviceRef", ChannelController::createServiceReference(channel).c_str()},
         {"provider", channel->Provider()},
-        {"group", ""}
+        {"group", groupName != NULL ? groupName : ""},
+        {"enabled", enabled}
     };
 
     // caids

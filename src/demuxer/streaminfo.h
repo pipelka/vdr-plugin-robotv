@@ -105,6 +105,10 @@ public:
         return m_parsed;
     }
 
+    inline bool isEnabled() const {
+        return m_enabled;
+    }
+
     void setSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId);
 
 protected:
@@ -155,6 +159,8 @@ protected:
     int m_spsLength;     // SPS length
     int m_ppsLength;     // PPS length
     int m_vpsLength;     // VPS length
+
+    bool m_enabled = false;
 
     friend class ChannelCache;
 

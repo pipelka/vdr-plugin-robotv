@@ -71,6 +71,9 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
         INFOLOG("Folder for TV shows: %s", Value);
         seriesFolder = Value;
     }
+    else if(!strcasecmp(Name, "FilterChannels")) {
+        filterChannels = (strcmp(Value, "true") == 0);
+    }
     else {
         return false;
     }
