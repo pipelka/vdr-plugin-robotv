@@ -386,6 +386,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     // create payload packet
     if(m_streamPacket == NULL) {
         m_streamPacket = new MsgPacket();
+        m_streamPacket->disablePayloadCheckSum();
     }
 
     // request packet from queue
