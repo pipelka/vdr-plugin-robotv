@@ -78,8 +78,39 @@ void TimerController::putTimer(cTimer* timer, MsgPacket* p) {
     p->put_U32(timer->Day());
     p->put_U32(timer->WeekDays());
     p->put_String(m_toUtf8.Convert(timer->File()));
-}
 
+    // get timer event
+    const cEvent* event = timer->Event();
+
+    // no event available
+    if(event == NULL) {
+        p->put_U8(0);
+        return;
+    }
+
+    // add event
+    p->put_U8(1);
+
+    p->put_U32(event->EventID());
+    p->put_U32(event->StartTime());
+    p->put_U32(event->Duration());
+
+    int i = 0;
+
+    for(;;) {
+        uchar c = event->Contents(i++);
+        p->put_U8(c);
+
+        if(c == 0) {
+            break;
+        }
+    }
+
+    p->put_U32(event->ParentalRating());
+    p->put_String(m_toUtf8.Convert(!isempty(event->Title()) ? event->Title() : ""));
+    p->put_String(m_toUtf8.Convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
+    p->put_String(m_toUtf8.Convert(!isempty(event->Description()) ? event->Description() : ""));
+}
 
 bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* OPCODE 81 */
     uint32_t number = request->get_U32();
