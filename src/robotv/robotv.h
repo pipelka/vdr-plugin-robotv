@@ -28,7 +28,7 @@
 
 #include "robotvserver.h"
 
-static const char* VERSION        = "0.9.98";
+static const char* VERSION        = "0.9.99";
 static const char* DESCRIPTION    = "roboTV Server";
 
 class PluginRoboTVServer : public cPlugin {
