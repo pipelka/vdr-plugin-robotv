@@ -39,7 +39,10 @@ uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket) {
     cleanup();
 
+    m_wrapped = false;
+    m_hasWrapped = false;
     m_writerRunning = true;
+    m_wrapCount = 0;
 
     m_writeThread = new std::thread([&]() {
         while(m_writerRunning) {
@@ -172,13 +175,14 @@ bool LiveQueue::write(const PacketData& data) {
     off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
     off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
 
-    if(writePosition >= (off_t)m_bufferSize) {
+    if(writePosition >= (off_t) m_bufferSize) {
         INFOLOG("timeshift: write buffer wrap");
         lseek(m_writeFd, 0, SEEK_SET);
         writePosition = 0;
 
         m_wrapped = !m_wrapped;
         m_hasWrapped = true;
+        m_wrapCount++;
 
         INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
     }
@@ -194,12 +198,13 @@ bool LiveQueue::write(const PacketData& data) {
         }
     }
 
+    trim(packetEndPosition);
+
     // add keyframe to map
     bool keyFrame = (p->getClientID() == StreamInfo::FrameType::ftIFRAME);
 
     if(keyFrame && content == StreamInfo::Content::scVIDEO) {
-        m_indexList.push_back({writePosition, timeStamp, pts});
-        trim(packetEndPosition);
+        m_indexList.push_back({writePosition, timeStamp, pts, m_wrapCount});
     }
 
     // write packet
@@ -223,19 +228,19 @@ void LiveQueue::close() {
 }
 
 void LiveQueue::trim(off_t position) {
-    if(!m_hasWrapped) {
+    if(!m_hasWrapped || m_indexList.empty()) {
         return;
     }
 
-    auto i = m_indexList.begin();
+    auto p = m_indexList.front();
 
-    while(i != m_indexList.end() && i->filePosition < position) {
-        i = m_indexList.erase(i);
+    if(p.filePosition < position && p.wrapCount < m_wrapCount) {
+        m_indexList.pop_front();
     }
 
-    if(m_indexList.size() > 0) {
-        auto i = m_indexList.begin();
-        m_queueStartTime = i->wallclockTime;
+    if(!m_indexList.empty()) {
+        auto p = m_indexList.front();
+        m_queueStartTime = p.wallclockTime;
     }
 }
 

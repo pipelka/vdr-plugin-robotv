@@ -73,6 +73,7 @@ protected:
         off_t filePosition;
         std::chrono::milliseconds wallclockTime;
         int64_t pts;
+        int wrapCount;
     };
 
     bool write(const PacketData& data);
@@ -87,7 +88,7 @@ protected:
 
     void seekNextKeyFrame();
 
-    std::list<struct PacketIndex> m_indexList;
+    std::deque<struct PacketIndex> m_indexList;
 
     int m_readFd;
 
@@ -103,9 +104,11 @@ protected:
 
     std::chrono::milliseconds m_queueStartTime;
 
-    bool m_wrapped = false;
+    bool m_wrapped;
 
-    bool m_hasWrapped = false;
+    bool m_hasWrapped;
+
+    int m_wrapCount;
 
     static cString m_timeShiftDir;
 
