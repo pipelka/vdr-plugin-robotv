@@ -90,7 +90,6 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
         ERRORLOG("%s - unable to start recording !", __FUNCTION__);
     }
 
-    m_packetCount = 0;
     return true;
 }
 
@@ -122,16 +121,6 @@ bool RecordingController::processRequest(MsgPacket* request, MsgPacket* response
 
     response->put_Blob(packetData, packetLen);
     delete p;
-
-    m_packetCount++;
-
-    // send position information
-    if(m_packetCount % 20 == 0) {
-        MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_POSITIONS, ROBOTV_CHANNEL_STREAM);
-        resp->put_S64(m_recPlayer->startTime().count());
-        resp->put_S64(m_recPlayer->endTime().count());
-        m_parent->queueMessage(resp);
-    }
 
     return true;
 }

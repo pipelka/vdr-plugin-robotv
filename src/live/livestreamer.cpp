@@ -377,15 +377,11 @@ void LiveStreamer::pause(bool on) {
 MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    auto sendStartPosition = [&]() {
-        MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_POSITIONS, ROBOTV_CHANNEL_STREAM);
-        resp->put_S64(m_queue->getTimeshiftStartPosition());
-        m_parent->queueMessage(resp);
-    };
-
     // create payload packet
     if(m_streamPacket == NULL) {
         m_streamPacket = new MsgPacket();
+        m_streamPacket->put_S64(m_queue->getTimeshiftStartPosition());
+        m_streamPacket->put_S64(0);
         m_streamPacket->disablePayloadCheckSum();
     }
 
@@ -393,11 +389,6 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     MsgPacket* p = NULL;
 
     while(p = m_queue->read(keyFrameMode)) {
-
-        // send timeshift start position on every keyframe
-        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME) {
-            sendStartPosition();
-        }
 
         // add data
         m_streamPacket->put_U16(p->getMsgID());
@@ -414,13 +405,14 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
         if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
             MsgPacket* result = m_streamPacket;
             m_streamPacket = NULL;
-
             return result;
         }
     }
 
     if(m_queue->isPaused()) {
-        sendStartPosition();
+        MsgPacket* result = m_streamPacket;
+        m_streamPacket = NULL;
+        return result;
     }
 
     return NULL;

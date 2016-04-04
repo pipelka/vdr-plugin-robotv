@@ -216,6 +216,12 @@ MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
             m_endTime = m_startTime + std::chrono::milliseconds(durationMs);
         }
 
+        // add start / endtime
+        if(m_streamPacket->eop()) {
+            m_streamPacket->put_S64(startTime().count());
+            m_streamPacket->put_S64(endTime().count());
+        }
+
         // add data
         m_streamPacket->put_U16(p->getMsgID());
         m_streamPacket->put_U16(p->getClientID());

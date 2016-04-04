@@ -60,8 +60,6 @@ private:
 
     PacketPlayer* m_recPlayer;
 
-    int m_packetCount = 0;
-
 };
 
 #endif	// ROBOTV_RECORDINGCONTROLLER_H
