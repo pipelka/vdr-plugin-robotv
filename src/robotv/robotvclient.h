@@ -28,6 +28,7 @@
 #include <list>
 #include <string>
 #include <deque>
+#include <map>
 #include <thread>
 
 #include <vdr/tools.h>
@@ -70,8 +71,6 @@ private:
 
     std::mutex m_queueLock;
 
-    Artwork m_artwork;
-
     // Controllers
 
     StreamController m_streamController;
@@ -98,9 +97,9 @@ protected:
 
     virtual void Action(void);
 
+    virtual void Recording(const cDevice* Device, const char* Name, const char* FileName, bool On);
     virtual void TimerChange(const cTimer* Timer, eTimerChange Change);
     virtual void ChannelChange(const cChannel* Channel);
-    virtual void Recording(const cDevice* Device, const char* Name, const char* FileName, bool On);
     virtual void OsdStatusMessage(const char* Message);
 
 public:
@@ -108,6 +107,8 @@ public:
     RoboTvClient(int fd, unsigned int id);
 
     virtual ~RoboTvClient();
+
+    void onRecording(const cEvent* event, bool on);
 
     void sendMoviesChange();
 

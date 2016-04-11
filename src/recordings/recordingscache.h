@@ -48,6 +48,8 @@ public:
 
     cRecording* lookup(uint32_t uid);
 
+    cRecording* lookup(const std::string& fileName);
+
     int getPlayCount(uint32_t uid);
 
     void setPlayCount(uint32_t uid, int count);

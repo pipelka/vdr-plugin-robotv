@@ -65,10 +65,11 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
     return false;
 }
 
-void TimerController::putTimer(cTimer* timer, MsgPacket* p) {
+void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
+    cCharSetConv toUtf8;
     int flags = checkTimerConflicts(timer);
 
-    p->put_U32(createTimerUid(timer));
+    p->put_U32(timer->Index());
     p->put_U32(timer->Flags() | flags);
     p->put_U32(timer->Priority());
     p->put_U32(timer->Lifetime());
@@ -77,7 +78,7 @@ void TimerController::putTimer(cTimer* timer, MsgPacket* p) {
     p->put_U32(timer->StopTime());
     p->put_U32(timer->Day());
     p->put_U32(timer->WeekDays());
-    p->put_String(m_toUtf8.Convert(timer->File()));
+    p->put_String(toUtf8.Convert(timer->File()));
 
     // get timer event
     const cEvent* event = timer->Event();
@@ -90,6 +91,12 @@ void TimerController::putTimer(cTimer* timer, MsgPacket* p) {
 
     // add event
     p->put_U8(1);
+
+    event2Packet(event, p);
+}
+
+void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
+    cCharSetConv toUtf8;
 
     p->put_U32(event->EventID());
     p->put_U32(event->StartTime());
@@ -107,9 +114,9 @@ void TimerController::putTimer(cTimer* timer, MsgPacket* p) {
     }
 
     p->put_U32(event->ParentalRating());
-    p->put_String(m_toUtf8.Convert(!isempty(event->Title()) ? event->Title() : ""));
-    p->put_String(m_toUtf8.Convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
-    p->put_String(m_toUtf8.Convert(!isempty(event->Description()) ? event->Description() : ""));
+    p->put_String(toUtf8.Convert(!isempty(event->Title()) ? event->Title() : ""));
+    p->put_String(toUtf8.Convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
+    p->put_String(toUtf8.Convert(!isempty(event->Description()) ? event->Description() : ""));
 }
 
 bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* OPCODE 81 */
@@ -128,7 +135,7 @@ bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* O
     }
 
     response->put_U32(ROBOTV_RET_OK);
-    putTimer(timer, response);
+    timer2Packet(timer, response);
 
     return true;
 }
@@ -152,7 +159,7 @@ bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) 
             continue;
         }
 
-        putTimer(timer, response);
+        timer2Packet(timer, response);
     }
 
     return true;

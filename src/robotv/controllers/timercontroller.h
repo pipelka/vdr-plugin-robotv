@@ -40,13 +40,13 @@ public:
 
     bool process(MsgPacket* request, MsgPacket* response);
 
+    static void event2Packet(const cEvent* event, MsgPacket* p);
+
+    static void timer2Packet(cTimer* timer, MsgPacket* p);
+
+    static int checkTimerConflicts(cTimer* timer);
+
 private:
-
-    void putTimer(cTimer* timer, MsgPacket* p);
-
-    int checkTimerConflicts(cTimer* timer);
-
-    //
 
     bool processGet(MsgPacket* request, MsgPacket* response);
 
@@ -61,8 +61,6 @@ private:
     TimerController(const TimerController& orig);
 
     RoboTvClient* m_parent;
-
-    cCharSetConv m_toUtf8;
 
 };
 

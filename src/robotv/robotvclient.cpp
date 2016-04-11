@@ -30,8 +30,8 @@
 #include <vdr/recording.h>
 #include <vdr/plugin.h>
 #include <vdr/menu.h>
+#include <recordings/recordingscache.h>
 
-#include "config/config.h"
 #include "robotvcommand.h"
 #include "robotvclient.h"
 #include "robotvserver.h"
@@ -113,9 +113,36 @@ void RoboTvClient::Action(void) {
     }
 }
 
+void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
+    // check if we should ignore this notification
+    if(!m_loginController.statusEnabled() || isempty(FileName)) {
+        return;
+    }
+
+    Recordings.Update(true);
+    cRecording* r = RecordingsCache::instance().lookup(FileName);
+
+    if(r == NULL) {
+        ERRORLOG("Unknown recording: '%s'", FileName);
+        return;
+    }
+
+    INFOLOG("----------------------------------");
+    INFOLOG("RECORDINGEVENT:");
+    INFOLOG("Client ID: %i", getId());
+    INFOLOG("Filename:  %s", FileName);
+    INFOLOG("Name:      %s", Name);
+    INFOLOG("Recording: %s", On ? "Yes" : "No");
+    INFOLOG("----------------------------------");
+
+    const cEvent* e = r->Info()->GetEvent();
+
+    onRecording(e, On);
+}
+
 void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     // ignore invalid timers
-    if(Timer == NULL) {
+    if(Timer == NULL || !m_loginController.statusEnabled()) {
         return;
     }
 
@@ -159,28 +186,16 @@ void RoboTvClient::sendMoviesChange() {
     queueMessage(resp);
 }
 
-void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
-    if(!m_loginController.statusEnabled()) {
-        return;
-    }
-
+void RoboTvClient::onRecording(const cEvent* event, bool on) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
 
-    resp->put_U32(Device->CardIndex());
-    resp->put_U32(On);
+    resp->put_U32(event ? event->Index() : -1);
+    resp->put_U32(on);
+    resp->put_String(m_toUtf8.Convert(event ? event->Title() : ""));
+    resp->put_String(m_toUtf8.Convert(event ? event->Description() : ""));
 
-    if(Name) {
-        resp->put_String(Name);
-    }
-    else {
-        resp->put_String("");
-    }
-
-    if(FileName) {
-        resp->put_String(FileName);
-    }
-    else {
-        resp->put_String("");
+    if(event != NULL) {
+        TimerController::event2Packet(event, resp);
     }
 
     queueMessage(resp);

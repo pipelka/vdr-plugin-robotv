@@ -72,6 +72,10 @@ uint32_t RecordingsCache::add(cRecording* recording) {
     return uid;
 }
 
+cRecording* RecordingsCache::lookup(const std::string& fileName) {
+    return Recordings.GetByName(fileName.c_str());
+}
+
 cRecording* RecordingsCache::lookup(uint32_t uid) {
     DEBUGLOG("%s - lookup uid: %08x", __FUNCTION__, uid);
 
