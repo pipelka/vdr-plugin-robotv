@@ -9,9 +9,9 @@
 #
 PLUGIN = robotv
 
-### The version number of this plugin (taken from the main source file):
+### The version number of this plugin:
 
-VERSION = $(shell grep 'static const char\* VERSION *=' src/robotv/robotv.h | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = 0.9.99
 
 ### The directory environment:
 
@@ -52,7 +52,7 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-INCLUDES += -I./src -I./src/vdr -I./src/sqlite3
+INCLUDES += -I./src -I./src/vdr -I./src/sqlite3 -I../../../include
 
 ifdef DEBUG
 INCLUDES += -DDEBUG
