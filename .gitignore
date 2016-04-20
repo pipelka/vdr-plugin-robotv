@@ -5,3 +5,5 @@ po/*.mo
 tools/serviceref
 po/robotv.pot
 nbproject
+.idea
+build
