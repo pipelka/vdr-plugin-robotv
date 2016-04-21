@@ -27,6 +27,8 @@
 #include "robotv/robotvcommand.h"
 #include "robotv/robotvchannels.h"
 #include "tools/hash.h"
+#include "db/storage.h"
+#include "timercontroller.h"
 
 EpgController::EpgController() {
 }
@@ -41,6 +43,9 @@ bool EpgController::process(MsgPacket* request, MsgPacket* response) {
     switch(request->getMsgID()) {
         case ROBOTV_EPG_GETFORCHANNEL:
             return processGet(request, response);
+
+        case ROBOTV_EPG_SEARCH:
+            return processSearch(request, response);
     }
 
     return false;
@@ -155,5 +160,75 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
     }
 
     c.unlock();
+    return true;
+}
+
+bool EpgController::processSearch(MsgPacket* request, MsgPacket* response) {
+    cSchedulesLock MutexLock;
+
+    std::string searchTerm = request->get_String();
+    time_t now = time(NULL);
+
+    const cSchedules* schedules = cSchedules::Schedules(MutexLock);
+
+    if(schedules == nullptr) {
+        return true;
+    }
+
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.lock(false);
+    cChannels* channels = c.get();
+
+    searchEpg(searchTerm, [&](tEventID eventId, time_t timeStamp, tChannelID channelId) {
+        if(timeStamp < now) {
+            return;
+        }
+
+        const cSchedule* schedule = schedules->GetSchedule(channelId);
+
+        if(schedule == nullptr) {
+            return;
+        }
+
+        const cEvent* event = schedule->GetEvent(eventId, timeStamp);
+
+        if(event == nullptr) {
+            return;
+        }
+
+        TimerController::event2Packet(event, response);
+
+        cChannel* channel = channels->GetByChannelID(channelId);
+        response->put_String(channel ? channel->Name() : "");
+        response->put_U32(createChannelUid(channel));
+    });
+
+    c.unlock();
+    return true;
+}
+
+bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback) {
+    roboTV::Storage& storage = roboTV::Storage::getInstance();
+
+    sqlite3_stmt* s = storage.query(
+                          "SELECT epgindex.docid,epgindex.timestamp,epgindex.channelid "
+                          "FROM epgindex JOIN epgsearch ON epgindex.docid=epgsearch.docid "
+                          "WHERE epgsearch MATCH %Q",
+                          searchTerm.c_str()
+                      );
+
+    if(s == nullptr) {
+        return false;
+    }
+
+    while(sqlite3_step(s) == SQLITE_ROW) {
+        tEventID eventId = sqlite3_column_int(s, 0);
+        time_t timeStamp = (time_t)sqlite3_column_int64(s, 1);
+        tChannelID channelId = tChannelID::FromString((const char*)sqlite3_column_text(s, 2));
+
+        callback(eventId, timeStamp, channelId);
+    }
+
+    sqlite3_finalize(s);
     return true;
 }

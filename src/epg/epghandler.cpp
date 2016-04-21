@@ -22,6 +22,7 @@
  *
  */
 
+#include <robotv/robotvchannels.h>
 #include "epghandler.h"
 
 EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
@@ -30,11 +31,23 @@ EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
 }
 
 bool EpgHandler::HandleEvent(cEvent* Event) {
+    std::string channelName;
+
+    RoboTVChannels& c = RoboTVChannels::instance();
+    c.lock(false);
+    cChannels* channels = c.get();
+    cChannel* channel = channels->GetByChannelID(Event->ChannelID());
+    if(channel != nullptr) {
+        channelName = channel->Name();
+    }
+    c.unlock();
+
     m_storage.exec(
-        "INSERT OR IGNORE INTO epgindex(docid, timestamp,channelid) VALUES(%u, %llu, %Q)",
+        "INSERT OR IGNORE INTO epgindex(docid, timestamp,channelid,channelname) VALUES(%u, %llu, %Q, %Q)",
         Event->EventID(),
         (uint64_t)Event->StartTime(),
-        (const char*)Event->ChannelID().ToString()
+        (const char*)Event->ChannelID().ToString(),
+        channelName.c_str()
     );
 
     m_storage.exec(
@@ -51,6 +64,7 @@ void EpgHandler::createDb() {
         "CREATE TABLE IF NOT EXISTS epgindex (\n"
         "  docid INTEGER PRIMARY KEY,\n"
         "  timestamp INTEGER NOT NULL,\n"
+        "  channelname TEXT NOT NULL,\n"
         "  channelid TEXT NOT NULL\n"
         ");\n"
         "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n"

@@ -94,6 +94,7 @@
 
 /* OPCODE 120 - 139: RoboTV network functions for epg access and manipulating */
 #define ROBOTV_EPG_GETFORCHANNEL     120
+#define ROBOTV_EPG_SEARCH             121
 
 /* OPCODE 140 - 159: RoboTV network functions for channel scanning */
 #define ROBOTV_SCAN_SUPPORTED        140

@@ -28,6 +28,7 @@
 #include "controller.h"
 #include "recordings/artwork.h"
 #include "vdr/tools.h"
+#include "vdr/epg.h"
 
 class EpgController : public Controller {
 public:
@@ -42,14 +43,17 @@ protected:
 
     bool processGet(MsgPacket* request, MsgPacket* response);
 
+    bool processSearch(MsgPacket* request, MsgPacket* response);
+
 private:
+
+    bool searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback);
 
     EpgController(const EpgController& orig);
 
     cCharSetConv m_toUtf8;
 
     Artwork m_artwork;
-
 };
 
 #endif // ROBOTV_EPGCONTROLLER_H
