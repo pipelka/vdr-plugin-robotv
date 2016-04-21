@@ -58,6 +58,7 @@ bool Database::open(const std::string& db) {
         }
     }
 
+    sqlite3_busy_timeout(m_db, 500);
     return (exec("PRAGMA journal_mode = WAL;") == SQLITE_OK);
 }
 

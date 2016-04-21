@@ -22,47 +22,29 @@
  *
  */
 
-#ifndef ROBOTV_SERVER_H
-#define ROBOTV_SERVER_H
+#ifndef ROBOTV_EPGHANDLER_H
+#define ROBOTV_EPGHANDLER_H
 
-#include <list>
-#include <vdr/thread.h>
-#include <epg/epghandler.h>
+#include <vdr/epg.h>
+#include <db/storage.h>
 
-#include "config/config.h"
-
-class RoboTvClient;
-
-class RoboTVServer : public cThread {
-protected:
-
-    typedef std::list<RoboTvClient*> ClientList;
-
-    virtual void Action(void);
-
-    void clientConnected(int fd);
-
-    int m_serverPort;
-
-    int m_serverFd;
-
-    bool m_ipv4Fallback;
-
-    cString m_allowedHostsFile;
-
-    ClientList m_clients;
-
-    RoboTVServerConfig& m_config;
-
-    EpgHandler m_epgHandler;
-
-    static unsigned int m_idCnt;
-
+class EpgHandler : public cEpgHandler {
 public:
 
-    RoboTVServer(int listenPort);
+    EpgHandler();
 
-    virtual ~RoboTVServer();
+    bool HandleEvent(cEvent* Event);
+
+    void triggerCleanup();
+
+private:
+
+    void cleanup();
+
+    void createDb();
+
+    roboTV::Storage& m_storage;
 };
 
-#endif // ROBOTV_SERVER_H
+
+#endif //ROBOTV_EPGHANDLER_H

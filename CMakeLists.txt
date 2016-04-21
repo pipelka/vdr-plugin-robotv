@@ -86,6 +86,8 @@ set(SOURCE_FILES
     src/demuxer/streambundle.h
     src/demuxer/streaminfo.cpp
     src/demuxer/streaminfo.h
+    src/epg/epghandler.cpp
+    src/epg/epghandler.h
     src/live/channelcache.cpp
     src/live/channelcache.h
     src/live/livequeue.cpp

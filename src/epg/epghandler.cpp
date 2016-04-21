@@ -1,0 +1,82 @@
+/*
+ *      vdr-plugin-robotv - roboTV server plugin for VDR
+ *
+ *      Copyright (C) 2016 Alexander Pipelka
+ *
+ *      https://github.com/pipelka/vdr-plugin-robotv
+ *
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  http://www.gnu.org/copyleft/gpl.html
+ *
+ */
+
+#include "epghandler.h"
+
+EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
+    createDb();
+    triggerCleanup();
+}
+
+bool EpgHandler::HandleEvent(cEvent* Event) {
+    m_storage.exec(
+        "INSERT OR IGNORE INTO epgindex(docid, timestamp,channelid) VALUES(%u, %llu, %Q)",
+        Event->EventID(),
+        (uint64_t)Event->StartTime(),
+        (const char*)Event->ChannelID().ToString()
+    );
+
+    m_storage.exec(
+        "INSERT OR IGNORE INTO epgsearch(docid, title, subject) VALUES(%u, %Q, %Q)",
+        Event->EventID(),
+        Event->Title() ? Event->Title() : "",
+        Event->ShortText() ? Event->ShortText() : ""
+    );
+    return false;
+}
+
+void EpgHandler::createDb() {
+    std::string schema =
+        "CREATE TABLE IF NOT EXISTS epgindex (\n"
+        "  docid INTEGER PRIMARY KEY,\n"
+        "  timestamp INTEGER NOT NULL,\n"
+        "  channelid TEXT NOT NULL\n"
+        ");\n"
+        "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n"
+        "CREATE VIRTUAL TABLE IF NOT EXISTS epgsearch USING fts4(\n"
+        "  content=\"\",\n"
+        "  title,\n"
+        "  subject\n"
+        ");\n";
+
+    if(m_storage.exec(schema) != SQLITE_OK) {
+        ERRORLOG("Unable to create database schema for epg search");
+    }
+}
+
+void EpgHandler::cleanup() {
+    INFOLOG("removing outdated epg entries");
+
+    time_t now = time(NULL);
+    m_storage.exec("DELETE FROM epgsearch WHERE docid IN (SELECT docid FROM epgindex WHERE timestamp < %llu)", (uint64_t)now);
+    m_storage.exec("DELETE FROM epgindex WHERE timestamp < %llu", (uint64_t)now);
+}
+
+void EpgHandler::triggerCleanup() {
+    std::thread t([ = ]() {
+        cleanup();
+    });
+
+    t.detach();
+}
