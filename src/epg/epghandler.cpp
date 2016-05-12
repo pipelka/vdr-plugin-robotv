@@ -37,9 +37,11 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
     c.lock(false);
     cChannels* channels = c.get();
     cChannel* channel = channels->GetByChannelID(Event->ChannelID());
+
     if(channel != nullptr) {
         channelName = channel->Name();
     }
+
     c.unlock();
 
     m_storage.exec(

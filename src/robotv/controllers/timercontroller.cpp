@@ -22,17 +22,16 @@
  *
  */
 
-#include <set>
 #include "timercontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
 #include "robotv/robotvchannels.h"
 #include "robotv/robotvclient.h"
-#include "config/config.h"
-#include "vdr/channels.h"
 #include "tools/hash.h"
-#include "vdr/recording.h"
+#include "tools/utf8conv.h"
 #include "vdr/menu.h"
+
+#include <set>
 
 TimerController::TimerController(RoboTvClient* parent) : m_parent(parent) {
 }
@@ -66,7 +65,7 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
 }
 
 void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
-    cCharSetConv toUtf8;
+    Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
 
     p->put_U32(timer->Index());
@@ -78,7 +77,7 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     p->put_U32(timer->StopTime());
     p->put_U32(timer->Day());
     p->put_U32(timer->WeekDays());
-    p->put_String(toUtf8.Convert(timer->File()));
+    p->put_String(toUtf8.convert(timer->File()));
 
     // get timer event
     const cEvent* event = timer->Event();
@@ -96,7 +95,7 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
 }
 
 void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
-    cCharSetConv toUtf8;
+    Utf8Conv toUtf8;
 
     p->put_U32(event->EventID());
     p->put_U32(event->StartTime());
@@ -114,9 +113,9 @@ void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
     }
 
     p->put_U32(event->ParentalRating());
-    p->put_String(toUtf8.Convert(!isempty(event->Title()) ? event->Title() : ""));
-    p->put_String(toUtf8.Convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
-    p->put_String(toUtf8.Convert(!isempty(event->Description()) ? event->Description() : ""));
+    p->put_String(toUtf8.convert(!isempty(event->Title()) ? event->Title() : ""));
+    p->put_String(toUtf8.convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
+    p->put_String(toUtf8.convert(!isempty(event->Description()) ? event->Description() : ""));
 }
 
 bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* OPCODE 81 */

@@ -25,6 +25,7 @@
 #ifndef ROBOTV_EPGCONTROLLER_H
 #define ROBOTV_EPGCONTROLLER_H
 
+#include <tools/utf8conv.h>
 #include "controller.h"
 #include "recordings/artwork.h"
 #include "vdr/tools.h"
@@ -51,7 +52,7 @@ private:
 
     EpgController(const EpgController& orig);
 
-    cCharSetConv m_toUtf8;
+    Utf8Conv m_toUtf8;
 
     Artwork m_artwork;
 };

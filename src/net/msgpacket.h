@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <string.h>
+#include <string>
 
 #include <ostream>
 #include <istream>
@@ -66,6 +67,15 @@ public:
     @return true on success / false on memory allocation error
     */
     bool put_String(const char* string);
+
+    /**
+    Insert a C++ std::string.
+    Add a C++ string to the payload of the packet.
+
+    @param	string		C++ character string
+    @return true on success / false on memory allocation error
+    */
+    bool put_String(const std::string& string);
 
     /**
     Insert unsigned 8bit integer.

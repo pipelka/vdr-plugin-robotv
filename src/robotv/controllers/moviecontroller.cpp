@@ -310,7 +310,7 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
     response->put_U32(recording->Lifetime());
 
     // channel_name
-    response->put_String(recording->Info()->ChannelName() ? m_toUtf8.Convert(recording->Info()->ChannelName()) : "");
+    response->put_String(recording->Info()->ChannelName() ? m_toUtf8.convert(recording->Info()->ChannelName()) : "");
 
     char* fullname = strdup(recording->Name());
     char* recname = strrchr(fullname, FOLDERDELIMCHAR);
@@ -327,15 +327,15 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
 
     // title
     const char* title = recording->Info()->Title();
-    response->put_String(title ? m_toUtf8.Convert(title) : "");
+    response->put_String(title ? m_toUtf8.convert(title) : "");
 
     // subtitle
     const char* subTitle = recording->Info()->ShortText();
-    response->put_String(subTitle ? m_toUtf8.Convert(subTitle) : "");
+    response->put_String(subTitle ? m_toUtf8.convert(subTitle) : "");
 
     // description
     const char* description = recording->Info()->Description();
-    response->put_String(description ? m_toUtf8.Convert(description) : "");
+    response->put_String(description ? m_toUtf8.convert(description) : "");
 
     // directory
     if(directory != NULL) {
@@ -364,7 +364,7 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
         }
     }
 
-    response->put_String((isempty(directory)) ? "" : m_toUtf8.Convert(directory));
+    response->put_String((isempty(directory)) ? "" : m_toUtf8.convert(directory));
 
     // filename / uid of recording
     uint32_t uid = RecordingsCache::instance().add(recording);

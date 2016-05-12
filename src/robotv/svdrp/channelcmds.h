@@ -25,6 +25,7 @@
 #ifndef ROBOTV_CHANNELCMDS_H
 #define ROBOTV_CHANNELCMDS_H
 
+#include <tools/utf8conv.h>
 #include "tools/json.hpp"
 #include "vdr/channels.h"
 #include "vdr/tools.h"
@@ -46,7 +47,7 @@ private:
 
     ChannelCmds(const ChannelCmds& orig);
 
-    cCharSetConv m_toUtf8;
+    Utf8Conv m_toUtf8;
 
 };
 

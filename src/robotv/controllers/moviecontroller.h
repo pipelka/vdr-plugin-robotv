@@ -25,6 +25,7 @@
 #ifndef ROBOTV_MOVIECONTROLLER_H
 #define ROBOTV_MOVIECONTROLLER_H
 
+#include <tools/utf8conv.h>
 #include "vdr/recording.h"
 #include "vdr/tools.h"
 #include "controller.h"
@@ -68,7 +69,7 @@ private:
 
     void recordingToPacket(cRecording* recording, MsgPacket* response);
 
-    cCharSetConv m_toUtf8;
+    Utf8Conv m_toUtf8;
 
 };
 

@@ -141,15 +141,15 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         response->put_U32(eventContent);
         response->put_U32(eventRating);
 
-        response->put_String(m_toUtf8.Convert(eventTitle));
-        response->put_String(m_toUtf8.Convert(eventSubTitle));
-        response->put_String(m_toUtf8.Convert(eventDescription));
+        response->put_String(m_toUtf8.convert(eventTitle));
+        response->put_String(m_toUtf8.convert(eventSubTitle));
+        response->put_String(m_toUtf8.convert(eventDescription));
 
         // add epg artwork
         std::string posterUrl;
         std::string backgroundUrl;
 
-        if(m_artwork.get(eventContent, m_toUtf8.Convert(eventTitle), posterUrl, backgroundUrl)) {
+        if(m_artwork.get(eventContent, m_toUtf8.convert(eventTitle), posterUrl, backgroundUrl)) {
             response->put_String(posterUrl.c_str());
             response->put_String(backgroundUrl.c_str());
         }

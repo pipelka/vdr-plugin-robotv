@@ -134,6 +134,9 @@ set(SOURCE_FILES
     src/robotv/robotvcommand.h
     src/robotv/robotvserver.cpp
     src/robotv/robotvserver.h
+    src/tools/utf8/checked.h
+    src/tools/utf8/core.h
+    src/tools/utf8/unchecked.h
     src/tools/hash.cpp
     src/tools/hash.h
     src/tools/json.hpp
@@ -142,7 +145,10 @@ set(SOURCE_FILES
     src/tools/time.cpp
     src/tools/time.h
     src/tools/urlencode.cpp
-    src/tools/urlencode.h)
+    src/tools/urlencode.h
+    src/tools/utf8.h
+    src/tools/utf8conv.h
+    src/tools/utf8conv.cpp)
 
 add_library(vdr-robotv SHARED ${SOURCE_FILES})
 target_link_libraries(vdr-robotv sqlite)

@@ -94,6 +94,7 @@ OBJS = \
 	src/tools/recid2uid.o \
 	src/tools/time.o \
 	src/tools/urlencode.o \
+	src/tools/utf8conv.o \
 	src/robotv/controllers/streamcontroller.o \
 	src/robotv/controllers/recordingcontroller.o \
 	src/robotv/controllers/channelcontroller.o \

@@ -106,7 +106,7 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
 
         if(channel->GroupSep()) {
-            groupName = m_toUtf8.Convert(channel->Name());
+            groupName = m_toUtf8.convert(channel->Name());
             continue;
         }
 
@@ -302,7 +302,7 @@ std::string ChannelController::createLogoUrl(const cChannel* channel, const std:
 
 void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p, const char* group) {
     p->put_U32(channel->Number());
-    p->put_String(m_toUtf8.Convert(channel->Name()));
+    p->put_String(m_toUtf8.convert(channel->Name()));
     p->put_U32(createChannelUid(channel));
     p->put_U32(channel->Ca());
 

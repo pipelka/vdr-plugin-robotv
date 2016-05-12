@@ -26,6 +26,7 @@
 #define ROBOTV_CHANNELCONTROLLER_H
 
 #include <list>
+#include <tools/utf8conv.h>
 #include "vdr/channels.h"
 #include "robotv/robotvchannels.h"
 #include "controller.h"
@@ -73,7 +74,7 @@ private:
 
     int m_channelCount = 0;
 
-    cCharSetConv m_toUtf8;
+    Utf8Conv m_toUtf8;
 
 };
 

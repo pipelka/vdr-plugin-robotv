@@ -140,6 +140,10 @@ void MsgPacket::disablePayloadCheckSum() {
     m_payloadchecksum = false;
 }
 
+bool MsgPacket::put_String(const std::string& string) {
+    return put_String(string.c_str());
+}
+
 bool MsgPacket::put_String(const char* string) {
     uint32_t len = strlen(string) + 1;
 

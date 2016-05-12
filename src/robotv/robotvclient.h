@@ -63,7 +63,7 @@ private:
 
     MsgPacket* m_response = NULL;
 
-    cCharSetConv m_toUtf8;
+    Utf8Conv m_toUtf8;
 
     int m_timeout = 3000;
 

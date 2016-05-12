@@ -63,7 +63,7 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
 
     for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         if(channel->GroupSep()) {
-            groupName = m_toUtf8.Convert(channel->Name());
+            groupName = m_toUtf8.convert(channel->Name());
             continue;
         }
 
@@ -78,8 +78,8 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
 json ChannelCmds::jsonFromChannel(const cChannel* channel, const char* groupName, bool enabled) {
     json j = {
         {"number", channel->Number()},
-        {"name", m_toUtf8.Convert(channel->Name())},
-        {"shortName", m_toUtf8.Convert(channel->ShortName())},
+        {"name", m_toUtf8.convert(channel->Name())},
+        {"shortName", m_toUtf8.convert(channel->ShortName())},
         {"uid", createChannelUid(channel)},
         {"logoUrl", ChannelController::createLogoUrl(channel, RoboTVServerConfig::instance().piconsUrl).c_str()},
         {"serviceRef", ChannelController::createServiceReference(channel).c_str()},

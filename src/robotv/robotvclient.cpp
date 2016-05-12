@@ -191,8 +191,8 @@ void RoboTvClient::onRecording(const cEvent* event, bool on) {
 
     resp->put_U32(event ? event->Index() : -1);
     resp->put_U32(on);
-    resp->put_String(m_toUtf8.Convert(event ? event->Title() : ""));
-    resp->put_String(m_toUtf8.Convert(event ? event->Description() : ""));
+    resp->put_String(m_toUtf8.convert(event ? event->Title() : ""));
+    resp->put_String(m_toUtf8.convert(event ? event->Description() : ""));
 
     if(event != NULL) {
         TimerController::event2Packet(event, resp);
