@@ -211,7 +211,7 @@ bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(
     roboTV::Storage& storage = roboTV::Storage::getInstance();
 
     sqlite3_stmt* s = storage.query(
-                          "SELECT epgindex.docid,epgindex.timestamp,epgindex.channelid "
+                          "SELECT epgindex.eventid,epgindex.timestamp,epgindex.channelid "
                           "FROM epgindex JOIN epgsearch ON epgindex.docid=epgsearch.docid "
                           "WHERE epgsearch MATCH %Q",
                           searchTerm.c_str()
