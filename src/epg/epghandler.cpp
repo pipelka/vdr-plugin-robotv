@@ -23,6 +23,7 @@
  */
 
 #include <robotv/robotvchannels.h>
+#include <tools/hash.h>
 #include "epghandler.h"
 
 EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
@@ -44,8 +45,14 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 
     c.unlock();
 
+    std::string docIdString = (const char*)Event->ChannelID().ToString();
+    docIdString += "-" + std::to_string(Event->EventID());
+
+    int docId = createStringHash(docIdString.c_str());
+
     m_storage.exec(
-        "INSERT OR IGNORE INTO epgindex(docid, timestamp,channelid,channelname) VALUES(%u, %llu, %Q, %Q)",
+        "INSERT OR REPLACE INTO epgindex(docid,eventid,timestamp,channelid,channelname) VALUES(%i, %u, %llu, %Q, %Q)",
+        docId,
         Event->EventID(),
         (uint64_t)Event->StartTime(),
         (const char*)Event->ChannelID().ToString(),
@@ -53,8 +60,8 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
     );
 
     m_storage.exec(
-        "INSERT OR IGNORE INTO epgsearch(docid, title, subject) VALUES(%u, %Q, %Q)",
-        Event->EventID(),
+        "INSERT OR REPLACE INTO epgsearch(docid, title, subject) VALUES(%i, %Q, %Q)",
+        docId,
         Event->Title() ? Event->Title() : "",
         Event->ShortText() ? Event->ShortText() : ""
     );
@@ -65,6 +72,7 @@ void EpgHandler::createDb() {
     std::string schema =
         "CREATE TABLE IF NOT EXISTS epgindex (\n"
         "  docid INTEGER PRIMARY KEY,\n"
+        "  eventid INTEGER NOT NULL,\n"
         "  timestamp INTEGER NOT NULL,\n"
         "  channelname TEXT NOT NULL,\n"
         "  channelid TEXT NOT NULL\n"
@@ -78,6 +86,11 @@ void EpgHandler::createDb() {
 
     if(m_storage.exec(schema) != SQLITE_OK) {
         ERRORLOG("Unable to create database schema for epg search");
+    }
+
+    // update older version of table
+    if(!m_storage.tableHasColumn("epgindex", "eventid")) {
+        m_storage.exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
     }
 }
 
