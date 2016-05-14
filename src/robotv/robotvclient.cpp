@@ -115,7 +115,7 @@ void RoboTvClient::Action(void) {
 
 void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char* FileName, bool On) {
     // check if we should ignore this notification
-    if(!m_loginController.statusEnabled() || isempty(FileName)) {
+    if(!m_loginController.statusEnabled()) {
         return;
     }
 
