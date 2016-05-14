@@ -212,6 +212,17 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
 
     c.unlock();
 
+    // replace invalid characters in file
+    char* p = (char*)file;
+
+    while(*p) {
+        if(*p == ' ' || *p == ':') {
+            *p = '_';
+        }
+
+        p++;
+    }
+
     cTimer* timer = new cTimer;
 
     if(timer->Parse(buffer)) {
