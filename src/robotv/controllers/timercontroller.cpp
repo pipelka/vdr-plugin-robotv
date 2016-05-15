@@ -172,7 +172,7 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
     }
 
     request->get_U32(); // index unused
-    uint32_t flags      = request->get_U32() > 0 ? tfActive : tfNone;
+    uint32_t flags      = request->get_U32();
     uint32_t priority   = request->get_U32();
     uint32_t lifetime   = request->get_U32();
     uint32_t channelid  = request->get_U32();
