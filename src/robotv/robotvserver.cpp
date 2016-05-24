@@ -189,13 +189,13 @@ void RoboTVServer::clientConnected(int fd) {
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val));
 
 #ifndef __FreeBSD__
-    val = 30;
+    val = 1;
     setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &val, sizeof(val));
 
-    val = 15;
+    val = 1;
     setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &val, sizeof(val));
 
-    val = 5;
+    val = 3;
     setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &val, sizeof(val));
 #endif
 

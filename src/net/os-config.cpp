@@ -97,6 +97,10 @@ int socketread(int fd, uint8_t* data, int datalen, int timeout_ms) {
                 continue;
             }
 
+            if(sockerror() == EBADF || sockerror() == ENOTCONN) {
+                return ECONNRESET;
+            }
+
             return sockerror();
         }
 
