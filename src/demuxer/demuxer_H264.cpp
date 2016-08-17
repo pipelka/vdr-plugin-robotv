@@ -74,6 +74,15 @@ int32_t ParserH264::readGolombSe(cBitStream* bs) {
 ParserH264::ParserH264(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024) {
     m_scale = 0;
     m_rate = 0;
+    m_log2_max_frame_num_minus4 = -1;
+
+    // framebuffer to assemble fields
+    m_frameBuffer = (uint8_t*)malloc(1024 * 1024);
+    m_frameBufferOffset = 0;
+}
+
+ParserH264::~ParserH264() {
+    free(m_frameBuffer);
 }
 
 uint8_t* ParserH264::extractNal(uint8_t* packet, int length, int nal_offset, int& nal_len) {
@@ -103,6 +112,7 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
     int o = 0;
     int sps_start = -1;
     int pps_start = -1;
+    int slh_start = -1;
     int nal_len = 0;
 
     if(length < 4) {
@@ -122,12 +132,7 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
         // NAL_SLH
         if(nal_type == NAL_SLH && length - o > 1) {
             o++;
-            uint8_t* nal_data = extractNal(data, length, o, nal_len);
-
-            if(nal_data != NULL) {
-                parseSlh(nal_data, nal_len);
-                delete[] nal_data;
-            }
+            slh_start = o;
         }
 
         // NAL_PPS
@@ -141,11 +146,6 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
             o++;
             sps_start = o;
         }
-
-        // remove filler data
-        else if(nal_type == 0x0C) {
-            length = o - 4;
-        }
     }
 
     // extract and register PPS data (decoder specific data)
@@ -158,37 +158,76 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
         }
     }
 
-    // exit if we do not have SPS data
-    if(sps_start == -1) {
-        return length;
+    // skip packet if we do not have SPS data (and never seen SPS before)
+    if(sps_start == -1 && m_log2_max_frame_num_minus4 == -1) {
+        return 0;
     }
 
     // extract SPS
-    uint8_t* nal_data = extractNal(data, length, sps_start, nal_len);
+    if(sps_start != -1) {
+        uint8_t* sps_data = extractNal(data, length, sps_start, nal_len);
 
-    if(nal_data == NULL) {
+        if(sps_data != NULL) {
+            // register SPS data (decoder specific data)
+            m_demuxer->setVideoDecoderData(sps_data, nal_len, NULL, 0);
+
+            int width = 0;
+            int height = 0;
+            pixel_aspect_t pixelaspect = { 1, 1 };
+
+            parseSps(sps_data, nal_len, pixelaspect, width, height);
+            delete[] sps_data;
+
+            double PAR = (double)pixelaspect.num / (double)pixelaspect.den;
+            double DAR = (PAR * width) / height;
+
+            m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
+        }
+    }
+
+    // extract slh
+    if(slh_start != -1) {
+        uint8_t* slh_data = extractNal(data, length, slh_start, nal_len);
+
+        if(slh_data != NULL) {
+            parseSlh(slh_data, nal_len);
+            delete[] slh_data;
+        }
+    }
+
+    // progressive frame (no need to assemble anything)
+    if(m_progressiveFrame) {
         return length;
     }
 
-    // register SPS data (decoder specific data)
-    m_demuxer->setVideoDecoderData(nal_data, nal_len, NULL, 0);
-
-    int width = 0;
-    int height = 0;
-    pixel_aspect_t pixelaspect = { 1, 1 };
-
-    bool rc = parseSps(nal_data, nal_len, pixelaspect, width, height);
-    delete[] nal_data;
-
-    if(!rc) {
+    // no fields present
+    if(!m_pic_field_flag) {
         return length;
     }
 
-    double PAR = (double)pixelaspect.num / (double)pixelaspect.den;
-    double DAR = (PAR * width) / height;
+    // top field -> start new frame
+    if(!m_bottomField) {
+        memcpy(m_frameBuffer, data, length);
+        m_frameBufferOffset = length;
+        return 0;
+    }
 
-    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
+    // bottom field -> finalize frame
+    memcpy(m_frameBuffer + m_frameBufferOffset, data, length);
+    m_frameBufferOffset += length;
     return length;
+}
+
+void ParserH264::sendPayload(unsigned char* payload, int length) {
+    // send parsed frame (field)
+    if(m_progressiveFrame || !m_pic_field_flag) {
+        Parser::sendPayload(payload, length);
+        return;
+    }
+
+    // send assembled frame
+    Parser::sendPayload(m_frameBuffer, m_frameBufferOffset);
+    m_frameBufferOffset = 0;
 }
 
 int ParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
@@ -209,13 +248,37 @@ int ParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
 }
 
 void ParserH264::parseSlh(uint8_t* buf, int len) {
+    // limit bitstream parsing to the slice header
+    if(len > 20) {
+        len = 20;
+    }
+
     cBitStream bs(buf, len * 8);
 
     readGolombUe(&bs); // first_mb_in_slice
-    int type = readGolombUe(&bs);;
+    int type = readGolombUe(&bs);
 
     if(type > 4) {
         type -= 5;
+    }
+
+    readGolombUe(&bs); // pic_parameter_set_id
+    bs.GetBits(m_log2_max_frame_num_minus4 + 4); // frame_num
+
+    m_pic_field_flag = 0;
+    m_bottomField = 0;
+
+    if(!m_progressiveFrame) {
+        m_pic_field_flag = bs.GetBit(); // pic_field_flag
+
+        if(m_pic_field_flag) {
+            m_bottomField = bs.GetBit(); // bottom_field_flag
+        }
+    }
+
+    // do not set frametype for bottomfield
+    if(m_bottomField) {
+        return;
     }
 
     switch(type) {
@@ -235,8 +298,6 @@ void ParserH264::parseSlh(uint8_t* buf, int len) {
             m_frameType = StreamInfo::ftUNKNOWN;
             break;
     }
-
-    return;
 }
 
 bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
@@ -272,7 +333,7 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         int chroma_format_idc = readGolombUe(&bs);
 
         if(chroma_format_idc == 3) { // chroma_format_idc
-            bs.SkipBits(1);    // residual_colour_transform_flag
+            bs.GetBit();    // residual_colour_transform_flag
         }
 
         readGolombUe(&bs); // bit_depth_luma - 8
@@ -298,7 +359,8 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         }
     }
 
-    readGolombUe(&bs); // log2_max_frame_num - 4
+    m_log2_max_frame_num_minus4 = readGolombUe(&bs); // log2_max_frame_num - 4
+
     int pic_order_cnt_type = readGolombUe(&bs);
 
     if(pic_order_cnt_type == 0) {
@@ -325,12 +387,12 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
 
     width = readGolombUe(&bs) + 1;
     height = readGolombUe(&bs) + 1;
-    unsigned int frame_mbs_only = bs.GetBit();
+    m_progressiveFrame = bs.GetBit();
 
     width  *= 16;
-    height *= 16 * (2 - frame_mbs_only);
+    height *= 16 * (2 - m_progressiveFrame);
 
-    if(!frame_mbs_only) {
+    if(!m_progressiveFrame) {
         bs.SkipBits(1);    // mb_adaptive_frame_field_flag
     }
 
@@ -345,7 +407,7 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
 
         width -= 2 * (crop_left + crop_right);
 
-        if(frame_mbs_only) {
+        if(m_progressiveFrame) {
             height -= 2 * (crop_top + crop_bottom);
         }
         else {

@@ -33,9 +33,13 @@ public:
 
     ParserH264(TsDemuxer* demuxer);
 
-    int parsePayload(unsigned char* data, int length);
+    virtual ~ParserH264();
 
 protected:
+
+    int parsePayload(unsigned char* data, int length);
+
+    void sendPayload(unsigned char* payload, int length);
 
     typedef struct {
         int num;
@@ -56,6 +60,18 @@ protected:
     int m_scale;
 
     int m_rate;
+
+    int m_log2_max_frame_num_minus4;
+
+    int m_progressiveFrame;
+
+    int m_pic_field_flag;
+
+    int m_bottomField;
+
+    uint8_t* m_frameBuffer;
+
+    int m_frameBufferOffset;
 
 private:
 
