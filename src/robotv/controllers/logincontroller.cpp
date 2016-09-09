@@ -64,7 +64,7 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
         return false;
     }
 
-    INFOLOG("Welcome client '%s' with protocol version '%u'", clientName, m_protocolVersion);
+    INFOLOG("Welcome client '%s' with protocol version '%u' and priority %i", clientName, m_protocolVersion, m_socketPriority);
 
     // Send the login reply
     time_t timeNow = time(NULL);
