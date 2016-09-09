@@ -53,6 +53,11 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
     m_compressionLevel = request->get_U8();
     const char* clientName = request->get_String();
     m_statusInterfaceEnabled = request->get_U8();
+    m_socketPriority = request->get_U8();
+
+    if(m_socket != -1) {
+        setsockopt(m_socket, SOL_SOCKET, SO_PRIORITY, &m_socketPriority, sizeof(m_socketPriority));
+    }
 
     if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 7) {
         ERRORLOG("Client '%s' has unsupported protocol version '%u', terminating client", clientName, m_protocolVersion);

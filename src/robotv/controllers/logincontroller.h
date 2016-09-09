@@ -51,6 +51,10 @@ public:
         return m_loggedIn;
     }
 
+    void setSocket(int fd) {
+        m_socket = fd;
+    }
+
 protected:
 
     bool processLogin(MsgPacket* request, MsgPacket* response);
@@ -68,6 +72,10 @@ private:
     bool m_loggedIn = false;
 
     bool m_statusInterfaceEnabled = false;
+
+    int m_socketPriority = 7;
+
+    int m_socket = -1;
 
 };
 

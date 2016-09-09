@@ -52,6 +52,7 @@ RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
         &m_artworkController
     };
 
+    m_loginController.setSocket(m_socket);
     Start();
 }
 
