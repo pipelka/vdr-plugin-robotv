@@ -55,6 +55,10 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
     m_statusInterfaceEnabled = request->get_U8();
     m_socketPriority = request->get_U8();
 
+    if(m_socketPriority < 1 || m_socketPriority > 7) {
+        m_socketPriority = 7;
+    }
+
     if(m_socket != -1) {
         setsockopt(m_socket, SOL_SOCKET, SO_PRIORITY, &m_socketPriority, sizeof(m_socketPriority));
     }
