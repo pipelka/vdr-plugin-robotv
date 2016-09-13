@@ -58,7 +58,7 @@ ifdef DEBUG
 INCLUDES += -DDEBUG
 endif
 
-DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DROBOTV_VERSION='"$(VERSION)"'
+DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DROBOTV_VERSION='"$(VERSION)"' -DHAVE_ZLIB=1
 
 ### The object files (add further files here):
 
@@ -112,7 +112,7 @@ OBJS = \
 SQLITE_OBJS = \
 	src/db/sqlite3.o
 
-LIBS =
+LIBS = -lz
 
 ### The main target:
 

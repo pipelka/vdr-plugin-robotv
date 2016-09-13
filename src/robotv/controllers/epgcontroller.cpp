@@ -160,6 +160,8 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
     }
 
     c.unlock();
+    response->compress(9);
+
     return true;
 }
 
@@ -203,6 +205,7 @@ bool EpgController::processSearch(MsgPacket* request, MsgPacket* response) {
         response->put_U32(createChannelUid(channel));
     });
 
+    response->compress(9);
     c.unlock();
     return true;
 }

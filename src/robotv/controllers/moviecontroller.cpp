@@ -93,6 +93,7 @@ bool MovieController::processGetList(MsgPacket* request, MsgPacket* response) {
         recordingToPacket(recording, response);
     }
 
+    response->compress(9);
     return true;
 
 }

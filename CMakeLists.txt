@@ -151,9 +151,9 @@ set(SOURCE_FILES
     src/tools/utf8conv.cpp)
 
 add_library(vdr-robotv SHARED ${SOURCE_FILES})
-target_link_libraries(vdr-robotv sqlite)
+target_link_libraries(vdr-robotv sqlite z)
 target_include_directories(vdr-robotv PRIVATE src ${VDR_INCLUDE_DIRS} ../../../include)
-target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}")
+target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1)
 set_target_properties(vdr-robotv PROPERTIES VERSION "${VDR_APIVERSION}")
 
 install(TARGETS vdr-robotv LIBRARY DESTINATION ${VDR_LIBDIR} NAMELINK_SKIP)
