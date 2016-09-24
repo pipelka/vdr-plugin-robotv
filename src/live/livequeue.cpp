@@ -42,6 +42,9 @@ LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket)
     m_writerRunning = true;
     m_wrapCount = 0;
 
+    // set queue start time
+    m_queueStartTime = roboTV::currentTimeMillis();
+
     m_writeThread = new std::thread([&]() {
         while(m_writerRunning) {
 
@@ -162,10 +165,10 @@ bool LiveQueue::write(const PacketData& data) {
     auto content = data.content;
     auto pts = data.pts;
 
-    // set queue start time
 
-    if(m_queueStartTime.count() == 0) {
-        m_queueStartTime = timeStamp;
+    // first packet set start time
+    if(m_indexList.empty()) {
+        m_queueStartTime = roboTV::currentTimeMillis();
     }
 
     // ring-buffer overrun ?
