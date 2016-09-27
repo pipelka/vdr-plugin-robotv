@@ -33,6 +33,14 @@ PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_firstKeyFrameSeen = false;
     m_index = new cIndexFile(rec->FileName(), false);
     m_recording = rec;
+    m_position = 0;
+    m_patVersion = -1;
+    m_pmtVersion = -1;
+    m_startPts = 0;
+
+    // initial start / end time
+    m_startTime = roboTV::currentTimeMillis();
+    m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
 }
 
 PacketPlayer::~PacketPlayer() {
@@ -55,12 +63,6 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // streaming starts with a key frame
     if(!m_firstKeyFrameSeen) {
         return;
-    }
-
-    // initial start / end time
-    if(m_startTime.count() == 0) {
-        m_startTime = roboTV::currentTimeMillis();
-        m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
     }
 
     // initialise stream packet

@@ -79,15 +79,15 @@ private:
 
     DemuxerBundle m_demuxers;
 
-    uint64_t m_position = 0;
+    uint64_t m_position;
 
     bool m_requestStreamChange;
 
     bool m_firstKeyFrameSeen;
 
-    int m_patVersion = -1;
+    int m_patVersion;
 
-    int m_pmtVersion = -1;
+    int m_pmtVersion;
 
     std::deque<MsgPacket*> m_queue;
 
@@ -97,7 +97,7 @@ private:
 
     std::chrono::milliseconds m_endTime;
 
-    int64_t m_startPts = 0;
+    int64_t m_startPts;
 
 };
 
