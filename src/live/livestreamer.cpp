@@ -377,7 +377,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     if(m_streamPacket == NULL) {
         m_streamPacket = new MsgPacket();
         m_streamPacket->put_S64(m_queue->getTimeshiftStartPosition());
-        m_streamPacket->put_S64(0);
+        m_streamPacket->put_S64(roboTV::currentTimeMillis().count());
         m_streamPacket->disablePayloadCheckSum();
     }
 
