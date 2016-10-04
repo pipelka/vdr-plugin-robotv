@@ -452,5 +452,12 @@ void LiveStreamer::createDemuxers(StreamBundle* bundle) {
 }
 
 int64_t LiveStreamer::seek(int64_t wallclockPositionMs) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    // remove pending packet
+    delete m_streamPacket;
+    m_streamPacket = nullptr;
+
+    // seek
     return m_queue->seek(wallclockPositionMs);
 }
