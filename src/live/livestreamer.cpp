@@ -384,7 +384,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     // request packet from queue
     MsgPacket* p = NULL;
 
-    while(p = m_queue->read(keyFrameMode)) {
+    while((p = m_queue->read(keyFrameMode)) != nullptr) {
 
         // add data
         m_streamPacket->put_U16(p->getMsgID());
