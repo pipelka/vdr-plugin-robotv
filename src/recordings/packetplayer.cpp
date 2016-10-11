@@ -92,7 +92,7 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     }
 
     // pts wrap ?
-    if(currentPts < m_startPts) {
+    if(currentPts < m_startPts - 90000) {
         currentPts += 0x200000000ULL;
     }
 
