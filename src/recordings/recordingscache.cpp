@@ -51,6 +51,20 @@ RecordingsCache& RecordingsCache::instance() {
     return singleton;
 }
 
+uint32_t RecordingsCache::update(uint32_t uid, cRecording* recording) {
+    cString filename = recording->FileName();
+    uint32_t newUid = createStringHash(filename);
+
+    // update existing record
+    m_storage.exec(
+            "UPDATE recordings set recid=%u, filename=%Q WHERE recid=%u;",
+            newUid,
+            (const char*)filename,
+            uid);
+
+    return newUid;
+}
+
 uint32_t RecordingsCache::add(cRecording* recording) {
     cString filename = recording->FileName();
     uint32_t uid = createStringHash(filename);

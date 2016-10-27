@@ -103,40 +103,28 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
     const char* recid = request->get_String();
     uid = recid2uid(recid);
 
-    const char* newtitle = request->get_String();
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
-    int r = ROBOTV_RET_DATAINVALID;
+    const char* newName = request->get_String();
 
-    if(recording != NULL) {
-        // get filename and remove last part (recording time)
-        char* filename_old = strdup((const char*)recording->FileName());
-        char* sep = strrchr(filename_old, '/');
+    char* s = (char*)newName;
 
-        if(sep != NULL) {
-            *sep = 0;
+    while(s != nullptr && *s != 0) {
+        if(*s == ' ' || *s == ':') {
+            *s = '_';
         }
-
-        // replace spaces in newtitle
-        strreplace((char*)newtitle, ' ', '_');
-        char filename_new[512];
-        strncpy(filename_new, filename_old, 512);
-        sep = strrchr(filename_new, '/');
-
-        if(sep != NULL) {
-            sep++;
-            *sep = 0;
-        }
-
-        strncat(filename_new, newtitle, sizeof(filename_new) - 1);
-
-        INFOLOG("renaming recording '%s' to '%s'", filename_old, filename_new);
-        r = rename(filename_old, filename_new);
-        Recordings.Update();
-
-        free(filename_old);
     }
 
-    response->put_U32(r);
+    cRecording* recording = RecordingsCache::instance().lookup(uid);
+
+    if(recording == nullptr) {
+        ERRORLOG("recording with id '%s' not found!", recid);
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return true;
+    }
+
+    INFOLOG("renaming recording '%s' to '%s'", recording->Name(), newName);
+
+    bool success = recording->ChangeName(newName);
+    response->put_U32(success ? 0 : -1);
     return true;
 }
 

@@ -44,6 +44,8 @@ public:
 
     static RecordingsCache& instance();
 
+    uint32_t update(uint32_t uid, cRecording* recording);
+
     uint32_t add(cRecording* recording);
 
     cRecording* lookup(uint32_t uid);
