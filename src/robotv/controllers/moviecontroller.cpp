@@ -107,10 +107,11 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
 
     char* s = (char*)newName;
 
-    while(s != nullptr && *s != 0) {
+    while(*s != 0) {
         if(*s == ' ' || *s == ':') {
             *s = '_';
         }
+        s++;
     }
 
     cRecording* recording = RecordingsCache::instance().lookup(uid);
@@ -124,6 +125,11 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
     INFOLOG("renaming recording '%s' to '%s'", recording->Name(), newName);
 
     bool success = recording->ChangeName(newName);
+
+    if(success) {
+        RecordingsCache::instance().update(uid, recording);
+    }
+
     response->put_U32(success ? 0 : -1);
     return true;
 }

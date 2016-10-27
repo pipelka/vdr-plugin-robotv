@@ -231,6 +231,7 @@ bool RoboTvClient::processRequest() {
         }
     }
 
+    delete m_response;
     return false;
 }
 
