@@ -70,6 +70,8 @@ public:
 
     void setMovieID(uint32_t uid, uint32_t id);
 
+    void triggerCleanup();
+
     void gc();
 
     void search(const char* searchTerm, std::function<void(uint32_t)> resultCallback);

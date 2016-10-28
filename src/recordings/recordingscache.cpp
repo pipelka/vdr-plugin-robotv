@@ -231,6 +231,14 @@ uint64_t RecordingsCache::getLastPlayedPosition(uint32_t uid) {
     return position;
 }
 
+void RecordingsCache::triggerCleanup() {
+    std::thread t([=]() {
+        gc();
+    });
+
+    t.detach();
+}
+
 void RecordingsCache::gc() {
     m_storage.exec("DELETE FROM fts_recordings;");
 

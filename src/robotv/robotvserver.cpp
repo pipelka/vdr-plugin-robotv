@@ -223,7 +223,7 @@ void RoboTVServer::Action(void) {
 
     // artwork
     Artwork artwork;
-    cTimeMs artworkCleanupTimer;
+    cTimeMs cleanupTimer;
 
     INFOLOG("removing outdated artwork");
     artwork.triggerCleanup();
@@ -266,12 +266,15 @@ void RoboTVServer::Action(void) {
             }
 
             // artwork cleanup (every 12 hours)
-            if(artworkCleanupTimer.Elapsed() >= 12 * 60 * 60 * 1000) {
+            if(cleanupTimer.Elapsed() >= 12 * 60 * 60 * 1000) {
                 INFOLOG("removing outdated artwork");
                 artwork.triggerCleanup();
                 m_epgHandler.triggerCleanup();
+                // start gc
+                INFOLOG("Starting garbage collection in recordings cache");
+                cache.triggerCleanup();
 
-                artworkCleanupTimer.Set(0);
+                cleanupTimer.Set(0);
             }
 
             // reset inactivity timeout as long as there are clients connected
@@ -284,17 +287,13 @@ void RoboTVServer::Action(void) {
 
             if(recState != recStateOld) {
                 recordingReloadTrigger = true;
-                recordingReloadTimer.Set(2000);
+                recordingReloadTimer.Set(1000);
                 INFOLOG("Recordings state changed (%i)", recState);
                 recStateOld = recState;
             }
 
             // update recordings
             if((recordingReloadTrigger && recordingReloadTimer.TimedOut())) {
-
-                // start gc
-                INFOLOG("Starting garbage collection in recordings cache");
-                cache.gc();
 
                 // request clients to reload recordings
                 if(!m_clients.empty()) {
