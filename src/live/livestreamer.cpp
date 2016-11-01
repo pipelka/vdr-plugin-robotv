@@ -121,6 +121,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     // get cached demuxer data
     ChannelCache& cache = ChannelCache::instance();
+    m_uid = createChannelUid(channel);
     StreamBundle bundle = cache.lookup(m_uid);
 
     // channel already in cache
@@ -138,8 +139,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     if(!currentitem.isMetaOf(bundle)) {
         INFOLOG("current channel differs from cache item - updating");
-        bundle = currentitem;
-        cache.add(m_uid, bundle);
+        bundle = cache.add(channel);
     }
 
     if(bundle.size() != 0) {
@@ -154,8 +154,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     if(m_waitForKeyFrame) {
         INFOLOG("Will wait for first key frame ...");
     }
-
-    m_uid = createChannelUid(channel);
 
     if(!attach()) {
         return ROBOTV_RET_DATALOCKED;
