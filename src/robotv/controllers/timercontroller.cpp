@@ -67,6 +67,7 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
 void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
+    const char* fileName = timer->File();
 
     p->put_U32(timer->Index());
     p->put_U32(timer->Flags() | flags);
@@ -76,8 +77,8 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     p->put_U32(timer->StartTime());
     p->put_U32(timer->StopTime());
     p->put_U32(timer->Day());
-    p->put_U32(timer->WeekDays());
-    p->put_String(toUtf8.convert(timer->File()));
+    p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
+    p->put_String(toUtf8.convert(fileName));
 
     // get timer event
     const cEvent* event = timer->Event();
