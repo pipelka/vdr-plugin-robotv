@@ -44,6 +44,8 @@ public:
 
     void addChannelToPacket(const cChannel* channel, MsgPacket* packet, const char* group = NULL);
 
+    static std::string createLogoUrl(const cChannel* channel);
+
     static std::string createLogoUrl(const cChannel* channel, const std::string& baseUrl);
 
     static std::string createServiceReference(const cChannel* channel);
@@ -59,8 +61,6 @@ private:
     int channelCount();
 
     bool isChannelWanted(cChannel* channel, int type = 0);
-
-    std::string createLogoUrl(const cChannel* channel);
 
     ChannelController(const ChannelController& orig);
 

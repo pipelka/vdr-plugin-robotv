@@ -30,8 +30,26 @@
 #include "tools/hash.h"
 #include "tools/utf8conv.h"
 #include "vdr/menu.h"
+#include "service/epgsearch/services.h"
 
-#include <set>
+#include <regex>
+#include <vdr/plugin.h>
+
+Epgsearch_services_v1_0* getEpgServiceData() {
+    cPlugin* plugin = cPluginManager::GetPlugin("epgsearch");
+
+    if(plugin == nullptr) {
+        return nullptr;
+    }
+
+    Epgsearch_services_v1_0* serviceData = new Epgsearch_services_v1_0;
+
+    if(!plugin->Service("Epgsearch_services_v1_0", serviceData)) {
+        return nullptr;
+    }
+
+    return serviceData;
+}
 
 TimerController::TimerController(RoboTvClient* parent) : m_parent(parent) {
 }
@@ -49,6 +67,9 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
 
         case ROBOTV_TIMER_GETLIST:
             return processGetTimers(request, response);
+
+        case ROBOTV_SEARCHTIMER_GETLIST:
+            return processGetSearchTimers(request, response);
 
         case ROBOTV_TIMER_ADD:
             return processAdd(request, response);
@@ -85,16 +106,20 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
         }
     }
 
+    // get channel / logo
+    auto channel = timer->Channel();
+    std::string logoUrl = ChannelController::createLogoUrl(channel);
+
     p->put_U32(timer->Index());
     p->put_U32(timer->Flags() | flags);
     p->put_U32(timer->Priority());
     p->put_U32(timer->Lifetime());
-    p->put_U32(createChannelUid(timer->Channel()));
+    p->put_U32(createChannelUid(channel));
     p->put_U32(timer->StartTime());
     p->put_U32(timer->StopTime());
     p->put_U32(searchTimerId); // !! day changed to searchTimerId
     p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
-    p->put_String(toUtf8.convert(fileName));
+    p->put_String(toUtf8.convert(logoUrl)); // !!! filename changed to logo url
 
     // get timer event
     const cEvent* event = timer->Event();
@@ -178,6 +203,81 @@ bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) 
         timer2Packet(timer, response);
     }
 
+    return true;
+}
+
+bool TimerController::processGetSearchTimers(MsgPacket* request, MsgPacket* response) {
+    auto toInt = [](const std::string& s) {
+        return strtol(s.c_str(), nullptr, 10);
+    };
+
+    auto service = getEpgServiceData();
+
+    if(service == nullptr) {
+        response->put_U32(ROBOTV_RET_ERROR);
+        return true;
+    }
+
+    response->put_U32(ROBOTV_RET_OK);
+    std::list<std::string> list = service->handler->SearchTimerList();
+
+    std::regex r(":");
+
+    for(auto t: list) {
+        // split the timer line into chunks delimited by ":"
+        std::sregex_token_iterator first{t.begin(), t.end(), r, -1}, last;
+        std::vector<std::string> timer = {first, last};
+
+        // EXAMPLE
+        // 39:Star Wars| The Clone Wars:0:::1:S19.2E-133-12-126:0:1:1:1:1:0:::1:0:0:1:Serien:50:99:2:10:1:0:0::1:0:1:1:0:0:0:0:0:1:0:0::1:0:0:0:0:0:0:0:0:0:90::0
+
+        // the following items are interesting for us
+        //  0 - unique search timer id
+        //  1 - the search term (will be the tv-show name)
+        //  5 - use channel (1 - interval);
+        //  6 - channel id
+        //  8 - search mode (0/1/2/3/4/5, 0 - search the whole term)
+        // 15 - use as search timer (0/1)
+        // 18 - use series recordings (0/1)
+        // 19 - directory for recordings
+        // 22 - time margin for start in minutes
+        // 23 - time margin for stop in minutes
+        // 24 - use VPS (0/1)
+        // 25 - action (0 - create a timer / 2 - announce only))
+        // 28 - avoid repeats (0/1)
+        // 30 - compare title
+        // 31 - compare subtitle
+
+        // for the complete documentation refer to:
+        // http://winni.vdr-developer.org/epgsearch/en/epgsearch.4.html#2__the_format_of_epgsearch_conf
+
+        // skip non-search timer entries
+        bool isSearchTimer = (toInt(timer[15]) == 1);
+        if(!isSearchTimer) {
+            continue;
+        }
+
+        // get channel / logo
+        cChannel* channel = Channels.GetByChannelID(tChannelID::FromString(timer[6].c_str()));
+        std::string logoUrl = ChannelController::createLogoUrl(channel);
+
+        // replace '|' with ':'
+        std::string name = timer[1];
+        std::replace(name.begin(), name.end(), '|', ':');
+
+        response->put_U32((uint32_t)toInt(timer[0]));   // timer id
+        response->put_String(name.c_str());             // search term (tv show name)
+        response->put_U32(createChannelUid(channel));   // channel uid
+        response->put_String(channel->Name());          // channel name
+        response->put_U32((uint32_t)toInt(timer[18]));  // series recording
+        response->put_String(timer[19].c_str());        // folder
+        response->put_String(logoUrl.c_str());          // channel logo
+        response->put_String(t.c_str());                // timer definition
+    }
+
+    delete service;
+
+    response->compress(9);
     return true;
 }
 

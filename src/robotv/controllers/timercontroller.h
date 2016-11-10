@@ -52,6 +52,8 @@ private:
 
     bool processGetTimers(MsgPacket* request, MsgPacket* response);
 
+    bool processGetSearchTimers(MsgPacket* request, MsgPacket* response);
+
     bool processAdd(MsgPacket* request, MsgPacket* response);
 
     bool processDelete(MsgPacket* request, MsgPacket* response);

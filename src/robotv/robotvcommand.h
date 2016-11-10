@@ -75,6 +75,7 @@
 #define ROBOTV_TIMER_ADD             83
 #define ROBOTV_TIMER_DELETE          84
 #define ROBOTV_TIMER_UPDATE          85
+#define ROBOTV_SEARCHTIMER_GETLIST   86
 
 /* OPCODE 100 - 119: RoboTV network functions for recording access */
 #define ROBOTV_RECORDINGS_DISKSIZE     100
