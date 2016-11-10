@@ -68,6 +68,22 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
     const char* fileName = timer->File();
+    const char* aux = timer->Aux();
+    uint32_t searchTimerId = (uint32_t)-1;
+
+    // we have auxillary timer data ?
+    if(aux != nullptr) {
+        // search for epgsearch id marker "<s-id>"
+        std::string auxString = std::string(aux);
+        std::size_t p1 = auxString.find("<s-id>");
+        std::size_t p2 = auxString.find("</s-id>");
+
+        if(p1 != std::string::npos && p2 != std::string::npos && (p2 - p1) > 6) {
+            p1 += 6; // "<s-id>" length
+            std::string id = auxString.substr(p1, p2 - p1);
+            searchTimerId = (uint32_t)strtol(id.c_str(), nullptr, 10);
+        }
+    }
 
     p->put_U32(timer->Index());
     p->put_U32(timer->Flags() | flags);
@@ -76,7 +92,7 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     p->put_U32(createChannelUid(timer->Channel()));
     p->put_U32(timer->StartTime());
     p->put_U32(timer->StopTime());
-    p->put_U32(timer->Day());
+    p->put_U32(searchTimerId); // !! day changed to searchTimerId
     p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
     p->put_String(toUtf8.convert(fileName));
 
