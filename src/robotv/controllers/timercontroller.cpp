@@ -254,7 +254,7 @@ bool TimerController::processGetSearchTimers(MsgPacket* request, MsgPacket* resp
         // http://winni.vdr-developer.org/epgsearch/en/epgsearch.4.html#2__the_format_of_epgsearch_conf
 
         // skip non-search timer entries
-        bool isSearchTimer = (toInt(timer[15]) == 1);
+        bool isSearchTimer = (toInt(timer[15]) > 0);
         if(!isSearchTimer) {
             continue;
         }
