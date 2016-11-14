@@ -39,12 +39,14 @@ Epgsearch_services_v1_0* getEpgServiceData() {
     cPlugin* plugin = cPluginManager::GetPlugin("epgsearch");
 
     if(plugin == nullptr) {
+        ERRORLOG("unable to connect to 'epgsearch plugin !");
         return nullptr;
     }
 
     Epgsearch_services_v1_0* serviceData = new Epgsearch_services_v1_0;
 
     if(!plugin->Service("Epgsearch_services_v1_0", serviceData)) {
+        ERRORLOG("unable to get 'Epgsearch_services_v1_0' from plugin.");
         return nullptr;
     }
 
