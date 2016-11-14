@@ -347,9 +347,14 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
     if(timer->Parse(buffer)) {
         cTimer* t = Timers.GetTimer(timer);
 
-        if(!t) {
+        if(t == nullptr) {
+            cSchedulesLock MutexLock;
+            const cSchedules* schedules = cSchedules::Schedules(MutexLock);
+            timer->SetEventFromSchedule(schedules);
+
             Timers.Add(timer);
             Timers.SetModified();
+
             INFOLOG("Timer %s added", *timer->ToDescr());
             response->put_U32(ROBOTV_RET_OK);
             return true;
