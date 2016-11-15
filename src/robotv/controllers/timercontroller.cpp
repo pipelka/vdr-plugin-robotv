@@ -87,7 +87,7 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
     return false;
 }
 
-void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
+void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
     const char* fileName = timer->File();
@@ -482,7 +482,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     return true;
 }
 
-int TimerController::checkTimerConflicts(cTimer* timer) {
+int TimerController::checkTimerConflicts(const cTimer* timer) {
     RoboTVChannels& c = RoboTVChannels::instance();
     c.lock(false);
 
@@ -521,7 +521,7 @@ int TimerController::checkTimerConflicts(cTimer* timer) {
 
     std::set<int> transponders;
     transponders.insert(timer->Channel()->Transponder()); // we also count ourself
-    cTimer* to_check = timer;
+    const cTimer* to_check = timer;
 
     std::map<time_t, cTimer*>::iterator i;
 
@@ -583,7 +583,7 @@ int TimerController::checkTimerConflicts(cTimer* timer) {
     return cflags;
 }
 
-const cEvent *TimerController::findEvent(cTimer *timer) {
+const cEvent *TimerController::findEvent(const cTimer *timer) {
     cSchedulesLock MutexLock;
 
     const cSchedules* schedules = cSchedules::Schedules(MutexLock);

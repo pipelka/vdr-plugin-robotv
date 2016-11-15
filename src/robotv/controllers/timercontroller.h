@@ -42,9 +42,9 @@ public:
 
     static void event2Packet(const cEvent* event, MsgPacket* p);
 
-    static void timer2Packet(cTimer* timer, MsgPacket* p);
+    static void timer2Packet(const cTimer* timer, MsgPacket* p);
 
-    static int checkTimerConflicts(cTimer* timer);
+    static int checkTimerConflicts(const cTimer* timer);
 
 private:
 
@@ -64,7 +64,7 @@ private:
 
     RoboTvClient* m_parent;
 
-    static const cEvent *findEvent(cTimer *pTimer);
+    static const cEvent *findEvent(const cTimer *pTimer);
 };
 
 #endif // ROBOTV_TIMERCONTROLLER_H
