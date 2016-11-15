@@ -147,7 +147,14 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
         return;
     }
 
-    sendTimerChange();
+    INFOLOG("Sending timer change request to client #%i ...", m_id);
+    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
+
+    if(Change == tcAdd) {
+        TimerController::timer2Packet(Timer, resp);
+    }
+
+    queueMessage(resp);
 }
 
 void RoboTvClient::ChannelChange(const cChannel* Channel) {
@@ -163,17 +170,6 @@ void RoboTvClient::ChannelChange(const cChannel* Channel) {
 
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_CHANNELCHANGED, ROBOTV_CHANNEL_STATUS);
     m_channelController.addChannelToPacket(Channel, resp);
-
-    queueMessage(resp);
-}
-
-void RoboTvClient::sendTimerChange() {
-    if(!m_loginController.statusEnabled()) {
-        return;
-    }
-
-    INFOLOG("Sending timer change request to client #%i ...", m_id);
-    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
 
     queueMessage(resp);
 }

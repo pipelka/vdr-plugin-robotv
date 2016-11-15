@@ -111,8 +111,6 @@ public:
 
     void sendMoviesChange();
 
-    void sendTimerChange();
-
     void queueMessage(MsgPacket* p);
 
     void sendStatusMessage(const char* Message);

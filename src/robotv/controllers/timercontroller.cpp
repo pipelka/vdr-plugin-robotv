@@ -475,7 +475,6 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
 
     *timer = t;
     Timers.SetModified();
-    m_parent->sendTimerChange();
 
     response->put_U32(ROBOTV_RET_OK);
 
