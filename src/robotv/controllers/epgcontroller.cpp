@@ -157,6 +157,11 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
             response->put_String("x");
             response->put_String("x");
         }
+
+        // add VPS timestamp (PROTOCOL VERSION 8)
+        if(request->getProtocolVersion() >= 8) {
+            response->put_S64(event->Vps());
+        }
     }
 
     c.unlock();

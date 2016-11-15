@@ -64,6 +64,7 @@ private:
 
     RoboTvClient* m_parent;
 
+    static const cEvent *findEvent(cTimer *pTimer);
 };
 
 #endif // ROBOTV_TIMERCONTROLLER_H

@@ -126,8 +126,12 @@ void TimerController::timer2Packet(cTimer* timer, MsgPacket* p) {
     // get timer event
     const cEvent* event = timer->Event();
 
-    // no event available
-    if(event == NULL) {
+    // no event available (try to find it)
+    if(event == nullptr) {
+        event = findEvent(timer);
+    }
+
+    if(event == nullptr) {
         p->put_U8(0);
         return;
     }
@@ -577,4 +581,26 @@ int TimerController::checkTimerConflicts(cTimer* timer) {
 
     c.unlock();
     return cflags;
+}
+
+const cEvent *TimerController::findEvent(cTimer *timer) {
+    cSchedulesLock MutexLock;
+
+    const cSchedules* schedules = cSchedules::Schedules(MutexLock);
+
+    if(schedules == nullptr) {
+        return nullptr;
+    }
+
+    const cSchedule* schedule = schedules->GetSchedule(timer->Channel()->GetChannelID());
+
+    for(const cEvent* event = schedule->Events()->First(); event; event = schedule->Events()->Next(event)) {
+        time_t eventStopTime = event->StartTime() + event->Duration();
+
+        if(event->StartTime() >= timer->StartTime() && eventStopTime <= timer->StopTime()) {
+            return event;
+        }
+    }
+
+    return nullptr;
 }
