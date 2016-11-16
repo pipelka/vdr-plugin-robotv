@@ -112,7 +112,7 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     auto channel = timer->Channel();
     std::string logoUrl = ChannelController::createLogoUrl(channel);
 
-    p->put_U32(timer->Index());
+    p->put_U32(createTimerUid(timer));
     p->put_U32(timer->Flags() | flags);
     p->put_U32(timer->Priority());
     p->put_U32(timer->Lifetime());

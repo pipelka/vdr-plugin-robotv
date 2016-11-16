@@ -158,9 +158,28 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
             response->put_String("x");
         }
 
-        // add VPS timestamp (PROTOCOL VERSION 8)
+        // add more epg information (PROTOCOL VERSION 8)
         if(request->getProtocolVersion() >= 8) {
             response->put_S64(event->Vps());
+            response->put_U8(event->TableID());
+            response->put_U8(event->Version());
+            response->put_U8((uint8_t)event->HasTimer());
+            response->put_U8((uint8_t)event->IsRunning());
+
+            const cComponents* components = event->Components();
+
+            if(components != nullptr) {
+                response->put_U32((uint32_t)components->NumComponents());
+                int index = 0;
+                tComponent* component;
+                while((component = components->Component(index++)) != nullptr) {
+                    response->put_String(component->description);
+                    response->put_String(component->language);
+                    response->put_U8(component->type);
+                    response->put_U8(component->stream);
+                }
+            }
+
         }
     }
 
