@@ -130,6 +130,9 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
         RecordingsCache::instance().update(uid, recording);
     }
 
+    Recordings.Update();
+    Recordings.TouchUpdate();
+
     response->put_U32(success ? 0 : -1);
     return true;
 }
