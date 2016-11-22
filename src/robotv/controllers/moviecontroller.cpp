@@ -22,6 +22,7 @@
  *
  */
 
+#include <algorithm>
 #include "moviecontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
@@ -275,6 +276,20 @@ bool MovieController::processSearch(MsgPacket* request, MsgPacket* response) {
     return true;
 }
 
+std::string MovieController::folderFromName(const std::string& name) {
+    size_t pos = name.rfind(FOLDERDELIMCHAR);
+
+    if(pos == std::string::npos) {
+        return "";
+    }
+
+    std::string folder = name.substr(0, pos);
+    std::replace(folder.begin(), folder.end(), '~', '/');
+    std::replace(folder.begin(), folder.end(), '_', ' ');
+
+    return folder;
+}
+
 void MovieController::recordingToPacket(cRecording* recording, MsgPacket* response) {
     RecordingsCache& cache = RecordingsCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
@@ -310,19 +325,6 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
     // channel_name
     response->put_String(recording->Info()->ChannelName() ? m_toUtf8.convert(recording->Info()->ChannelName()) : "");
 
-    char* fullname = strdup(recording->Name());
-    char* recname = strrchr(fullname, FOLDERDELIMCHAR);
-    char* directory = NULL;
-
-    if(recname == NULL) {
-        recname = fullname;
-    }
-    else {
-        *recname = 0;
-        recname++;
-        directory = fullname;
-    }
-
     // title
     const char* title = recording->Info()->Title();
     response->put_String(title ? m_toUtf8.convert(title) : "");
@@ -336,33 +338,15 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
     response->put_String(description ? m_toUtf8.convert(description) : "");
 
     // directory
-    if(directory != NULL) {
-        char* p = directory;
+    std::string directory = folderFromName(recording->Name());
 
-        while(*p != 0) {
-            if(*p == FOLDERDELIMCHAR) {
-                *p = '/';
-            }
-
-            if(*p == '_') {
-                *p = ' ';
-            }
-
-            p++;
-        }
-
-        while(*directory == '/') {
-            directory++;
-        }
-    }
-
-    if(!isempty(directory) && !config.seriesFolder.empty()) {
-        if(strncmp(directory, config.seriesFolder.c_str(), config.seriesFolder.length()) == 0) {
+    if(!directory.empty() && !config.seriesFolder.empty()) {
+        if(directory.substr(0, config.seriesFolder.length()) == config.seriesFolder) {
             content = 0x15;
         }
     }
 
-    response->put_String((isempty(directory)) ? "" : m_toUtf8.convert(directory));
+    response->put_String(m_toUtf8.convert(directory.c_str()));
 
     // filename / uid of recording
     uint32_t uid = RecordingsCache::instance().add(recording);
@@ -381,6 +365,4 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
 
     // icon url - for future use
     response->put_String((const char*)cache.getBackgroundUrl(uid));
-
-    free(fullname);
 }

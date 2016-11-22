@@ -41,6 +41,8 @@ public:
 
     bool process(MsgPacket* request, MsgPacket* response);
 
+    static std::string folderFromName(const std::string& name);
+
 protected:
 
     bool processGetDiskSpace(MsgPacket* request, MsgPacket* response);
