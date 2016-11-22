@@ -151,7 +151,7 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
 
     if(Change == tcAdd) {
-        TimerController::timer2Packet(Timer, resp);
+        TimerController::timer2Packet(Timer, resp, m_loginController.protocolVersion());
     }
 
     queueMessage(resp);

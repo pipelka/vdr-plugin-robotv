@@ -87,7 +87,7 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
     return false;
 }
 
-void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
+void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p, uint16_t protocolVersion) {
     Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
     const char* fileName = timer->File();
@@ -112,6 +112,11 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     auto channel = timer->Channel();
     std::string logoUrl = ChannelController::createLogoUrl(channel);
 
+    cRecordControl* rc = cRecordControls::GetRecordControl(timer);
+    if(rc != nullptr) {
+        fileName = rc->FileName();
+    }
+
     p->put_U32(createTimerUid(timer));
     p->put_U32(timer->Flags() | flags);
     p->put_U32(timer->Priority());
@@ -122,6 +127,10 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     p->put_U32(searchTimerId); // !! day changed to searchTimerId
     p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
     p->put_String(toUtf8.convert(logoUrl)); // !!! filename changed to logo url
+
+    if(protocolVersion >= 8) {
+        p->put_String(MovieController::folderFromName(timer->File()));
+    }
 
     // get timer event
     const cEvent* event = timer->Event();
@@ -182,7 +191,7 @@ bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* O
     }
 
     response->put_U32(ROBOTV_RET_OK);
-    timer2Packet(timer, response);
+    timer2Packet(timer, response, request->getProtocolVersion());
 
     return true;
 }
@@ -206,7 +215,7 @@ bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) 
             continue;
         }
 
-        timer2Packet(timer, response);
+        timer2Packet(timer, response, request->getProtocolVersion());
     }
 
     return true;
