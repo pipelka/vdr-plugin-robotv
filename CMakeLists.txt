@@ -134,6 +134,9 @@ set(SOURCE_FILES
     src/robotv/robotvcommand.h
     src/robotv/robotvserver.cpp
     src/robotv/robotvserver.h
+    src/scanner/wirbelscan.cpp
+    src/scanner/wirbelscan.h
+    src/scanner/wirbelscan_services.h
     src/tools/utf8/checked.h
     src/tools/utf8/core.h
     src/tools/utf8/unchecked.h

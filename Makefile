@@ -90,6 +90,7 @@ OBJS = \
 	src/recordings/recordingscache.o \
 	src/recordings/packetplayer.o \
 	src/recordings/recplayer.o \
+	src/scanner/wirbelscan.o \
 	src/tools/hash.o \
 	src/tools/recid2uid.o \
 	src/tools/time.o \
