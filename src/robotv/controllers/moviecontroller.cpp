@@ -294,20 +294,23 @@ void MovieController::recordingToPacket(cRecording* recording, MsgPacket* respon
     RecordingsCache& cache = RecordingsCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
+    time_t recordingStart;
+    int recordingDuration;
+    int content = 0;
+
     const cEvent* event = recording->Info()->GetEvent();
 
-    time_t recordingStart = event->StartTime();
-    int recordingDuration = event->Duration();
-    int content = event->Contents();
-
-    cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
-
-    if(rc) {
-        recordingStart    = rc->Timer()->StartTime();
-        recordingDuration = rc->Timer()->StopTime() - recordingStart;
+    if(event != nullptr) {
+        recordingStart = event->StartTime();
+        recordingDuration = event->Duration();
+        content = event->Contents();
     }
     else {
-        recordingStart = recording->Start();
+        cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
+        cTimer* timer = rc->Timer();
+
+        recordingStart = timer->StartTime();
+        recordingDuration = (int)(timer->StopTime() - recordingStart);
     }
 
     // recording_time
