@@ -233,17 +233,17 @@ void TsDemuxer::setAudioInformation(int Channels, int SampleRate, int BitRate, i
 }
 
 void TsDemuxer::setVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
-    if(sps != NULL) {
+    if(sps != NULL && spsLength <= sizeof(m_sps)) {
         m_spsLength = spsLength;
         memcpy(m_sps, sps, spsLength);
     }
 
-    if(pps != NULL) {
+    if(pps != NULL && ppsLength <= sizeof(m_pps)) {
         m_ppsLength = ppsLength;
         memcpy(m_pps, pps, ppsLength);
     }
 
-    if(vps != NULL) {
+    if(vps != NULL && vpsLength <= sizeof(m_vps)) {
         m_vpsLength = vpsLength;
         memcpy(m_vps, vps, vpsLength);
     }
