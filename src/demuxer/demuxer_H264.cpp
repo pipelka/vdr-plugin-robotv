@@ -37,6 +37,7 @@
 
 // NAL SPS ID
 #define NAL_SLH 0x01
+#define NAL_IDR 0x05
 #define NAL_SEI 0x06
 #define NAL_SPS 0x07
 #define NAL_PPS 0x08
@@ -119,6 +120,8 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
         return length;
     }
 
+    bool idr_frame = false;
+
     // iterate through all NAL units
     while((o = findStartCode(data, length, o, 0x00000001)) >= 0) {
         o += 4;
@@ -145,6 +148,11 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
         else if(nal_type == NAL_SPS && length - o > 1) {
             o++;
             sps_start = o;
+        }
+
+        // NAL_IDR
+        else if(nal_type == NAL_IDR) {
+            idr_frame = true;
         }
     }
 
@@ -193,6 +201,11 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
             parseSlh(slh_data, nal_len);
             delete[] slh_data;
         }
+    }
+
+    // IDR frame ?
+    if(m_frameType != StreamInfo::ftIFRAME && idr_frame) {
+        m_frameType = StreamInfo::ftIFRAME;
     }
 
     // progressive frame (no need to assemble anything)
