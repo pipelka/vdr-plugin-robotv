@@ -47,6 +47,8 @@ protected:
 
     bool processGetDiskSpace(MsgPacket* request, MsgPacket* response);
 
+    bool processGetFolders(MsgPacket* request, MsgPacket* response);
+
     bool processGetList(MsgPacket* request, MsgPacket* response);
 
     bool processRename(MsgPacket* request, MsgPacket* response);

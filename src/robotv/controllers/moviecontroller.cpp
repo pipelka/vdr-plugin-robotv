@@ -23,6 +23,7 @@
  */
 
 #include <algorithm>
+#include <set>
 #include "moviecontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
@@ -45,6 +46,9 @@ bool MovieController::process(MsgPacket* request, MsgPacket* response) {
     switch(request->getMsgID()) {
         case ROBOTV_RECORDINGS_DISKSIZE:
             return processGetDiskSpace(request, response);
+
+        case ROBOTV_RECORDINGS_GETFOLDERS:
+            return processGetFolders(request, response);
 
         case ROBOTV_RECORDINGS_GETLIST:
             return processGetList(request, response);
@@ -86,6 +90,33 @@ bool MovieController::processGetDiskSpace(MsgPacket* request, MsgPacket* respons
     response->put_U32(freeMb);
     response->put_U32(percent);
 
+    return true;
+}
+
+bool MovieController::processGetFolders(MsgPacket* request, MsgPacket* response) {
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
+    std::set<std::string> folders;
+    size_t size = config.seriesFolder.length();
+
+    if(size  > 0) {
+        folders.insert(config.seriesFolder);
+    }
+
+    for(cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
+        std::string folder = folderFromName(recording->Name());
+
+        if(folder.empty() || (size > 0 && folder.substr(0, size + 1) == config.seriesFolder + "/")) {
+            continue;
+        }
+
+        folders.insert(folder);
+    }
+
+    for(auto& folder: folders) {
+        response->put_String(folder);
+    }
+
+    response->compress(9);
     return true;
 }
 
