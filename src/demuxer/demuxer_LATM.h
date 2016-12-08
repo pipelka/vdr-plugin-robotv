@@ -38,17 +38,9 @@ protected:
 
     int parsePayload(unsigned char* data, int len);
 
-    void sendPayload(unsigned char* payload, int length);
-
     bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
 
     void readStreamMuxConfig(cBitStream* bs);
-
-    void readAudioSpecificConfig(cBitStream* bs);
-
-private:
-
-    int m_sampleRateIndex;
 
 };
 

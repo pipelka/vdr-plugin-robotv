@@ -25,25 +25,6 @@
 #include "demuxer_LATM.h"
 #include "aaccommon.h"
 
-static uint32_t LATMGetValue(cBitStream* bs) {
-    return bs->GetBits(bs->GetBits(2) * 8);
-}
-
-static void putBits(uint8_t* buffer, int& offset, int val, int num) {
-    while(num > 0) {
-        num--;
-
-        if(val & (1 << num)) {
-            buffer[offset / 8] |= 1 << (7 - (offset & 7));
-        }
-        else {
-            buffer[offset / 8] &= ~(1 << (7 - (offset & 7)));
-        }
-
-        offset++;
-    }
-}
-
 ParserLatm::ParserLatm(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
 }
 
@@ -56,14 +37,8 @@ bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     }
 
     // read frame size
-    framesize = bs.GetBits(13);
-    framesize += 3; // add header size
-
+    framesize = bs.GetBits(13) + 3;
     return true;
-}
-
-// dummy - handled in ParsePayload
-void ParserLatm::sendPayload(unsigned char* payload, int length) {
 }
 
 int ParserLatm::parsePayload(unsigned char* data, int len) {
@@ -75,166 +50,42 @@ int ParserLatm::parsePayload(unsigned char* data, int len) {
         readStreamMuxConfig(&bs);
     }
 
-    int tmp;
-    unsigned int slotLen = 0;
-
-    do {
-        tmp = bs.GetBits(8);
-        slotLen += tmp;
-    }
-    while(tmp == 255);
-
-    if(slotLen * 8 > (bs.Length() - (unsigned)bs.Index())) {
-        return len;
-    }
-
-    if(m_curDts == DVD_NOPTS_VALUE) {
-        return len;
-    }
-
-    // buffer for converted payload data
-    int payloadlength = slotLen + 7;
-    uint8_t* payload = (uint8_t*)malloc(payloadlength);
-
-    // 7 bytes of ADTS header
-    int offset = 0;
-    putBits(payload, offset, 0xfff, 12); // Sync marker
-    putBits(payload, offset, 0, 1);      // ID 0 = MPEG 4
-    putBits(payload, offset, 0, 2);      // Layer
-    putBits(payload, offset, 1, 1);      // Protection absent
-    putBits(payload, offset, 2, 2);      // AOT
-    putBits(payload, offset, m_sampleRateIndex, 4);
-    putBits(payload, offset, 1, 1);      // Private bit
-    putBits(payload, offset, m_channels, 3);
-    putBits(payload, offset, 1, 1);      // Original
-    putBits(payload, offset, 1, 1);      // Copy
-    putBits(payload, offset, 1, 1);      // Copyright identification bit
-    putBits(payload, offset, 1, 1);      // Copyright identification start
-    putBits(payload, offset, slotLen, 13);
-    putBits(payload, offset, 0, 11);     // Buffer fullness
-    putBits(payload, offset, 0, 2);      // RDB in frame
-
-    // copy AAC data
-    uint8_t* buf = payload + 7;
-
-    for(unsigned int i = 0; i < slotLen; i++) {
-        *buf++ = bs.GetBits(8);
-    }
-
-    // send converted payload packet
-    Parser::sendPayload(payload, payloadlength);
-
-    // free payload buffer
-    free(payload);
-
     return len;
 }
 
-void ParserLatm::readStreamMuxConfig(cBitStream* bs) {
-    int AudioMuxVersion = bs->GetBits(1);
-    int AudioMuxVersion_A = 0;
+void ParserLatm::readStreamMuxConfig(cBitStream *bs)  {
+    int audioMuxVersion = bs->GetBit();
 
-    if(AudioMuxVersion) {                      // audioMuxVersion
-        AudioMuxVersion_A = bs->GetBits(1);
-    }
-
-    if(AudioMuxVersion_A) {
+    if(audioMuxVersion != 0) {
         return;
     }
 
-    if(AudioMuxVersion) {
-        LATMGetValue(bs);    // taraFullness
+    bs->SkipBits(1);    // allStreamSameTimeFraming = 1
+    bs->SkipBits(6);    // numSubFrames = 0
+    bs->SkipBits(4);    // numPrograms = 0
+    bs->SkipBits(3);    // numLayer = 0
+
+    auto aot = bs->GetBits(5);
+    if(aot == 31) {
+        bs->SkipBits(6);
     }
 
-    bs->SkipBits(1);                         // allStreamSameTimeFraming = 1
-    bs->SkipBits(6);                         // numSubFrames = 0
-    bs->SkipBits(4);                         // numPrograms = 0
+    auto sampleRateIndex = bs->GetBits(4);
 
-    // for each program (which there is only on in DVB)
-    bs->SkipBits(3);                         // numLayer = 0
-
-    // for each layer (which there is only on in DVB)
-    if(!AudioMuxVersion) {
-        readAudioSpecificConfig(bs);
+    if(sampleRateIndex == 0xf) {
+        m_sampleRate = bs->GetBits(24);
     }
     else {
-        return;
+        m_sampleRate = aac_samplerates[sampleRateIndex];
     }
 
-    // these are not needed... perhaps
-    int framelength = bs->GetBits(3);
+    auto channelIndex = bs->GetBits(4);
 
-    switch(framelength) {
-        case 0:
-            bs->GetBits(8);
-            break;
-
-        case 1:
-            bs->GetBits(9);
-            break;
-
-        case 3:
-        case 4:
-        case 5:
-            bs->GetBits(6);                 // celp_table_index
-            break;
-
-        case 6:
-        case 7:
-            bs->GetBits(1);                 // hvxc_table_index
-            break;
+    if(channelIndex < 8) {
+        m_channels = aac_channels[channelIndex];
     }
 
-    if(bs->GetBits(1)) {
-        // other data?
-        if(AudioMuxVersion) {
-            LATMGetValue(bs);              // other_data_bits
-        }
-        else {
-            int esc;
-
-            do {
-                esc = bs->GetBits(1);
-                bs->SkipBits(8);
-            }
-            while(esc);
-        }
-    }
-
-    if(bs->GetBits(1)) {                  // crc present?
-        bs->SkipBits(8);    // config_crc
-    }
-}
-
-void ParserLatm::readAudioSpecificConfig(cBitStream* bs) {
-    bs->GetBits(5); // audio object type
-
-    m_sampleRateIndex = bs->GetBits(4);
-
-    if(m_sampleRateIndex == 0xf) {
-        return;
-    }
-
-    m_sampleRate = aac_samplerates[m_sampleRateIndex];
     m_duration = 1024 * 90000 / m_sampleRate;
-
-    int channelindex = bs->GetBits(4);
-
-    if(channelindex > 7) {
-        channelindex = 0;
-    }
-
-    m_channels = aac_channels[channelindex];
-
-    bs->SkipBits(1);      //framelen_flag
-
-    if(bs->GetBit()) { // depends_on_coder
-        bs->SkipBits(14);
-    }
-
-    if(bs->GetBits(1)) { // ext_flag
-        bs->SkipBits(1);    // ext3_flag
-    }
 
     m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
 }

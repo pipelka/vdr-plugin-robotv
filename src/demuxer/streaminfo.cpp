@@ -30,7 +30,7 @@ static const char* contentnames[] = {
 };
 
 static const char* typenames[] = {
-    "NONE", "MPEG2AUDIO", "AC3", "EAC3", "AAC", "AAC", "MPEG2VIDEO", "H264", "DVBSUB", "TELETEXT", "H265"
+    "NONE", "MPEG2AUDIO", "AC3", "EAC3", "AAC", "LATM", "MPEG2VIDEO", "H264", "DVBSUB", "TELETEXT", "H265"
 };
 
 
