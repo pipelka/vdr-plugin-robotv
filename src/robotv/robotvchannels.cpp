@@ -67,12 +67,12 @@ cChannels* RoboTVChannels::reorder(cChannels* channels) {
     int output[2];
 
     if(pipe(input) == -1) {
-        ERRORLOG("Failed to create pipe");
+        esyslog("Failed to create pipe");
         return channels;
     }
 
     if(pipe(output) == -1) {
-        ERRORLOG("Failed to create pipe");
+        esyslog("Failed to create pipe");
         close(input[0]);
         close(input[1]);
         return channels;
@@ -80,7 +80,7 @@ cChannels* RoboTVChannels::reorder(cChannels* channels) {
 
     switch(pid = fork()) {
         case -1:
-            ERRORLOG("Failed to fork new process");
+            esyslog("Failed to fork new process");
             close(input[0]);
             close(input[1]);
             close(output[0]);
@@ -96,12 +96,12 @@ cChannels* RoboTVChannels::reorder(cChannels* channels) {
             dup2(input[0], STDIN_FILENO);
             dup2(output[1], STDOUT_FILENO);
 
-            INFOLOG(
+            isyslog(
                 "Reordering %i channels with command '%s'", channels->Count(), reorderCmd.c_str());
             status = system(reorderCmd.c_str());
 
             if(status != 0) {
-                ERRORLOG(
+                esyslog(
                     "Command: %s failed with exit code %i", reorderCmd.c_str(), status);
             }
 
@@ -125,7 +125,7 @@ cChannels* RoboTVChannels::reorder(cChannels* channels) {
             close(input[1]);
 
             if(!result) {
-                ERRORLOG("Failed to write channels to the command's input");
+                esyslog("Failed to write channels to the command's input");
                 close(output[0]);
                 return channels;
             }
@@ -139,18 +139,18 @@ cChannels* RoboTVChannels::reorder(cChannels* channels) {
             waitpid(pid, &status, 0);
 
             if(WEXITSTATUS(status) != 0) {
-                ERRORLOG("Returning original channels due to reorder failure");
+                esyslog("Returning original channels due to reorder failure");
                 delete reordered;
                 return channels;
             }
 
             if(!result) {
-                ERRORLOG("Failed to read channels from the command's output");
+                esyslog("Failed to read channels from the command's output");
                 delete reordered;
                 return channels;
             }
 
-            INFOLOG("Loaded %i channels", reordered->Count());
+            isyslog("Loaded %i channels", reordered->Count());
             return reordered;
     }
 }
@@ -187,7 +187,7 @@ bool RoboTVChannels::read(FILE* f, cChannels* channels) {
             }
             else {
                 delete c;
-                ERRORLOG("Invalid channel: %s", line);
+                esyslog("Invalid channel: %s", line);
                 return false;
             }
         }

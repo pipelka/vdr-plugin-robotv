@@ -80,7 +80,7 @@ Parser* TsDemuxer::createParser(StreamInfo::Type type) {
             return new ParserSubtitle(this);
 
         default:
-            ERRORLOG("Unrecognized type %i", m_type);
+            esyslog("Unrecognized type %i", m_type);
             m_content = scNONE;
             m_type = stNONE;
             break;
@@ -137,12 +137,12 @@ bool TsDemuxer::processTsPacket(unsigned char* data) const {
     }
 
     if(TsError(data)) {
-        ERRORLOG("transport error");
+        esyslog("transport error");
         return false;
     }
 
     if(!TsHasPayload(data)) {
-        DEBUGLOG("no payload, size %d", bytes);
+        dsyslog("no payload, size %d", bytes);
         return true;
     }
 
@@ -173,27 +173,27 @@ void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int W
         return;
     }
 
-    INFOLOG("--------------------------------------");
-    INFOLOG("NEW PICTURE INFORMATION:");
-    INFOLOG("Picture Width: %i", Width);
-    INFOLOG("Picture Height: %i", Height);
+    isyslog("--------------------------------------");
+    isyslog("NEW PICTURE INFORMATION:");
+    isyslog("Picture Width: %i", Width);
+    isyslog("Picture Height: %i", Height);
 
     if(num != 1 || den != 1) {
-        INFOLOG("Pixel Aspect: %i:%i", num, den);
+        isyslog("Pixel Aspect: %i:%i", num, den);
     }
 
     if(Aspect == 0) {
-        INFOLOG("Unknown Display Aspect Ratio");
+        isyslog("Unknown Display Aspect Ratio");
     }
     else {
-        INFOLOG("Display Aspect Ratio: %.2f", (double)Aspect / 10000);
+        isyslog("Display Aspect Ratio: %.2f", (double)Aspect / 10000);
     }
 
     if(FpsScale != 0 && FpsRate != 0) {
-        INFOLOG("Frames per second: %.2lf", (double)FpsRate / (double)FpsScale);
+        isyslog("Frames per second: %.2lf", (double)FpsRate / (double)FpsScale);
     }
 
-    INFOLOG("--------------------------------------");
+    isyslog("--------------------------------------");
 
     m_fpsScale = FpsScale;
     m_fpsRate  = FpsRate;
@@ -211,16 +211,16 @@ void TsDemuxer::setAudioInformation(int Channels, int SampleRate, int BitRate, i
         return;
     }
 
-    INFOLOG("--------------------------------------");
-    INFOLOG("NEW AUDIO INFORMATION:");
-    INFOLOG("Channels: %i", Channels);
-    INFOLOG("Samplerate: %i Hz", SampleRate);
+    isyslog("--------------------------------------");
+    isyslog("NEW AUDIO INFORMATION:");
+    isyslog("Channels: %i", Channels);
+    isyslog("Samplerate: %i Hz", SampleRate);
 
     if(BitRate > 0) {
-        INFOLOG("Bitrate: %i bps", BitRate);
+        isyslog("Bitrate: %i bps", BitRate);
     }
 
-    INFOLOG("--------------------------------------");
+    isyslog("--------------------------------------");
 
     m_channels      = Channels;
     m_sampleRate    = SampleRate;

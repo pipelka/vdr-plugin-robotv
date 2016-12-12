@@ -30,7 +30,7 @@ Storage::Storage() : m_config(RoboTVServerConfig::instance()) {
     cString filename = AddDirectory(m_config.cacheDirectory.c_str(), STORAGE_DB_FILE);
 
     if(!open((const char*)filename)) {
-        ERRORLOG("Unable to open database: '%s' - strange thing will happen !", (const char*)filename);
+        esyslog("Unable to open database: '%s' - strange thing will happen !", (const char*)filename);
     }
 }
 

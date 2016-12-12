@@ -204,7 +204,7 @@ void StreamInfo::info() const {
         snprintf(buffer, sizeof(buffer), "Unknown");
     }
 
-    INFOLOG("Stream: %s PID: %i %s (parsed: %s)", typeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
+    isyslog("Stream: %s PID: %i %s (parsed: %s)", typeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
 }
 
 void StreamInfo::setSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {

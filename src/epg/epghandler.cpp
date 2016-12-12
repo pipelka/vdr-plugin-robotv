@@ -85,7 +85,7 @@ void EpgHandler::createDb() {
         ");\n";
 
     if(m_storage.exec(schema) != SQLITE_OK) {
-        ERRORLOG("Unable to create database schema for epg search");
+        esyslog("Unable to create database schema for epg search");
     }
 
     // update older version of table
@@ -95,7 +95,7 @@ void EpgHandler::createDb() {
 }
 
 void EpgHandler::cleanup() {
-    INFOLOG("removing outdated epg entries");
+    isyslog("removing outdated epg entries");
 
     time_t now = time(NULL);
     m_storage.exec("DELETE FROM epgsearch WHERE docid IN (SELECT docid FROM epgindex WHERE timestamp < %llu)", (uint64_t)now);

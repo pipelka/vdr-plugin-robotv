@@ -78,7 +78,7 @@ LiveQueue::~LiveQueue() {
     }
 
     delete m_writeThread;
-    INFOLOG("LiveQueue terminated");
+    isyslog("LiveQueue terminated");
 }
 
 void LiveQueue::cleanup() {
@@ -87,13 +87,13 @@ void LiveQueue::cleanup() {
     m_pause = false;
 
     m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
-    DEBUGLOG("timeshift file: %s", (const char*)m_storage);
+    dsyslog("timeshift file: %s", (const char*)m_storage);
 
     m_writeFd = open(m_storage, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     m_readFd = open(m_storage, O_CREAT | O_RDONLY, 0644);
 
     if(m_readFd == -1) {
-        ERRORLOG("Failed to create timeshift ringbuffer !");
+        esyslog("Failed to create timeshift ringbuffer !");
     }
 
     lseek(m_readFd, 0, SEEK_SET);
@@ -122,11 +122,11 @@ MsgPacket* LiveQueue::internalRead() {
     off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
 
     if(readPosition >= (off_t)m_bufferSize) {
-        INFOLOG("timeshift: read buffer wrap");
+        isyslog("timeshift: read buffer wrap");
         lseek(m_readFd, 0, SEEK_SET);
         readPosition = 0;
         m_wrapped = !m_wrapped;
-        INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
+        isyslog("wrapped: %s", m_wrapped ? "yes" : "no");
     }
 
     // check if read position is still behind write position (if not wrapped))
@@ -177,7 +177,7 @@ bool LiveQueue::write(const PacketData& data) {
     off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
 
     if(writePosition >= (off_t) m_bufferSize) {
-        INFOLOG("timeshift: write buffer wrap");
+        isyslog("timeshift: write buffer wrap");
         lseek(m_writeFd, 0, SEEK_SET);
         writePosition = 0;
 
@@ -185,7 +185,7 @@ bool LiveQueue::write(const PacketData& data) {
         m_hasWrapped = true;
         m_wrapCount++;
 
-        INFOLOG("wrapped: %s", m_wrapped ? "yes" : "no");
+        isyslog("wrapped: %s", m_wrapped ? "yes" : "no");
     }
 
     off_t packetEndPosition = writePosition + p->getPacketLength();
@@ -212,7 +212,7 @@ bool LiveQueue::write(const PacketData& data) {
     bool success = p->write(m_writeFd, 1000);
 
     if(!success) {
-        ERRORLOG("Unable to write packet into timeshift ringbuffer !");
+        esyslog("Unable to write packet into timeshift ringbuffer !");
     }
 
     delete p;
@@ -258,12 +258,12 @@ bool LiveQueue::pause(bool on) {
 
 void LiveQueue::setTimeShiftDir(const cString& dir) {
     m_timeShiftDir = dir;
-    DEBUGLOG("TIMESHIFTDIR: %s", (const char*)m_timeShiftDir);
+    dsyslog("TIMESHIFTDIR: %s", (const char*)m_timeShiftDir);
 }
 
 void LiveQueue::setBufferSize(uint64_t s) {
     m_bufferSize = s;
-    INFOLOG("timeshift buffersize: %lu bytes", m_bufferSize);
+    isyslog("timeshift buffersize: %lu bytes", m_bufferSize);
 }
 
 void LiveQueue::removeTimeShiftFiles() {
@@ -277,7 +277,7 @@ void LiveQueue::removeTimeShiftFiles() {
 
     while((entry = readdir(dir)) != NULL) {
         if(strncmp(entry->d_name, "robotv-ringbuffer-", 16) == 0) {
-            INFOLOG("Removing old time-shift storage: %s", entry->d_name);
+            isyslog("Removing old time-shift storage: %s", entry->d_name);
             unlink(AddDirectory(m_timeShiftDir, entry->d_name));
         }
     }
@@ -288,14 +288,14 @@ void LiveQueue::removeTimeShiftFiles() {
 int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    INFOLOG("seek: %lu", wallclockPositionMs);
+    isyslog("seek: %lu", wallclockPositionMs);
 
     auto s = m_indexList.rbegin();
     auto e = m_indexList.rend();
     auto h = m_indexList.begin();
 
     if(s == e) {
-        ERRORLOG("empty timeshift queue - unable to seek");
+        esyslog("empty timeshift queue - unable to seek");
         return 0;
     }
 
@@ -322,7 +322,7 @@ int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
     }
 
     // not found
-    ERRORLOG("fileposition not found!");
+    esyslog("fileposition not found!");
     return 0;
 }
 

@@ -149,12 +149,12 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
     cRecording* recording = RecordingsCache::instance().lookup(uid);
 
     if(recording == nullptr) {
-        ERRORLOG("recording with id '%s' not found!", recid);
+        esyslog("recording with id '%s' not found!", recid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
 
-    INFOLOG("renaming recording '%s' to '%s'", recording->Name(), newName);
+    isyslog("renaming recording '%s' to '%s'", recording->Name(), newName);
 
     bool success = recording->ChangeName(newName);
 
@@ -175,29 +175,29 @@ bool MovieController::processDelete(MsgPacket* request, MsgPacket* response) {
     cRecording* recording = RecordingsCache::instance().lookup(uid);
 
     if(recording == NULL) {
-        ERRORLOG("Recording not found !");
+        esyslog("Recording not found !");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
-    DEBUGLOG("deleting recording: %s", recording->Name());
+    dsyslog("deleting recording: %s", recording->Name());
 
     cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
 
     if(rc != NULL) {
-        ERRORLOG("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
+        esyslog("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
         response->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
     if(!recording->Delete()) {
-        ERRORLOG("Error while deleting recording!");
+        esyslog("Error while deleting recording!");
         response->put_U32(ROBOTV_RET_ERROR);
         return true;
     }
 
     Recordings.DelByName(recording->FileName());
-    INFOLOG("Recording \"%s\" deleted", recording->FileName());
+    isyslog("Recording \"%s\" deleted", recording->FileName());
     response->put_U32(ROBOTV_RET_OK);
 
     return true;
@@ -240,7 +240,7 @@ bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
     cRecording* recording = RecordingsCache::instance().lookup(uid);
 
     if(recording == NULL) {
-        ERRORLOG("GetMarks: recording not found !");
+        esyslog("GetMarks: recording not found !");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
@@ -248,7 +248,7 @@ bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
     cMarks marks;
 
     if(!marks.Load(recording->FileName(), recording->FramesPerSecond(), recording->IsPesRecording())) {
-        INFOLOG("no marks found for: '%s'", recording->FileName());
+        isyslog("no marks found for: '%s'", recording->FileName());
         response->put_U32(ROBOTV_RET_NOTSUPPORTED);
         return true;
     }

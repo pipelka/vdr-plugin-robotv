@@ -79,7 +79,7 @@ void RecPlayer::scan() {
     }
 
     if(len != m_totalLength) {
-        INFOLOG("recording scan: %lu bytes", m_totalLength);
+        isyslog("recording scan: %lu bytes", m_totalLength);
     }
 }
 
@@ -115,7 +115,7 @@ bool RecPlayer::openFile(int index) {
     closeFile();
 
     fileNameFromIndex(index);
-    INFOLOG("openFile called for index %i (%s)", index, m_fileName);
+    isyslog("openFile called for index %i (%s)", index, m_fileName);
 
     // first try to open with NOATIME flag
     m_file = open(m_fileName, O_RDONLY | O_NOATIME);
@@ -127,7 +127,7 @@ bool RecPlayer::openFile(int index) {
 
     // failed to open file
     if(m_file == -1) {
-        INFOLOG("file failed to open");
+        isyslog("file failed to open");
         m_fileOpen = -1;
         return false;
     }
@@ -141,7 +141,7 @@ void RecPlayer::closeFile() {
         return;
     }
 
-    INFOLOG("file closed");
+    isyslog("file closed");
     close(m_file);
 
     m_file = -1;
@@ -195,13 +195,13 @@ int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
 
     // seek to position
     if(lseek(m_file, filePosition, SEEK_SET) == -1) {
-        ERRORLOG("unable to seek to position: %lu", filePosition);
+        esyslog("unable to seek to position: %lu", filePosition);
         return 0;
     }
 
     // try to read the block
     int bytes_read = read(m_file, buffer, amount);
-    DEBUGLOG("read %i bytes from file %i at position %llu", bytes_read, segmentNumber, filePosition);
+    dsyslog("read %i bytes from file %i at position %llu", bytes_read, segmentNumber, filePosition);
 
     if(bytes_read <= 0) {
         return 0;

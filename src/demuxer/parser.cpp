@@ -95,7 +95,7 @@ void Parser::putData(unsigned char* data, int length, bool pusi) {
 
         // reset buffer on overflow
         if(put < length) {
-            ERRORLOG("Parser buffer overflow - resetting");
+            esyslog("Parser buffer overflow - resetting");
             Clear();
         }
     }
@@ -117,7 +117,7 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
             int next_framesize = 0;
 
             if(!checkAlignmentHeader(&buffer[framesize], next_framesize)) {
-                ERRORLOG("next frame not found on expected position, searching ...");
+                esyslog("next frame not found on expected position, searching ...");
             }
             else {
                 // check if we should extrapolate the timestamps
@@ -152,7 +152,7 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     int offset = findAlignmentOffset(buffer, length, 1, framesize);
 
     if(offset != -1) {
-        INFOLOG("sync found at offset %i (streamtype: %s / %i bytes in buffer / framesize: %i bytes)", offset, m_demuxer->typeName(), Available(), framesize);
+        isyslog("sync found at offset %i (streamtype: %s / %i bytes in buffer / framesize: %i bytes)", offset, m_demuxer->typeName(), Available(), framesize);
         Del(offset);
     }
     else if(length > m_headerSize) {

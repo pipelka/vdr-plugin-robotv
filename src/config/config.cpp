@@ -43,7 +43,7 @@ void RoboTVServerConfig::Load() {
 
     for(cSetupLine* l = First(); l; l = Next(l)) {
         if(!Parse(l->Name(), l->Value())) {
-            ERRORLOG("Unknown config parameter %s = %s in %s", l->Name(), l->Value(), GENERAL_CONFIG_FILE);
+            esyslog("Unknown config parameter %s = %s in %s", l->Name(), l->Value(), GENERAL_CONFIG_FILE);
         }
     }
 
@@ -64,11 +64,11 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
         reorderCmd = Value;
     }
     else if(!strcasecmp(Name, "EpgImageUrl")) {
-        INFOLOG("EPG images template URL: %s", Value);
+        isyslog("EPG images template URL: %s", Value);
         epgImageUrl = Value;
     }
     else if(!strcasecmp(Name, "SeriesFolder")) {
-        INFOLOG("Folder for TV shows: %s", Value);
+        isyslog("Folder for TV shows: %s", Value);
         seriesFolder = Value;
     }
     else if(!strcasecmp(Name, "FilterChannels")) {

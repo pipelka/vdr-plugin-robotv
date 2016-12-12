@@ -74,7 +74,7 @@ LiveStreamer::~LiveStreamer() {
     m_device = NULL;
     delete m_streamPacket;
 
-    INFOLOG("live streamer terminated");
+    isyslog("live streamer terminated");
 }
 
 void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
@@ -88,7 +88,7 @@ void LiveStreamer::requestStreamChange() {
 int LiveStreamer::switchChannel(const cChannel* channel) {
 
     if(channel == NULL) {
-        ERRORLOG("unknown channel !");
+        esyslog("unknown channel !");
         return ROBOTV_RET_ERROR;
     }
 
@@ -103,19 +103,19 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
         for(cTimer* ti = Timers.First(); ti; ti = Timers.Next(ti)) {
             if(ti->Recording() && ti->Matches(now)) {
-                ERRORLOG("Recording running !");
+                esyslog("Recording running !");
                 return ROBOTV_RET_RECRUNNING;
             }
         }
 
-        ERRORLOG("No device available !");
+        esyslog("No device available !");
         return ROBOTV_RET_DATALOCKED;
     }
 
-    INFOLOG("Found available device %d", m_device->DeviceNumber() + 1);
+    isyslog("Found available device %d", m_device->DeviceNumber() + 1);
 
     if(!m_device->SwitchChannel(channel, false)) {
-        ERRORLOG("Can't switch to channel %i - %s", channel->Number(), channel->Name());
+        esyslog("Can't switch to channel %i - %s", channel->Number(), channel->Name());
         return ROBOTV_RET_ERROR;
     }
 
@@ -126,11 +126,11 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     // channel already in cache
     if(bundle.size() != 0) {
-        INFOLOG("Channel information found in cache");
+        isyslog("Channel information found in cache");
     }
     // channel not found in cache -> add it from vdr
     else {
-        INFOLOG("adding channel to cache");
+        isyslog("adding channel to cache");
         bundle = cache.add(channel);
     }
 
@@ -138,28 +138,28 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     StreamBundle currentitem = StreamBundle::createFromChannel(channel);
 
     if(!currentitem.isMetaOf(bundle)) {
-        INFOLOG("current channel differs from cache item - updating");
+        isyslog("current channel differs from cache item - updating");
         bundle = cache.add(channel);
     }
 
     if(bundle.size() != 0) {
-        INFOLOG("Creating demuxers");
+        isyslog("Creating demuxers");
         createDemuxers(&bundle);
     }
 
     requestStreamChange();
 
-    INFOLOG("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
+    isyslog("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
 
     if(m_waitForKeyFrame) {
-        INFOLOG("Will wait for first key frame ...");
+        isyslog("Will wait for first key frame ...");
     }
 
     if(!attach()) {
         return ROBOTV_RET_DATALOCKED;
     }
 
-    INFOLOG("done switching.");
+    isyslog("done switching.");
     return ROBOTV_RET_OK;
 }
 
@@ -173,11 +173,11 @@ bool LiveStreamer::attach(void) {
     }
 
     if(m_device->AttachReceiver(this)) {
-        INFOLOG("device attached to receiver");
+        isyslog("device attached to receiver");
         return true;
     }
 
-    ERRORLOG("failed to attach receiver !");
+    esyslog("failed to attach receiver !");
     return false;
 }
 
@@ -191,7 +191,7 @@ void LiveStreamer::detach(void) {
     }
 
     m_device->Detach(this);
-    INFOLOG("device detached");
+    isyslog("device detached");
 }
 
 void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
@@ -241,13 +241,13 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
 }
 
 void LiveStreamer::sendDetach() {
-    INFOLOG("sending detach message");
+    isyslog("sending detach message");
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
     m_parent->queueMessage(resp);
 }
 
 void LiveStreamer::sendStreamChange() {
-    INFOLOG("stream change notification");
+    isyslog("stream change notification");
 
     StreamBundle cache;
 
@@ -339,7 +339,7 @@ void LiveStreamer::requestSignalInfo() {
         resp->put_String("");
     }
 
-    DEBUGLOG("RequestSignalInfo");
+    dsyslog("RequestSignalInfo");
     m_queue->queue(resp, StreamInfo::scNONE);
 }
 
@@ -432,7 +432,7 @@ void LiveStreamer::processChannelChange(const cChannel* channel) {
         return;
     }
 
-    INFOLOG("ChannelChange()");
+    isyslog("ChannelChange()");
     switchChannel(channel);
 }
 

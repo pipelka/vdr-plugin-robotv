@@ -30,24 +30,6 @@
 
 #include <vdr/config.h>
 
-// log output configuration
-
-#ifdef CONSOLEDEBUG
-#define DEBUGLOG(format, ...) printf("roboTV: " format, ##__VA_ARGS__)
-#elif defined  DEBUG
-#define DEBUGLOG(format, ...) dsyslog("roboTV: " format, ##__VA_ARGS__)
-#else
-#define DEBUGLOG(format, ...)
-#endif
-
-#ifdef CONSOLEDEBUG
-#define INFOLOG(format, ...) printf("roboTV: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) printf("roboTV-Error: " format, ##__VA_ARGS__)
-#else
-#define INFOLOG(format, ...) isyslog("roboTV: " format, ##__VA_ARGS__)
-#define ERRORLOG(format, ...) esyslog("roboTV-Error: " format, ##__VA_ARGS__)
-#endif
-
 // default settings
 
 #define ALLOWED_HOSTS_FILE  "allowed_hosts.conf"

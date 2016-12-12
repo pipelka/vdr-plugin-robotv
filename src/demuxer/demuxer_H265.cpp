@@ -304,7 +304,7 @@ bool ParserH265::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
                 pixelaspect = m_aspect_ratios[aspect_ratio_idc];
             }
             else {
-                ERRORLOG("Unexpected aspect_ratio_idc value: %i", aspect_ratio_idc);
+                esyslog("Unexpected aspect_ratio_idc value: %i", aspect_ratio_idc);
             }
         }
     }

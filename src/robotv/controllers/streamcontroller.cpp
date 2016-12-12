@@ -88,7 +88,7 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
     }
 
     if(m_languageIndex != -1) {
-        INFOLOG("Preferred language: %s / type: %i", I18nLanguageCode(m_languageIndex), (int)m_langStreamType);
+        isyslog("Preferred language: %s / type: %i", I18nLanguageCode(m_languageIndex), (int)m_langStreamType);
     }
 
     stopStreaming();
@@ -108,7 +108,7 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
     c.unlock();
 
     if(channel == NULL) {
-        ERRORLOG("Can't find channel %08x", uid);
+        esyslog("Can't find channel %08x", uid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
@@ -120,11 +120,11 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
                      waitForKeyFrame);
 
     if(status == ROBOTV_RET_OK) {
-        INFOLOG("--------------------------------------");
-        INFOLOG("Started streaming of channel %s (priority %i)", channel->Name(), priority);
+        isyslog("--------------------------------------");
+        isyslog("Started streaming of channel %s (priority %i)", channel->Name(), priority);
     }
     else {
-        ERRORLOG("Can't stream channel %s (status: %i)", channel->Name(), status);
+        esyslog("Can't stream channel %s (status: %i)", channel->Name(), status);
     }
 
     response->put_U32(status);
@@ -165,7 +165,7 @@ bool StreamController::processPause(MsgPacket* request, MsgPacket* response) {
     }
 
     bool on = request->get_U32();
-    INFOLOG("LIVESTREAM: %s", on ? "PAUSED" : "TIMESHIFT");
+    isyslog("LIVESTREAM: %s", on ? "PAUSED" : "TIMESHIFT");
 
     m_streamer->pause(on);
 

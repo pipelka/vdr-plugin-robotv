@@ -90,7 +90,7 @@ void ChannelCache::createDb() {
         ");\n";
 
     if(exec(schema) != SQLITE_OK) {
-        ERRORLOG("Unable to create database schema for channelcache");
+        esyslog("Unable to create database schema for channelcache");
     }
 }
 

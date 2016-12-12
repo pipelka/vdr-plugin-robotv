@@ -36,7 +36,7 @@ DemuxerBundle::~DemuxerBundle() {
 void DemuxerBundle::clear() {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL) {
-            DEBUGLOG("Deleting stream demuxer for pid=%i and type=%i", (*i)->getPid(), (*i)->getType());
+            dsyslog("Deleting stream demuxer for pid=%i and type=%i", (*i)->getPid(), (*i)->getType());
             delete(*i);
         }
     }
@@ -127,7 +127,7 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 
     for(std::map<uint32_t, TsDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
         TsDemuxer* stream = i->second;
-        DEBUGLOG("Stream : Type %s / %s Weight: %08X", stream->typeName(), stream->getLanguage(), i->first);
+        dsyslog("Stream : Type %s / %s Weight: %08X", stream->typeName(), stream->getLanguage(), i->first);
         push_back(stream);
     }
 }
@@ -135,7 +135,7 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 bool DemuxerBundle::isReady() const {
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->isParsed()) {
-            DEBUGLOG("Stream with PID %i not parsed", (*i)->getPid());
+            dsyslog("Stream with PID %i not parsed", (*i)->getPid());
             return false;
         }
     }

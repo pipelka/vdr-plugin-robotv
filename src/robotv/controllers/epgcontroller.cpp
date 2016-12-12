@@ -64,14 +64,14 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
     channel = findChannelByUid(channelUid);
 
     if(channel != NULL) {
-        DEBUGLOG("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
+        dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
     }
 
     if(!channel) {
         response->put_U32(0);
         c.unlock();
 
-        ERRORLOG("written 0 because channel = NULL");
+        esyslog("written 0 because channel = NULL");
         return true;
     }
 
@@ -82,7 +82,7 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         response->put_U32(0);
         c.unlock();
 
-        DEBUGLOG("written 0 because Schedule!s! = NULL");
+        dsyslog("written 0 because Schedule!s! = NULL");
         return true;
     }
 
@@ -92,7 +92,7 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         response->put_U32(0);
         c.unlock();
 
-        DEBUGLOG("written 0 because Schedule = NULL");
+        dsyslog("written 0 because Schedule = NULL");
         return true;
     }
 

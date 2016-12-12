@@ -51,7 +51,7 @@ PacketPlayer::~PacketPlayer() {
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // check if we've got a key frame
     if(p->content == StreamInfo::scVIDEO && p->frameType == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
-        INFOLOG("got first key frame");
+        isyslog("got first key frame");
         m_firstKeyFrameSeen = true;
     }
 
@@ -105,7 +105,7 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
 }
 
 void PacketPlayer::requestStreamChange() {
-    INFOLOG("stream change requested");
+    isyslog("stream change requested");
     m_requestStreamChange = true;
 }
 
@@ -131,11 +131,11 @@ MsgPacket* PacketPlayer::getNextPacket() {
         m_parser.GetVersions(m_patVersion, pmtVersion);
 
         if(pmtVersion > m_pmtVersion) {
-            INFOLOG("found new PMT version (%i)", pmtVersion);
+            isyslog("found new PMT version (%i)", pmtVersion);
             m_pmtVersion = pmtVersion;
 
             // update demuxers from new PMT
-            INFOLOG("updating demuxers");
+            isyslog("updating demuxers");
             StreamBundle streamBundle = StreamBundle::createFromPatPmt(&m_parser);
             m_demuxers.updateFrom(&streamBundle);
 
@@ -163,13 +163,13 @@ MsgPacket* PacketPlayer::getNextPacket() {
             return NULL;
         }
 
-        INFOLOG("demuxers ready");
+        isyslog("demuxers ready");
 
         for(auto i : m_demuxers) {
             i->info();
         }
 
-        INFOLOG("create streamchange packet");
+        isyslog("create streamchange packet");
         m_requestStreamChange = false;
         return m_demuxers.createStreamChangePacket();
     }
@@ -299,7 +299,7 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
         return -1;
     }
 
-    INFOLOG("seek: %lu / %lu", m_position, m_totalLength);
+    isyslog("seek: %lu / %lu", m_position, m_totalLength);
 
     // reset parser
     reset();

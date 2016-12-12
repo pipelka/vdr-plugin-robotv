@@ -64,7 +64,7 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
 
     const char* recid = request->get_String();
     unsigned int uid = recid2uid(recid);
-    DEBUGLOG("lookup recid: %s (uid: %u)", recid, uid);
+    dsyslog("lookup recid: %s (uid: %u)", recid, uid);
     recording = RecordingsCache::instance().lookup(uid);
 
     if(recording && m_recPlayer == NULL) {
@@ -84,7 +84,7 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
     }
     else {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        ERRORLOG("%s - unable to start recording !", __FUNCTION__);
+        esyslog("%s - unable to start recording !", __FUNCTION__);
     }
 
     return true;

@@ -31,19 +31,19 @@ WirbelScan::WirbelScan() : m_plugin(NULL) {
 	m_plugin = cPluginManager::GetPlugin("wirbelscan");
 
 	if(m_plugin == NULL) {
-		ERRORLOG("Unable to connect to wirbelscan plugin !");
+		esyslog("Unable to connect to wirbelscan plugin !");
 		return;
 	}
 
-	INFOLOG("Connected to wirbelscan plugin ...");
+	isyslog("Connected to wirbelscan plugin ...");
 
 	cWirbelscanInfo info;
 
 	if(getVersion(&info)) {
-		INFOLOG("wirbelscan plugin version: %s", info.PluginVersion);
+		isyslog("wirbelscan plugin version: %s", info.PluginVersion);
 	}
 	else {
-		ERRORLOG("unable to fetch version information !");
+		esyslog("unable to fetch version information !");
 	}
 }
 

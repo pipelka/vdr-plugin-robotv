@@ -47,7 +47,7 @@ void Artwork::createDb() {
         "CREATE UNIQUE INDEX IF NOT EXISTS artwork_content on artwork(contenttype, title);\n";
 
     if(m_storage.exec(schema) != SQLITE_OK) {
-        ERRORLOG("Unable to create database schema for artwork");
+        esyslog("Unable to create database schema for artwork");
     }
 }
 

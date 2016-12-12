@@ -75,7 +75,7 @@ RoboTvClient::~RoboTvClient() {
         }
     }
 
-    DEBUGLOG("done");
+    dsyslog("done");
 }
 
 void RoboTvClient::Action(void) {
@@ -124,17 +124,17 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
     cRecording* r = RecordingsCache::instance().lookup(FileName);
 
     if(r == NULL) {
-        ERRORLOG("Unknown recording: '%s'", FileName);
+        esyslog("Unknown recording: '%s'", FileName);
         return;
     }
 
-    INFOLOG("----------------------------------");
-    INFOLOG("RECORDINGEVENT:");
-    INFOLOG("Client ID: %i", getId());
-    INFOLOG("Filename:  %s", FileName);
-    INFOLOG("Name:      %s", Name);
-    INFOLOG("Recording: %s", On ? "Yes" : "No");
-    INFOLOG("----------------------------------");
+    isyslog("----------------------------------");
+    isyslog("RECORDINGEVENT:");
+    isyslog("Client ID: %i", getId());
+    isyslog("Filename:  %s", FileName);
+    isyslog("Name:      %s", Name);
+    isyslog("Recording: %s", On ? "Yes" : "No");
+    isyslog("----------------------------------");
 
     const cEvent* e = r->Info()->GetEvent();
 
@@ -147,7 +147,7 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
         return;
     }
 
-    INFOLOG("Sending timer change request to client #%i ...", m_id);
+    isyslog("Sending timer change request to client #%i ...", m_id);
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
 
     if(Change == tcAdd) {

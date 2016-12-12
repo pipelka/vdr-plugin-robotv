@@ -42,7 +42,7 @@ bool Database::open(const std::string& db) {
             return false;
         }
 
-        INFOLOG("Opening database: %s", db.c_str());
+        isyslog("Opening database: %s", db.c_str());
         int rc = sqlite3_open_v2(db.c_str(), &m_db,
                                  SQLITE_OPEN_SHAREDCACHE |
                                  SQLITE_OPEN_FULLMUTEX |
@@ -51,7 +51,7 @@ bool Database::open(const std::string& db) {
                                  NULL);
 
         if(rc != SQLITE_OK) {
-            ERRORLOG("Can't open database: %s", sqlite3_errmsg(m_db));
+            esyslog("Can't open database: %s", sqlite3_errmsg(m_db));
             sqlite3_close(m_db);
             m_db = NULL;
             return false;
@@ -69,7 +69,7 @@ bool Database::close() {
         return false;
     }
 
-    INFOLOG("Closing database.");
+    isyslog("Closing database.");
 
     sqlite3_close_v2(m_db);
     m_db = NULL;
@@ -125,7 +125,7 @@ int Database::exec(const std::string& query, ...) {
     releaseQueryBuffer(querybuffer);
 
     if(rc != SQLITE_OK && errmsg != NULL) {
-        ERRORLOG("SQLite: %s", errmsg);
+        esyslog("SQLite: %s", errmsg);
         sqlite3_free(errmsg);
     }
 
@@ -161,7 +161,7 @@ sqlite3_stmt* Database::query(const std::string& query, ...) {
     releaseQueryBuffer(querybuffer);
 
     if(rc != SQLITE_OK) {
-        ERRORLOG("SQLite: %s", sqlite3_errmsg(m_db));
+        esyslog("SQLite: %s", sqlite3_errmsg(m_db));
 
         if(stmt != NULL) {
             sqlite3_finalize(stmt);

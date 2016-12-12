@@ -91,12 +91,12 @@ cRecording* RecordingsCache::lookup(const std::string& fileName) {
 }
 
 cRecording* RecordingsCache::lookup(uint32_t uid) {
-    DEBUGLOG("%s - lookup uid: %08x", __FUNCTION__, uid);
+    dsyslog("%s - lookup uid: %08x", __FUNCTION__, uid);
 
     sqlite3_stmt* s = m_storage.query("SELECT filename FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
-        DEBUGLOG("%s - not found !", __FUNCTION__);
+        dsyslog("%s - not found !", __FUNCTION__);
         return NULL;
     }
 
@@ -109,14 +109,14 @@ cRecording* RecordingsCache::lookup(uint32_t uid) {
     sqlite3_finalize(s);
 
     if(isempty(filename)) {
-        DEBUGLOG("%s - empty filename for uid: %08x !", __FUNCTION__, uid);
+        dsyslog("%s - empty filename for uid: %08x !", __FUNCTION__, uid);
         return NULL;
     }
 
-    DEBUGLOG("%s - filename: %s", __FUNCTION__, (const char*)filename);
+    dsyslog("%s - filename: %s", __FUNCTION__, (const char*)filename);
 
     cRecording* r = Recordings.GetByName(filename);
-    DEBUGLOG("%s - recording %s", __FUNCTION__, (r == NULL) ? "not found !" : "found");
+    dsyslog("%s - recording %s", __FUNCTION__, (r == NULL) ? "not found !" : "found");
 
     return r;
 }
@@ -183,7 +183,7 @@ cString RecordingsCache::getPosterUrl(uint32_t uid) {
 
     if(sqlite3_step(s) == SQLITE_ROW) {
         const char* u = (const char*)sqlite3_column_text(s, 0);
-        INFOLOG("posterurl for %u: %s", uid, u);
+        isyslog("posterurl for %u: %s", uid, u);
 
         if(u != NULL) {
             url = u;
@@ -258,7 +258,7 @@ void RecordingsCache::gc() {
 
         // remove orphaned entry
         if(Recordings.GetByName(filename) == NULL) {
-            INFOLOG("removing outdated recording '%s' from cache", filename);
+            isyslog("removing outdated recording '%s' from cache", filename);
             m_storage.exec("DELETE FROM recordings WHERE recid=%u;", recid);
         }
     }
@@ -282,7 +282,7 @@ void RecordingsCache::createDb() {
         "CREATE VIRTUAL TABLE IF NOT EXISTS fts_recordings USING fts4(title, subject, description);\n";
 
     if(m_storage.exec(schema) != SQLITE_OK) {
-        ERRORLOG("Unable to create database schema for recordings");
+        esyslog("Unable to create database schema for recordings");
     }
 }
 

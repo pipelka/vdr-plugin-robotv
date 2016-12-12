@@ -55,8 +55,8 @@ class cAllowedHosts : public cSVDRPhosts {
 public:
     cAllowedHosts(const cString& AllowedHostsFile) {
         if(!Load(AllowedHostsFile, true, true)) {
-            ERRORLOG("Invalid or missing %s. Disabling access restrictions !!!.", *AllowedHostsFile);
-            ERRORLOG("Please create the file as soon as possible.");
+            esyslog("Invalid or missing %s. Disabling access restrictions !!!.", *AllowedHostsFile);
+            esyslog("Please create the file as soon as possible.");
             cSVDRPhost* localhost = new cSVDRPhost;
 
             if(localhost->Parse("0.0.0.0:0")) {
@@ -77,7 +77,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
         m_allowedHostsFile = cString::sprintf("%s/" ALLOWED_HOSTS_FILE, m_config.configDirectory.c_str());
     }
     else {
-        ERRORLOG("RoboTVServer: missing ConfigDirectory!");
+        esyslog("RoboTVServer: missing ConfigDirectory!");
         m_allowedHostsFile = cString::sprintf("/video/" ALLOWED_HOSTS_FILE);
     }
 
@@ -104,7 +104,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
     int no = 0;
 
     if(!m_ipv4Fallback && setsockopt(m_serverFd, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&no, sizeof(no)) < 0) {
-        ERRORLOG("RoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
+        esyslog("RoboTVServer: setsockopt failed (errno=%d: %s)", errno, strerror(errno));
     }
 
     struct sockaddr_storage s;
@@ -124,7 +124,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
 
     if(x < 0) {
         close(m_serverFd);
-        INFOLOG("Unable to start roboTV Server, port already in use ?");
+        isyslog("Unable to start roboTV Server, port already in use ?");
         m_serverFd = -1;
         return;
     }
@@ -133,7 +133,7 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
 
     Start();
 
-    INFOLOG("roboTV Server started");
+    isyslog("roboTV Server started");
     return;
 }
 
@@ -144,7 +144,7 @@ RoboTVServer::~RoboTVServer() {
         delete(*i);
     }
 
-    INFOLOG("roboTV Server stopped");
+    isyslog("roboTV Server stopped");
 }
 
 void RoboTVServer::clientConnected(int fd) {
@@ -153,7 +153,7 @@ void RoboTVServer::clientConnected(int fd) {
     in_addr_t* ipv4_addr = NULL;
 
     if(getpeername(fd, (struct sockaddr*)&sin, &len)) {
-        ERRORLOG("getpeername() failed, dropping new incoming connection %d", m_idCnt);
+        esyslog("getpeername() failed, dropping new incoming connection %d", m_idCnt);
         close(fd);
         return;
     }
@@ -173,14 +173,14 @@ void RoboTVServer::clientConnected(int fd) {
         cAllowedHosts AllowedHosts(m_allowedHostsFile);
 
         if(!AllowedHosts.Acceptable(*ipv4_addr)) {
-            ERRORLOG("Address not allowed to connect (%s)", *m_allowedHostsFile);
+            esyslog("Address not allowed to connect (%s)", *m_allowedHostsFile);
             close(fd);
             return;
         }
     }
 
     if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
-        ERRORLOG("Error setting control socket to nonblocking mode");
+        esyslog("Error setting control socket to nonblocking mode");
         close(fd);
         return;
     }
@@ -203,10 +203,10 @@ void RoboTVServer::clientConnected(int fd) {
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 
     if(!m_ipv4Fallback) {
-        INFOLOG("Client %s:%i with ID %d connected.", robotv_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_idCnt);
+        isyslog("Client %s:%i with ID %d connected.", robotv_inet_ntoa(((struct sockaddr_in6*)&sin)->sin6_addr), ((struct sockaddr_in6*)&sin)->sin6_port, m_idCnt);
     }
     else {
-        INFOLOG("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_idCnt);
+        isyslog("Client %s:%i with ID %d connected.", inet_ntoa(((struct sockaddr_in*)&sin)->sin_addr), ((struct sockaddr_in*)&sin)->sin_port, m_idCnt);
     }
 
     RoboTvClient* connection = new RoboTvClient(fd, m_idCnt);
@@ -225,7 +225,7 @@ void RoboTVServer::Action(void) {
     Artwork artwork;
     cTimeMs cleanupTimer;
 
-    INFOLOG("removing outdated artwork");
+    isyslog("removing outdated artwork");
     artwork.triggerCleanup();
 
     // get initial state of the recordings
@@ -247,7 +247,7 @@ void RoboTVServer::Action(void) {
         int r = select(m_serverFd + 1, &fds, NULL, NULL, &tv);
 
         if(r == -1) {
-            ERRORLOG("failed during select");
+            esyslog("failed during select");
             continue;
         }
 
@@ -256,7 +256,7 @@ void RoboTVServer::Action(void) {
             for(ClientList::iterator i = m_clients.begin(); i != m_clients.end();) {
 
                 if(!(*i)->Active()) {
-                    INFOLOG("Client with ID %u seems to be disconnected, removing from client list", (*i)->getId());
+                    isyslog("Client with ID %u seems to be disconnected, removing from client list", (*i)->getId());
                     delete(*i);
                     i = m_clients.erase(i);
                 }
@@ -267,11 +267,11 @@ void RoboTVServer::Action(void) {
 
             // artwork cleanup (every 12 hours)
             if(cleanupTimer.Elapsed() >= 12 * 60 * 60 * 1000) {
-                INFOLOG("removing outdated artwork");
+                isyslog("removing outdated artwork");
                 artwork.triggerCleanup();
                 m_epgHandler.triggerCleanup();
                 // start gc
-                INFOLOG("Starting garbage collection in recordings cache");
+                isyslog("Starting garbage collection in recordings cache");
                 cache.triggerCleanup();
 
                 cleanupTimer.Set(0);
@@ -288,7 +288,7 @@ void RoboTVServer::Action(void) {
             if(recState != recStateOld) {
                 recordingReloadTrigger = true;
                 recordingReloadTimer.Set(1000);
-                INFOLOG("Recordings state changed (%i)", recState);
+                isyslog("Recordings state changed (%i)", recState);
                 recStateOld = recState;
             }
 
@@ -297,7 +297,7 @@ void RoboTVServer::Action(void) {
 
                 // request clients to reload recordings
                 if(!m_clients.empty()) {
-                    INFOLOG("Requesting clients to reload recordings list");
+                    isyslog("Requesting clients to reload recordings list");
 
                     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
                         (*i)->sendMoviesChange();
@@ -317,7 +317,7 @@ void RoboTVServer::Action(void) {
             clientConnected(fd);
         }
         else {
-            ERRORLOG("accept failed");
+            esyslog("accept failed");
         }
     }
 

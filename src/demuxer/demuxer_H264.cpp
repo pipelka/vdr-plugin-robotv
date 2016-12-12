@@ -103,7 +103,7 @@ uint8_t* ParserH264::extractNal(uint8_t* packet, int length, int nal_offset, int
     nal_len = nalUnescape(nal_data, packet + nal_offset, l);
 
     if(nal_len + nal_offset > length) {
-        ERRORLOG("nal overrun: nal len: %i, offset: %i, packet length: %i", nal_len, nal_offset, length);
+        esyslog("nal overrun: nal len: %i, offset: %i, packet length: %i", nal_len, nal_offset, length);
     }
 
     return nal_data;
@@ -328,7 +328,7 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
             profile_idc != PROFILE_HI422 &&
             profile_idc != PROFILE_HI444 &&
             profile_idc != PROFILE_CAVLC444) {
-        ERRORLOG("H264: invalid profile idc: %i", profile_idc);
+        esyslog("H264: invalid profile idc: %i", profile_idc);
         return false;
     }
 
@@ -391,7 +391,7 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         }
     }
     else if(pic_order_cnt_type != 2) {
-        ERRORLOG("pic_order_cnt_type = %i", pic_order_cnt_type);
+        esyslog("pic_order_cnt_type = %i", pic_order_cnt_type);
         return false;
     }
 

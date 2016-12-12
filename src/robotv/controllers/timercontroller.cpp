@@ -39,14 +39,14 @@ Epgsearch_services_v1_0* getEpgServiceData() {
     cPlugin* plugin = cPluginManager::GetPlugin("epgsearch");
 
     if(plugin == nullptr) {
-        ERRORLOG("unable to connect to 'epgsearch plugin !");
+        esyslog("unable to connect to 'epgsearch plugin !");
         return nullptr;
     }
 
     Epgsearch_services_v1_0* serviceData = new Epgsearch_services_v1_0;
 
     if(!plugin->Service("Epgsearch-services-v1.0", serviceData)) {
-        ERRORLOG("unable to get 'Epgsearch_services_v1_0' from plugin.");
+        esyslog("unable to get 'Epgsearch_services_v1_0' from plugin.");
         return nullptr;
     }
 
@@ -198,7 +198,7 @@ bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* O
 
 bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) {
     if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to delete timer - timers being edited at VDR");
+        esyslog("Unable to delete timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
@@ -298,7 +298,7 @@ bool TimerController::processGetSearchTimers(MsgPacket* request, MsgPacket* resp
 
 bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
     if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to add timer - timers being edited at VDR");
+        esyslog("Unable to add timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
@@ -368,17 +368,17 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
             Timers.Add(timer);
             Timers.SetModified();
 
-            INFOLOG("Timer %s added", *timer->ToDescr());
+            isyslog("Timer %s added", *timer->ToDescr());
             response->put_U32(ROBOTV_RET_OK);
             return true;
         }
         else {
-            ERRORLOG("Timer already defined: %d %s", t->Index() + 1, *t->ToText());
+            esyslog("Timer already defined: %d %s", t->Index() + 1, *t->ToText());
             response->put_U32(ROBOTV_RET_DATALOCKED);
         }
     }
     else {
-        ERRORLOG("Error in timer settings");
+        esyslog("Error in timer settings");
         response->put_U32(ROBOTV_RET_DATAINVALID);
     }
 
@@ -394,19 +394,19 @@ bool TimerController::processDelete(MsgPacket* request, MsgPacket* response) {
     cTimer* timer = findTimerByUid(uid);
 
     if(timer == NULL) {
-        ERRORLOG("Unable to delete timer - invalid timer identifier");
+        esyslog("Unable to delete timer - invalid timer identifier");
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
 
     if(Timers.BeingEdited()) {
-        ERRORLOG("Unable to delete timer - timers being edited at VDR");
+        esyslog("Unable to delete timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
         return true;
     }
 
     if(timer->Recording() && !force) {
-        ERRORLOG("Timer is recording and can be deleted (use force to stop it)");
+        esyslog("Timer is recording and can be deleted (use force to stop it)");
         response->put_U32(ROBOTV_RET_RECRUNNING);
         return true;
     }
@@ -414,7 +414,7 @@ bool TimerController::processDelete(MsgPacket* request, MsgPacket* response) {
     timer->Skip();
     cRecordControls::Process(time(NULL));
 
-    INFOLOG("Deleting timer %s", *timer->ToDescr());
+    isyslog("Deleting timer %s", *timer->ToDescr());
     Timers.Del(timer);
     Timers.SetModified();
     response->put_U32(ROBOTV_RET_OK);
@@ -429,13 +429,13 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     cTimer* timer = findTimerByUid(uid);
 
     if(timer == NULL) {
-        ERRORLOG("Timer not defined");
+        esyslog("Timer not defined");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return true;
     }
 
     if(timer->Recording()) {
-        INFOLOG("Will not update timer - currently recording");
+        isyslog("Will not update timer - currently recording");
         response->put_U32(ROBOTV_RET_OK);
         return true;
     }
@@ -477,7 +477,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     c.unlock();
 
     if(!t.Parse(buffer)) {
-        ERRORLOG("Error in timer settings");
+        esyslog("Error in timer settings");
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return true;
     }
@@ -495,7 +495,7 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     c.lock(false);
 
     // check for timer conflicts
-    DEBUGLOG("Checking conflicts for: %s", (const char*)timer->ToText(true));
+    dsyslog("Checking conflicts for: %s", (const char*)timer->ToText(true));
 
     // order active timers by starttime
     std::map<time_t, cTimer*> timeline;
@@ -556,7 +556,7 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
             continue;
         }
 
-        DEBUGLOG("Possible conflict: %s", (const char*)t->ToText(true));
+        dsyslog("Possible conflict: %s", (const char*)t->ToText(true));
         transponders.insert(t->Channel()->Transponder());
 
         // now check conflicting timer
@@ -576,15 +576,15 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     int cflags = 0;
 
     if(transponders.size() > number_of_devices_for_this_channel) {
-        DEBUGLOG("ERROR - Not enough devices");
+        dsyslog("ERROR - Not enough devices");
         cflags += 2048;
     }
     else if(transponders.size() > 1) {
-        DEBUGLOG("Overlapping timers - Will record");
+        dsyslog("Overlapping timers - Will record");
         cflags += 1024;
     }
     else {
-        DEBUGLOG("No conflicts");
+        dsyslog("No conflicts");
     }
 
     c.unlock();

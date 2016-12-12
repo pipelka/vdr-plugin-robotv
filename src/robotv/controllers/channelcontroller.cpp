@@ -54,11 +54,11 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     ChannelCache& channelCache = ChannelCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-    INFOLOG("Fetching channels ...");
+    isyslog("Fetching channels ...");
 
     int type = request->get_U32();
 
-    INFOLOG("Type: %s",
+    isyslog("Type: %s",
             type == 0 ? "MPEG2/H.264 channels" :
             type == 1 ? "radio channels" :
             type == 2 ? "H.264 channels" :
@@ -72,24 +72,24 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     const char* language = request->get_String();
     // do we want fta channels ?
     m_wantFta = request->get_U32();
-    INFOLOG("Free To Air channels: %s", m_wantFta ? "Yes" : "No");
+    isyslog("Free To Air channels: %s", m_wantFta ? "Yes" : "No");
 
     // display only channels with native language audio ?
     m_filterLanguage = request->get_U32();
-    INFOLOG("Only native language: %s", m_filterLanguage ? "Yes" : "No");
+    isyslog("Only native language: %s", m_filterLanguage ? "Yes" : "No");
 
     // read caids
     m_caids.clear();
     uint32_t count = request->get_U32();
 
-    INFOLOG("Enabled CaIDs: ");
+    isyslog("Enabled CaIDs: ");
 
     // sanity check (maximum of 20 caids)
     if(count < 20) {
         for(uint32_t i = 0; i < count; i++) {
             int caid = request->get_U32();
             m_caids.push_back(caid);
-            INFOLOG("%04X", caid);
+            isyslog("%04X", caid);
         }
     }
 
@@ -124,7 +124,7 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
 
     c.unlock();
 
-    INFOLOG("client got %i channels", m_channelCount);
+    isyslog("client got %i channels", m_channelCount);
     return true;
 }
 
