@@ -142,7 +142,6 @@ bool TsDemuxer::processTsPacket(unsigned char* data) const {
     }
 
     if(!TsHasPayload(data)) {
-        dsyslog("no payload, size %d", bytes);
         return true;
     }
 
