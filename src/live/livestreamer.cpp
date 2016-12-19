@@ -50,9 +50,10 @@
 using namespace std::chrono;
 
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority)
-    : cReceiver(NULL, priority)
+    : cReceiver(nullptr, priority)
     , m_demuxers(this)
-    , m_parent(parent) {
+    , m_parent(parent)
+    , m_device(nullptr) {
     m_uid = createChannelUid(channel);
 
     // create send queue
@@ -71,7 +72,7 @@ LiveStreamer::~LiveStreamer() {
     std::this_thread::yield();
 
     m_uid = 0;
-    m_device = NULL;
+    m_device = nullptr;
     delete m_streamPacket;
 
     isyslog("live streamer terminated");
@@ -87,19 +88,17 @@ void LiveStreamer::requestStreamChange() {
 
 int LiveStreamer::switchChannel(const cChannel* channel) {
 
-    if(channel == NULL) {
+    if(channel == nullptr) {
         esyslog("unknown channel !");
         return ROBOTV_RET_ERROR;
     }
 
-    detach();
-
     // get device for this channel
     m_device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
 
-    if(m_device == NULL) {
+    if(m_device == nullptr) {
         // return status "recording running" if there is an active timer
-        time_t now = time(NULL);
+        time_t now = time(nullptr);
 
         for(cTimer* ti = Timers.First(); ti; ti = Timers.Next(ti)) {
             if(ti->Recording() && ti->Matches(now)) {
@@ -164,12 +163,8 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 }
 
 bool LiveStreamer::attach(void) {
-    if(m_device == NULL) {
+    if(m_device == nullptr) {
         return false;
-    }
-
-    if(IsAttached()) {
-        return true;
     }
 
     if(m_device->AttachReceiver(this)) {
@@ -182,21 +177,19 @@ bool LiveStreamer::attach(void) {
 }
 
 void LiveStreamer::detach(void) {
-    if(m_device == NULL) {
-        return;
-    }
-
-    if(!IsAttached()) {
+    if(m_device == nullptr) {
         return;
     }
 
     m_device->Detach(this);
+    m_device = nullptr;
+
     isyslog("device detached");
 }
 
 void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     // skip empty packets
-    if(pkt == NULL || pkt->size == 0) {
+    if(pkt == nullptr || pkt->size == 0) {
         return;
     }
 
@@ -273,7 +266,7 @@ void LiveStreamer::sendStatus(int status) {
 }
 
 void LiveStreamer::requestSignalInfo() {
-    if(m_device == NULL || !IsAttached()) {
+    if(m_device == nullptr || !IsAttached()) {
         return;
     }
 
@@ -326,7 +319,7 @@ void LiveStreamer::requestSignalInfo() {
     // get provider & service information
     const cChannel* channel = findChannelByUid(m_uid);
 
-    if(channel != NULL) {
+    if(channel != nullptr) {
         // put in provider name
         resp->put_String(channel->Provider());
 
@@ -353,7 +346,7 @@ void LiveStreamer::setLanguage(int lang, StreamInfo::Type streamtype) {
 }
 
 bool LiveStreamer::isPaused() {
-    if(m_queue == NULL) {
+    if(m_queue == nullptr) {
         return false;
     }
 
@@ -361,7 +354,7 @@ bool LiveStreamer::isPaused() {
 }
 
 void LiveStreamer::pause(bool on) {
-    if(m_queue == NULL) {
+    if(m_queue == nullptr) {
         return;
     }
 
@@ -372,7 +365,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     // create payload packet
-    if(m_streamPacket == NULL) {
+    if(m_streamPacket == nullptr) {
         m_streamPacket = new MsgPacket();
         m_streamPacket->put_S64(m_queue->getTimeshiftStartPosition());
         m_streamPacket->put_S64(roboTV::currentTimeMillis().count());
@@ -380,7 +373,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     }
 
     // request packet from queue
-    MsgPacket* p = NULL;
+    MsgPacket* p = nullptr;
 
     while((p = m_queue->read(keyFrameMode)) != nullptr) {
 
@@ -398,18 +391,18 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
         // send payload packet if it's big enough
         if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
             MsgPacket* result = m_streamPacket;
-            m_streamPacket = NULL;
+            m_streamPacket = nullptr;
             return result;
         }
     }
 
     if(m_queue->isPaused()) {
         MsgPacket* result = m_streamPacket;
-        m_streamPacket = NULL;
+        m_streamPacket = nullptr;
         return result;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 #if VDRVERSNUM < 20300
@@ -433,6 +426,8 @@ void LiveStreamer::processChannelChange(const cChannel* channel) {
     }
 
     isyslog("ChannelChange()");
+
+    detach();
     switchChannel(channel);
 }
 
@@ -441,7 +436,7 @@ void LiveStreamer::createDemuxers(StreamBundle* bundle) {
     m_demuxers.updateFrom(bundle);
 
     // update pids
-    SetPids(NULL);
+    SetPids(nullptr);
 
     for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
         TsDemuxer* dmx = *i;
