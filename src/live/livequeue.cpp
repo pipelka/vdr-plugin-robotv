@@ -132,6 +132,10 @@ MsgPacket* LiveQueue::internalRead() {
     off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
     off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
 
+    if(readPosition == (off_t)-1 || writePosition == (off_t)-1) {
+        return nullptr;
+    }
+
     if(readPosition >= (off_t)m_bufferSize) {
         isyslog("timeshift: read buffer wrap");
         lseek(m_readFd, 0, SEEK_SET);
@@ -145,7 +149,7 @@ MsgPacket* LiveQueue::internalRead() {
     // the buffer)
 
     if(readPosition >= writePosition && !m_wrapped) {
-        return NULL;
+        return nullptr;
     }
 
     // read packet from storage
