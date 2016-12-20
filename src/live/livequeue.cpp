@@ -35,17 +35,43 @@ cString LiveQueue::m_timeShiftDir = "/video";
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
 LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket) {
-    cleanup();
-
     m_wrapped = false;
     m_hasWrapped = false;
     m_writerRunning = true;
     m_wrapCount = 0;
+    m_queueStartTime = roboTV::currentTimeMillis();
+    m_writeThread = nullptr;
+}
+
+LiveQueue::~LiveQueue() {
+    m_writerRunning = false;
+    close();
+
+    if(m_writeThread != nullptr) {
+        m_writeThread->join();
+    }
+
+    while(!m_writerQueue.empty()) {
+        const PacketData& p = m_writerQueue.front();
+        delete p.p;
+        m_writerQueue.pop_front();
+    }
+
+    delete m_writeThread;
+    isyslog("LiveQueue terminated");
+}
+
+void LiveQueue::start() {
+    if(m_writeThread != nullptr) {
+        return;
+    }
 
     // set queue start time
     m_queueStartTime = roboTV::currentTimeMillis();
 
     m_writeThread = new std::thread([&]() {
+        createRingBuffer();
+
         while(m_writerRunning) {
 
             while(m_writerRunning && !m_writerQueue.empty()) {
@@ -63,25 +89,10 @@ LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     });
+
 }
 
-LiveQueue::~LiveQueue() {
-    m_writerRunning = false;
-    close();
-
-    m_writeThread->join();
-
-    while(!m_writerQueue.empty()) {
-        const PacketData& p = m_writerQueue.front();
-        delete p.p;
-        m_writerQueue.pop_front();
-    }
-
-    delete m_writeThread;
-    isyslog("LiveQueue terminated");
-}
-
-void LiveQueue::cleanup() {
+void LiveQueue::createRingBuffer() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     m_pause = false;
@@ -147,14 +158,18 @@ bool LiveQueue::isPaused() {
 }
 
 void LiveQueue::queue(MsgPacket* p, StreamInfo::Content content, int64_t pts) {
-    std::lock_guard<std::mutex> lock(m_mutexQueue);
+    start();
 
-    if(m_writerQueue.size() >= 400) {
-        delete p;
-        return;
+    {
+        std::lock_guard<std::mutex> lock(m_mutexQueue);
+
+        if (m_writerQueue.size() >= 400) {
+            delete p;
+            return;
+        }
+
+        m_writerQueue.push_back({p, content, pts});
     }
-
-    m_writerQueue.push_back({p, content, pts});
 }
 
 bool LiveQueue::write(const PacketData& data) {

@@ -78,7 +78,9 @@ protected:
 
     bool write(const PacketData& data);
 
-    void cleanup();
+    void start();
+
+    void createRingBuffer();
 
     void close();
 
