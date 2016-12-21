@@ -46,12 +46,10 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
             int len = parsePayload(buffer, m_length);
 
             // send payload data
-            if(len > 0) {
-                sendPayload(buffer, len);
+            sendPayload(buffer, len);
 
-                m_curDts = DVD_NOPTS_VALUE;
-                m_curPts = DVD_NOPTS_VALUE;
-            }
+            m_curDts = DVD_NOPTS_VALUE;
+            m_curPts = DVD_NOPTS_VALUE;
         }
     }
 
