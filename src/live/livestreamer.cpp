@@ -52,8 +52,7 @@ using namespace std::chrono;
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority)
     : cReceiver(nullptr, priority)
     , m_demuxers(this)
-    , m_parent(parent)
-    , m_device(nullptr) {
+    , m_parent(parent) {
     m_uid = createChannelUid(channel);
 
     // create send queue
@@ -61,18 +60,11 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
 }
 
 LiveStreamer::~LiveStreamer() {
-    // wait for pending channelchange
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        detach();
-        m_demuxers.clear();
-        delete m_queue;
-    }
-
-    std::this_thread::yield();
+    Detach();
+    m_demuxers.clear();
+    delete m_queue;
 
     m_uid = 0;
-    m_device = nullptr;
     delete m_streamPacket;
 
     isyslog("live streamer terminated");
@@ -94,9 +86,9 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     }
 
     // get device for this channel
-    m_device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
+    cDevice* device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
 
-    if(m_device == nullptr) {
+    if(device == nullptr) {
         // return status "recording running" if there is an active timer
         time_t now = time(nullptr);
 
@@ -111,9 +103,9 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         return ROBOTV_RET_DATALOCKED;
     }
 
-    isyslog("Found available device %d", m_device->DeviceNumber() + 1);
+    isyslog("Found available device %d", device->DeviceNumber() + 1);
 
-    if(!m_device->SwitchChannel(channel, false)) {
+    if(!device->SwitchChannel(channel, false)) {
         esyslog("Can't switch to channel %i - %s", channel->Number(), channel->Name());
         return ROBOTV_RET_ERROR;
     }
@@ -154,37 +146,13 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         isyslog("Will wait for first key frame ...");
     }
 
-    if(!attach()) {
-        return ROBOTV_RET_DATALOCKED;
+    if (device->AttachReceiver(this) == false) {
+        esyslog("failed to attach receiver !");
+        return false;
     }
 
     isyslog("done switching.");
     return ROBOTV_RET_OK;
-}
-
-bool LiveStreamer::attach(void) {
-    if(m_device == nullptr) {
-        return false;
-    }
-
-    if(m_device->AttachReceiver(this)) {
-        isyslog("device attached to receiver");
-        return true;
-    }
-
-    esyslog("failed to attach receiver !");
-    return false;
-}
-
-void LiveStreamer::detach(void) {
-    if(m_device == nullptr) {
-        return;
-    }
-
-    m_device->Detach(this);
-    m_device = nullptr;
-
-    isyslog("device detached");
 }
 
 void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
@@ -266,7 +234,9 @@ void LiveStreamer::sendStatus(int status) {
 }
 
 void LiveStreamer::requestSignalInfo() {
-    if(m_device == nullptr || !IsAttached()) {
+    cDevice* device = Device();
+
+    if(device == nullptr || !IsAttached()) {
         return;
     }
 
@@ -278,18 +248,18 @@ void LiveStreamer::requestSignalInfo() {
 
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_SIGNALINFO, ROBOTV_CHANNEL_STREAM);
 
-    int DeviceNumber = m_device->DeviceNumber() + 1;
+    int DeviceNumber = device->DeviceNumber() + 1;
     int Strength = 0;
     int Quality = 0;
 
-    Strength = m_device->SignalStrength();
-    Quality = m_device->SignalQuality();
+    Strength = device->SignalStrength();
+    Quality = device->SignalQuality();
 
     resp->put_String(*cString::sprintf(
                          "%s #%d - %s",
-                         (const char*)m_device->DeviceType(),
+                         (const char*)device->DeviceType(),
                          DeviceNumber,
-                         (const char*)m_device->DeviceName()));
+                         (const char*)device->DeviceName()));
 
     // Quality:
     // 4 - NO LOCK
@@ -415,19 +385,13 @@ void LiveStreamer::Receive(const uchar* Data, int Length)
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if(!IsAttached()) {
-        return;
-    }
-
     if(createChannelUid(channel) != m_uid) {
         return;
     }
 
     isyslog("ChannelChange()");
 
-    detach();
+    Detach();
     switchChannel(channel);
 }
 

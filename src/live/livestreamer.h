@@ -47,21 +47,11 @@ class RoboTvClient;
 class LiveStreamer : public cReceiver, public TsDemuxer::Listener {
 private:
 
-    void detach(void);
-
-    bool attach(void);
-
-    TsDemuxer* findDemuxer(int Pid);
-
-    void reorderStreams(int lang, StreamInfo::Type type);
-
     void sendStreamChange();
 
     void sendStatus(int status);
 
     void sendDetach();
-
-    cDevice* m_device = NULL;              /*!> The receiving device the channel depents to */
 
     DemuxerBundle m_demuxers = NULL;
 
@@ -84,8 +74,6 @@ private:
     MsgPacket* m_streamPacket = NULL;
 
 protected:
-
-    void Action(void);
 
 #if VDRVERSNUM < 20300
     void Receive(uchar* Data, int Length);
