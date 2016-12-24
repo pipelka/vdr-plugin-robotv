@@ -182,8 +182,6 @@ bool StreamController::processSignal(MsgPacket* request, MsgPacket* response) {
 }
 
 void StreamController::processChannelChange(const cChannel* Channel) {
-    std::lock_guard<std::mutex> lock(m_lock);
-
     if(m_streamer != NULL) {
         m_streamer->processChannelChange(Channel);
     }
