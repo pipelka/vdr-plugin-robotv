@@ -146,10 +146,24 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         isyslog("Will wait for first key frame ...");
     }
 
+    // fool device to not start the decryption timer
+    int priority = Priority();
+    SetPriority(MINPRIORITY);
+
+    /// attach receiver
     if (device->AttachReceiver(this) == false) {
         esyslog("failed to attach receiver !");
         return false;
     }
+
+    // start decrypting manually
+    cCamSlot* slot = device->CamSlot();
+
+    if(slot) {
+        slot->StartDecrypting();
+    }
+
+    SetPriority(priority);
 
     isyslog("done switching.");
     return ROBOTV_RET_OK;
