@@ -149,7 +149,7 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         std::string posterUrl;
         std::string backgroundUrl;
 
-        if(m_artwork.get(eventContent, m_toUtf8.convert(eventTitle), posterUrl, backgroundUrl)) {
+        if(eventContent != 0 && m_artwork.get(eventContent, m_toUtf8.convert(eventTitle), posterUrl, backgroundUrl)) {
             response->put_String(posterUrl.c_str());
             response->put_String(backgroundUrl.c_str());
         }
