@@ -129,16 +129,13 @@ RoboTVServer::RoboTVServer(int listenPort) : cThread("roboTV VDR Server"), m_con
         return;
     }
 
-    listen(m_serverFd, 10);
-
     Start();
 
-    isyslog("roboTV Server started");
     return;
 }
 
 RoboTVServer::~RoboTVServer() {
-    Cancel(5);
+    Cancel(10);
 
     for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
         delete(*i);
@@ -226,7 +223,7 @@ void RoboTVServer::Action(void) {
     cTimeMs cleanupTimer;
 
     isyslog("removing outdated artwork");
-    artwork.triggerCleanup();
+    artwork.cleanup();
 
     // get initial state of the recordings
     int recState = -1;
@@ -236,6 +233,14 @@ void RoboTVServer::Action(void) {
     Recordings.StateChanged(recState);
 
     recStateOld = recState;
+
+    // wait for other services
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    // liasten for connections
+    listen(m_serverFd, 10);
+
+    isyslog("roboTV Server started");
 
     while(Running()) {
         FD_ZERO(&fds);
