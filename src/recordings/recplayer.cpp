@@ -201,7 +201,6 @@ int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
 
     // try to read the block
     int bytes_read = read(m_file, buffer, amount);
-    dsyslog("read %i bytes from file %i at position %llu", bytes_read, segmentNumber, filePosition);
 
     if(bytes_read <= 0) {
         return 0;

@@ -183,7 +183,6 @@ cString RecordingsCache::getPosterUrl(uint32_t uid) {
 
     if(sqlite3_step(s) == SQLITE_ROW) {
         const char* u = (const char*)sqlite3_column_text(s, 0);
-        isyslog("posterurl for %u: %s", uid, u);
 
         if(u != NULL) {
             url = u;
