@@ -81,7 +81,6 @@ OBJS = \
 	src/demuxer/demuxerbundle.o \
 	src/demuxer/streaminfo.o \
 	src/epg/epghandler.o \
-	src/live/channelcache.o \
 	src/live/livequeue.o \
 	src/live/livestreamer.o \
 	src/net/msgpacket.o \

@@ -135,7 +135,6 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 bool DemuxerBundle::isReady() const {
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->isParsed()) {
-            dsyslog("Stream with PID %i not parsed", (*i)->getPid());
             return false;
         }
     }

@@ -162,8 +162,6 @@ protected:
 
     bool m_enabled = false;
 
-    friend class ChannelCache;
-
 private:
 
     void Initialize();
