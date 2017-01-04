@@ -39,7 +39,7 @@ bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerat
 
     bs.SkipBits(1); // MPEG Version (0 = MPEG4 / 1 = MPEG2)
 
-    // layer if always 0
+    // layer is always 0
     if(bs.GetBits(2) != 0) {
         return false;
     }
@@ -71,18 +71,14 @@ bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerat
     return true;
 }
 
-bool ParserAdts::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
-    int channels, samplerate;
-    return ParseAudioHeader(buffer, channels, samplerate, framesize);
-}
-
-int ParserAdts::parsePayload(unsigned char* payload, int length) {
-    int framesize = 0;
-
-    if(!ParseAudioHeader(payload, m_channels, m_sampleRate, framesize)) {
-        return length;
+bool ParserAdts::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
+    if(!ParseAudioHeader(buffer, m_channels, m_sampleRate, framesize)) {
+        return false;
     }
 
-    m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
-    return length;
+    if(parse) {
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
+    }
+
+    return true;
 }

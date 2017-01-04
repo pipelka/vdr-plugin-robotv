@@ -45,7 +45,7 @@ protected:
 
     virtual int parsePayload(unsigned char* payload, int length);
 
-    virtual bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
+    virtual bool checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse);
 
     int findStartCode(unsigned char* buffer, int buffersize, int offset, uint32_t startcode, uint32_t mask = 0xFFFFFFFF);
 

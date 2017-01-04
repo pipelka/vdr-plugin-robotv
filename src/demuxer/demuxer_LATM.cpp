@@ -28,7 +28,7 @@
 ParserLatm::ParserLatm(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
 }
 
-bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
     cBitStream bs(buffer, 24 * 8);
 
     // read sync
@@ -38,19 +38,16 @@ bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
 
     // read frame size
     framesize = bs.GetBits(13) + 3;
-    return true;
-}
-
-int ParserLatm::parsePayload(unsigned char* data, int len) {
-    cBitStream bs(data, len * 8);
-
-    bs.SkipBits(24); // skip header
 
     if(!bs.GetBit()) {
         readStreamMuxConfig(&bs);
     }
 
-    return len;
+    if(parse) {
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
+    }
+
+    return true;
 }
 
 void ParserLatm::readStreamMuxConfig(cBitStream *bs)  {
@@ -86,6 +83,4 @@ void ParserLatm::readStreamMuxConfig(cBitStream *bs)  {
     }
 
     m_duration = 1024 * 90000 / m_sampleRate;
-
-    m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
 }

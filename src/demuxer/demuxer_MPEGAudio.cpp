@@ -107,20 +107,16 @@ bool ParserMpeg2Audio::parseAudioHeader(uint8_t* buffer, int& channels, int& sam
     return true;
 }
 
-bool ParserMpeg2Audio::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
-    int channels, samplerate, bitrate;
-    return parseAudioHeader(buffer, channels, samplerate, bitrate, framesize);
-}
-
-int ParserMpeg2Audio::parsePayload(unsigned char* payload, int length) {
-    int framesize = 0;
-
-    if(!parseAudioHeader(payload, m_channels, m_sampleRate, m_bitRate, framesize)) {
-        return length;
+bool ParserMpeg2Audio::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
+    if(!parseAudioHeader(buffer, m_channels, m_sampleRate, m_bitRate, framesize)) {
+        return false;
     }
 
     m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
 
-    m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
-    return length;
+    if(parse) {
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
+    }
+
+    return true;
 }

@@ -36,9 +36,7 @@ public:
 
 protected:
 
-    int parsePayload(unsigned char* data, int len);
-
-    bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse);
 
     void readStreamMuxConfig(cBitStream* bs);
 

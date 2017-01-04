@@ -30,7 +30,7 @@ ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {
     m_enhanced = false;
 }
 
-bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
     cBitStream bs(buffer, AC3_HEADER_SIZE * 8);
 
     if(bs.GetBits(16) != 0x0B77) {
@@ -45,47 +45,20 @@ bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
     bs.Reset(); // rewind to start
     bs.SkipBits(16); // skip syncword
 
-    if(m_enhanced) {
-        bs.SkipBits(2); // frametype
-        bs.SkipBits(3); // substream id
-        framesize = (bs.GetBits(11) + 1) << 1;
-        return true;
-    }
-
-    bs.SkipBits(16); // CRC
-    int fscod = bs.GetBits(2); // fscod
-    int frmsizcod = bs.GetBits(6); // frmsizcod
-
-    if(fscod == 3 || frmsizcod > 37) {
-        return false;
-    }
-
-
-    framesize = AC3FrameSizeTable[frmsizcod][fscod] * 2;
-    return true;
-}
-
-int ParserAc3::parsePayload(unsigned char* payload, int length) {
-    cBitStream bs(payload, AC3_HEADER_SIZE * 8);
-
-    if(bs.GetBits(16) != 0x0B77) {
-        return length;
-    }
-
     // EAC-3
     if(m_enhanced) {
         int frametype = bs.GetBits(2);
 
         if(frametype == EAC3_FRAME_TYPE_RESERVED) {
-            return length;
+            return false;
         }
 
         bs.SkipBits(3);
 
-        int framesize = (bs.GetBits(11) + 1) << 1;
+        framesize = (bs.GetBits(11) + 1) << 1;
 
         if(framesize < AC3_HEADER_SIZE) {
-            return length;
+            return false;
         }
 
         int numBlocks = 6;
@@ -95,7 +68,7 @@ int ParserAc3::parsePayload(unsigned char* payload, int length) {
             int sr_code2 = bs.GetBits(2);
 
             if(sr_code2 == 3) {
-                return length;
+                return false;
             }
 
             m_sampleRate = AC3SampleRateTable[sr_code2] / 2;
@@ -113,7 +86,7 @@ int ParserAc3::parsePayload(unsigned char* payload, int length) {
         m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
     }
 
-    // AC-3
+        // AC-3
     else {
         bs.SkipBits(16); // CRC
         int fscod = bs.GetBits(2);
@@ -124,7 +97,7 @@ int ParserAc3::parsePayload(unsigned char* payload, int length) {
         int acmod = bs.GetBits(3);
 
         if(fscod == 3 || frmsizecod > 37) {
-            return length;
+            return false;
         }
 
         if(acmod == AC3_CHMODE_STEREO) {
@@ -146,11 +119,14 @@ int ParserAc3::parsePayload(unsigned char* payload, int length) {
         m_bitRate = (AC3BitrateTable[frmsizecod >> 1] * 1000);
         m_channels = AC3ChannelsTable[acmod] + lfeon;
 
-        int framesize = AC3FrameSizeTable[frmsizecod][fscod] * 2;
+        framesize = AC3FrameSizeTable[frmsizecod][fscod] * 2;
 
         m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
     }
 
-    m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
-    return length;
+    if(parse) {
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
+    }
+
+    return true;
 }

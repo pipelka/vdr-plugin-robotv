@@ -36,9 +36,7 @@ public:
 
 protected:
 
-    int parsePayload(unsigned char* payload, int length);
-
-    bool checkAlignmentHeader(unsigned char* buffer, int& framesize);
+    bool checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse);
 
 private:
 

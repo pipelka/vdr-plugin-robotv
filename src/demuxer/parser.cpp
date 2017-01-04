@@ -109,14 +109,14 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     // do we have a sync ?
     int framesize = 0;
 
-    if(length > m_headerSize && buffer != NULL && checkAlignmentHeader(buffer, framesize)) {
+    if(length > m_headerSize && buffer != NULL && checkAlignmentHeader(buffer, framesize, true)) {
         // valid framesize ?
         if(framesize > 0 && length >= framesize + m_headerSize) {
 
             // check for the next frame (eliminate false positive header checks)
             int next_framesize = 0;
 
-            if(!checkAlignmentHeader(&buffer[framesize], next_framesize)) {
+            if(!checkAlignmentHeader(&buffer[framesize], next_framesize, false)) {
                 esyslog("next frame not found on expected position, searching ...");
             }
             else {
@@ -170,7 +170,7 @@ int Parser::findAlignmentOffset(unsigned char* buffer, int buffersize, int o, in
     framesize = 0;
 
     // seek sync
-    while(o < (buffersize - m_headerSize) && !checkAlignmentHeader(buffer + o, framesize)) {
+    while(o < (buffersize - m_headerSize) && !checkAlignmentHeader(buffer + o, framesize, false)) {
         o++;
     }
 
@@ -182,7 +182,7 @@ int Parser::findAlignmentOffset(unsigned char* buffer, int buffersize, int o, in
     return o;
 }
 
-bool Parser::checkAlignmentHeader(unsigned char* buffer, int& framesize) {
+bool Parser::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
     framesize = 0;
     return true;
 }
