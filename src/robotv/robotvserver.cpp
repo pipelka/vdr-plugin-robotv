@@ -54,12 +54,15 @@ unsigned int RoboTVServer::m_idCnt = 0;
 class cAllowedHosts : public cSVDRPhosts {
 public:
     cAllowedHosts(const cString& AllowedHostsFile) {
+        char allHosts[15];
+        strcpy(allHosts, "0.0.0.0/0");
+
         if(!Load(AllowedHostsFile, true, true)) {
             esyslog("Invalid or missing %s. Disabling access restrictions !!!.", *AllowedHostsFile);
             esyslog("Please create the file as soon as possible.");
             cSVDRPhost* localhost = new cSVDRPhost;
 
-            if(localhost->Parse("0.0.0.0:0")) {
+            if(localhost->Parse(allHosts)) {
                 Add(localhost);
             }
             else {
