@@ -49,6 +49,10 @@ PacketPlayer::~PacketPlayer() {
 }
 
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
+    if(!m_demuxers.isReady() || m_requestStreamChange) {
+        return;
+    }
+
     // check if we've got a key frame
     if(p->content == StreamInfo::scVIDEO && p->frameType == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
         isyslog("got first key frame");
