@@ -265,7 +265,6 @@ void PacketPlayer::reset() {
     m_firstKeyFrameSeen = false;
     m_patVersion = -1;
     m_pmtVersion = -1;
-    m_position = 0;
 
     // remove pending packets
     clearQueue();
@@ -304,34 +303,5 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
     // reset parser
     reset();
 
-    // first check for next video packet (PTS) after seek
-    MsgPacket* p = NULL;
-    int64_t pts = 0;
-
-    for(;;) {
-        p = getPacket();
-
-        // exit if we have no more packets
-        if(p == NULL) {
-            return -1;
-        }
-
-        // get pid / pts
-        int pid = p->get_U16();
-        pts = p->get_U64();
-
-        // delete packet
-        delete p;
-
-        // check for video pid
-        if(pid == m_parser.Vpid()) {
-            break;
-        }
-    }
-
-    // reset again
-    reset();
-    m_position = filePositionFromClock(wallclockTimeMs);
-
-    return pts;
+    return 0;
 }
