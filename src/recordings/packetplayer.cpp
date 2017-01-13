@@ -270,6 +270,10 @@ void PacketPlayer::reset() {
     m_patVersion = -1;
     m_pmtVersion = -1;
 
+    // reset current stream packet
+    delete m_streamPacket;
+    m_streamPacket = nullptr;
+
     // remove pending packets
     clearQueue();
 }
