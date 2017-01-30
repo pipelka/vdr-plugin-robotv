@@ -66,7 +66,7 @@ private:
 
     void stopStreaming();
 
-    int m_languageIndex = -1;
+    std::string m_language;
 
     StreamInfo::Type m_langStreamType;
 

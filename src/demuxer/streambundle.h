@@ -26,8 +26,6 @@
 #define ROBOTV_STREAMBUNDLE_H
 
 #include "demuxer/streaminfo.h"
-#include "vdr/channels.h"
-#include "vdr/remux.h"
 #include <map>
 
 class StreamBundle : public std::map<int, StreamInfo> {
@@ -48,10 +46,6 @@ public:
     }
 
     bool isParsed();
-
-    static StreamBundle createFromChannel(const cChannel* channel);
-
-    static StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
 
 private:
 

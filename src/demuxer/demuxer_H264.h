@@ -26,7 +26,6 @@
 #define ROBOTV_DEMUXER_H264_H
 
 #include "demuxer_PES.h"
-#include "vdr/tools.h"
 
 class ParserH264 : public ParserPes {
 public:

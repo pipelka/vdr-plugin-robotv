@@ -61,7 +61,7 @@ private:
 
     bool m_requestStreamChange = false;
 
-    int m_languageIndex = -1;
+    std::string m_language;
 
     StreamInfo::Type m_langStreamType = StreamInfo::stAC3;
 
@@ -85,6 +85,8 @@ protected:
 
 private:
 
+    StreamBundle createFromChannel(const cChannel* channel);
+
     void createDemuxers(StreamBundle* bundle);
 
 public:
@@ -97,7 +99,7 @@ public:
 
     bool isPaused();
 
-    void setLanguage(int lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
+    void setLanguage(const char* lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
 
     void setWaitForKeyFrame(bool waitForKeyFrame);
 

@@ -29,7 +29,6 @@
 #include "tools/hash.h"
 
 StreamController::StreamController(RoboTvClient* parent) :
-    m_languageIndex(-1),
     m_langStreamType(StreamInfo::stAC3),
     m_parent(parent) {
 }
@@ -82,13 +81,12 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
 
     // get preferred language
     if(!request->eop()) {
-        const char* language = request->get_String();
-        m_languageIndex = I18nLanguageIndex(language);
+        m_language = request->get_String();
         m_langStreamType = (StreamInfo::Type)request->get_U8();
     }
 
-    if(m_languageIndex != -1) {
-        isyslog("Preferred language: %s / type: %i", I18nLanguageCode(m_languageIndex), (int)m_langStreamType);
+    if(!m_language.empty()) {
+        isyslog("Preferred language: %s / type: %i", m_language.c_str(), (int)m_langStreamType);
     }
 
     stopStreaming();
@@ -192,7 +190,7 @@ int StreamController::startStreaming(int version, const cChannel* channel, int32
     const RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
     m_streamer = new LiveStreamer(m_parent, channel, priority, config.channelCache);
-    m_streamer->setLanguage(m_languageIndex, m_langStreamType);
+    m_streamer->setLanguage(m_language.c_str(), m_langStreamType);
     m_streamer->setWaitForKeyFrame(waitForKeyFrame);
 
     return m_streamer->switchChannel(channel);

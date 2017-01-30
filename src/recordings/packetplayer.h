@@ -71,6 +71,8 @@ protected:
 
 private:
 
+    StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
+
     cPatPmtParser m_parser;
 
     cIndexFile* m_index;

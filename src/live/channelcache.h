@@ -27,6 +27,7 @@
 
 #include <thread>
 #include <string>
+#include <vdr/channels.h>
 
 #include "config/config.h"
 #include "db/storage.h"
@@ -36,8 +37,6 @@ class ChannelCache : public roboTV::Storage {
 public:
 
     void add(uint32_t channeluid, const StreamBundle& channel);
-
-    StreamBundle add(const cChannel* channel);
 
     StreamBundle lookup(uint32_t channeluid);
 

@@ -23,7 +23,7 @@
  */
 
 #include "demuxer_PES.h"
-#include "vdr/remux.h"
+#include "pes.h"
 
 ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffersize, 0), m_length(0) {
     m_startup = true;

@@ -124,7 +124,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
 
             // update demuxers from new PMT
             isyslog("updating demuxers");
-            StreamBundle streamBundle = StreamBundle::createFromPatPmt(&m_parser);
+            StreamBundle streamBundle = createFromPatPmt(&m_parser);
             m_demuxers.updateFrom(&streamBundle);
 
             m_requestStreamChange = true;
@@ -154,7 +154,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
         isyslog("demuxers ready");
 
         for(auto i : m_demuxers) {
-            i->info();
+            isyslog("%s", i->info().c_str());
         }
 
         isyslog("create streamchange packet");
@@ -295,4 +295,60 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
     reset();
 
     return 0;
+}
+
+StreamBundle PacketPlayer::createFromPatPmt(const cPatPmtParser* patpmt) {
+    StreamBundle item;
+    int patVersion = 0;
+    int pmtVersion = 0;
+
+    if(!patpmt->GetVersions(patVersion, pmtVersion)) {
+        return item;
+    }
+
+    // add video stream
+    int vpid = patpmt->Vpid();
+    int vtype = patpmt->Vtype();
+
+    item.addStream(StreamInfo(vpid,
+                              vtype == 0x02 ? StreamInfo::stMPEG2VIDEO :
+                              vtype == 0x1b ? StreamInfo::stH264 :
+                              vtype == 0x24 ? StreamInfo::stH265 :
+                              StreamInfo::stNONE));
+
+    // add (E)AC3 streams
+    for(int i = 0; patpmt->Dpid(i) != 0; i++) {
+        int dtype = patpmt->Dtype(i);
+        item.addStream(StreamInfo(patpmt->Dpid(i),
+                                  dtype == 0x6A ? StreamInfo::stAC3 :
+                                  dtype == 0x7A ? StreamInfo::stEAC3 :
+                                  StreamInfo::stNONE,
+                                  patpmt->Dlang(i)));
+    }
+
+    // add audio streams
+    for(int i = 0; patpmt->Apid(i) != 0; i++) {
+        int atype = patpmt->Atype(i);
+        item.addStream(StreamInfo(patpmt->Apid(i),
+                                  atype == 0x04 ? StreamInfo::stMPEG2AUDIO :
+                                  atype == 0x03 ? StreamInfo::stMPEG2AUDIO :
+                                  atype == 0x0f ? StreamInfo::stAAC :
+                                  atype == 0x11 ? StreamInfo::stLATM :
+                                  StreamInfo::stNONE,
+                                  patpmt->Alang(i)));
+    }
+
+    // add subtitle streams
+    for(int i = 0; patpmt->Spid(i) != 0; i++) {
+        StreamInfo stream(patpmt->Spid(i), StreamInfo::stDVBSUB, patpmt->Slang(i));
+
+        stream.setSubtitlingDescriptor(
+                patpmt->SubtitlingType(i),
+                patpmt->CompositionPageId(i),
+                patpmt->AncillaryPageId(i));
+
+        item.addStream(stream);
+    }
+
+    return item;
 }

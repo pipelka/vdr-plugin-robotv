@@ -22,7 +22,6 @@
  *
  */
 
-#include "config/config.h"
 #include "demuxer_H265.h"
 
 // nal_unit_type values from H.265/HEVC (2014) Table 7-1.

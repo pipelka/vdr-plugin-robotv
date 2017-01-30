@@ -23,7 +23,6 @@
  */
 
 #include "parser.h"
-#include "config/config.h"
 #include "pes.h"
 
 Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : cRingBufferLinear(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {

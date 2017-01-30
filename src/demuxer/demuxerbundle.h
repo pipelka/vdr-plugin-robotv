@@ -43,7 +43,7 @@ public:
 
     TsDemuxer* findDemuxer(int pid) const;
 
-    void reorderStreams(int lang, StreamInfo::Type type);
+    void reorderStreams(const char* lang, StreamInfo::Type type);
 
     bool isReady() const;
 

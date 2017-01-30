@@ -35,21 +35,6 @@ ChannelCache& ChannelCache::instance() {
     return cache;
 }
 
-StreamBundle ChannelCache::add(const cChannel* channel) {
-    uint32_t uid = createChannelUid(channel);
-
-    // ignore invalid channels
-    if(uid == 0) {
-        return StreamBundle();
-    }
-
-    // create new cache item
-    StreamBundle item = StreamBundle::createFromChannel(channel);
-
-    add(uid, item);
-    return item;
-}
-
 void ChannelCache::gc() {
     // TODO - implement garbage collection
 }

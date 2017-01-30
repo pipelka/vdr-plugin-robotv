@@ -22,10 +22,6 @@
  *
  */
 
-#include <vdr/remux.h>
-
-#include "config/config.h"
-#include "live/livestreamer.h"
 #include "parser.h"
 #include "pes.h"
 #include "demuxer_LATM.h"

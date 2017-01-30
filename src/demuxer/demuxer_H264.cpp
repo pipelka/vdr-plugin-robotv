@@ -22,7 +22,6 @@
  *
  */
 
-#include "config/config.h"
 #include "demuxer_H264.h"
 
 // H264 profiles

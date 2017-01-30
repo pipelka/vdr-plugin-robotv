@@ -99,7 +99,7 @@ public:
 
     static const char* contentName(const StreamInfo::Content& content);
 
-    void info() const;
+    std::string info() const;
 
     inline bool isParsed() const {
         return m_parsed;

@@ -22,8 +22,8 @@
  *
  */
 
+#include <cstring>
 #include "streaminfo.h"
-#include "config/config.h"
 
 static const char* contentnames[] = {
     "NONE", "VIDEO", "AUDIO", "SUBTITLE", "TELETEXT"
@@ -175,9 +175,9 @@ const char* StreamInfo::contentName(const StreamInfo::Content& content) {
     return contentnames[content];
 }
 
-void StreamInfo::info() const {
-    char buffer[100];
-    buffer[0] = 0;
+std::string StreamInfo::info() const {
+    char buffer[80];
+    char result[120];
 
     int scale = m_fpsScale;
 
@@ -204,7 +204,8 @@ void StreamInfo::info() const {
         snprintf(buffer, sizeof(buffer), "Unknown");
     }
 
-    isyslog("Stream: %s PID: %i %s (parsed: %s)", typeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
+    snprintf(result, sizeof(result), "Stream: %s PID: %i %s (parsed: %s)", typeName(m_type), m_pid, buffer, (m_parsed ? "yes" : "no"));
+    return result;
 }
 
 void StreamInfo::setSubtitlingDescriptor(unsigned char SubtitlingType, uint16_t CompositionPageId, uint16_t AncillaryPageId) {

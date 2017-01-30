@@ -22,8 +22,8 @@
  *
  */
 
-#include "config/config.h"
 #include "demuxerbundle.h"
+#include "pes.h"
 
 DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
 }
@@ -36,7 +36,6 @@ DemuxerBundle::~DemuxerBundle() {
 void DemuxerBundle::clear() {
     for(auto i = begin(); i != end(); i++) {
         if((*i) != NULL) {
-            dsyslog("Deleting stream demuxer for pid=%i and type=%i", (*i)->getPid(), (*i)->getType());
             delete(*i);
         }
     }
@@ -54,7 +53,7 @@ TsDemuxer* DemuxerBundle::findDemuxer(int Pid) const {
     return NULL;
 }
 
-void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
+void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
     std::map<uint32_t, TsDemuxer*> weight;
 
     // compute weights
@@ -114,8 +113,7 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
         }
 
         // weight of language
-        int streamLangIndex = I18nLanguageIndex(stream->getLanguage());
-        w |= (streamLangIndex == lang) ? LANGUAGE_MASK : 0;
+        w |= (strcmp(stream->getLanguage(), lang) == 0) ? LANGUAGE_MASK : 0;
 
         // summed weight
         weight[w] = stream;
@@ -127,7 +125,6 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 
     for(std::map<uint32_t, TsDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
         TsDemuxer* stream = i->second;
-        dsyslog("Stream : Type %s / %s Weight: %08X", stream->typeName(), stream->getLanguage(), i->first);
         push_back(stream);
     }
 }
@@ -135,7 +132,6 @@ void DemuxerBundle::reorderStreams(int lang, StreamInfo::Type type) {
 bool DemuxerBundle::isReady() const {
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->isParsed()) {
-            dsyslog("Stream with PID %i not parsed", (*i)->getPid());
             return false;
         }
     }
@@ -166,16 +162,14 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
 
         TsDemuxer* dmx = new TsDemuxer(m_listener, infonew);
 
-        if(dmx != NULL) {
-            push_back(dmx);
-            dmx->info();
-        }
+        push_back(dmx);
+        //isyslog("%s", dmx->info().c_str());
     }
 }
 
 bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
-    unsigned int ts_pid = TsPid(packet);
-    TsDemuxer* demuxer = findDemuxer(ts_pid);
+    int pid = TsPid(packet);
+    TsDemuxer* demuxer = findDemuxer(pid);
 
     if(demuxer == NULL) {
         return false;
