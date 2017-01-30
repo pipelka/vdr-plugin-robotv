@@ -16,7 +16,7 @@ VERSION = 0.9.103
 ### The directory environment:
 
 # Use package data if installed...otherwise assume we're under the VDR source directory:
-PKGCFG = $(if $(VDRDIR),$(shell pkg-config --variable=$(1) $(VDRDIR)/vdr.pc),$(shell pkg-config --variable=$(1) vdr || pkg-config --variable=$(1) ../../../vdr.pc))
+PKGCFG = $(if $(VDRDIR),$(shell pkg-config --variable=$(1) $(VDRDIR)/vdr.pc),$(shell pkg-config --variable=$(1) vdr 2>/dev/null || pkg-config --variable=$(1) ../../../vdr.pc 2>/dev/null))
 LIBDIR = $(call PKGCFG,libdir)
 LOCDIR = $(call PKGCFG,locdir)
 PLGCFG = $(call PKGCFG,plgcfg)
