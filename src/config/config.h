@@ -67,6 +67,7 @@ public:
     std::string epgImageUrl;
     std::string seriesFolder;
     bool filterChannels = false;
+    bool channelCache = false;
 };
 
 #endif // ROBOTV_CONFIG_H

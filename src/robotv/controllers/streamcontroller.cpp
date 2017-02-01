@@ -189,8 +189,9 @@ void StreamController::processChannelChange(const cChannel* Channel) {
 
 int StreamController::startStreaming(int version, const cChannel* channel, int32_t priority, bool waitForKeyFrame) {
     std::lock_guard<std::mutex> lock(m_lock);
+    const RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-    m_streamer = new LiveStreamer(m_parent, channel, priority);
+    m_streamer = new LiveStreamer(m_parent, channel, priority, config.channelCache);
     m_streamer->setLanguage(m_languageIndex, m_langStreamType);
     m_streamer->setWaitForKeyFrame(waitForKeyFrame);
 
