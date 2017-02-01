@@ -41,6 +41,7 @@
 
 #include "livestreamer.h"
 #include "livequeue.h"
+#include "channelcache.h"
 
 #include <chrono>
 
@@ -109,17 +110,33 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         return ROBOTV_RET_ERROR;
     }
 
-    // create demuxers from channel
+    // get cached demuxer data
+    ChannelCache& cache = ChannelCache::instance();
     m_uid = createChannelUid(channel);
-    StreamBundle bundle = StreamBundle::createFromChannel(channel);
+    StreamBundle bundle = cache.lookup(m_uid);
 
-    if(bundle.size() == 0) {
-        esyslog("Found zero demuxers for channel %i - %s", channel->Number(), channel->Name());
-        return ROBOTV_RET_ERROR;
+    // channel already in cache
+    if(bundle.size() != 0) {
+        isyslog("Channel information found in cache");
+    }
+    // channel not found in cache -> add it from vdr
+    else {
+        isyslog("adding channel to cache");
+        bundle = cache.add(channel);
     }
 
-    isyslog("Creating demuxers");
-    createDemuxers(&bundle);
+    // recheck cache item
+    StreamBundle currentitem = StreamBundle::createFromChannel(channel);
+
+    if(!currentitem.isMetaOf(bundle)) {
+        isyslog("current channel differs from cache item - updating");
+        bundle = cache.add(channel);
+    }
+
+    if(bundle.size() != 0) {
+        isyslog("Creating demuxers");
+        createDemuxers(&bundle);
+    }
 
     requestStreamChange();
 
@@ -206,6 +223,14 @@ void LiveStreamer::sendDetach() {
 
 void LiveStreamer::sendStreamChange() {
     isyslog("stream change notification");
+
+    StreamBundle cache;
+
+    for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
+        cache.addStream(*(*i));
+    }
+
+    ChannelCache::instance().add(m_uid, cache);
 
     // reorder streams as preferred
     m_demuxers.reorderStreams(m_languageIndex, m_langStreamType);

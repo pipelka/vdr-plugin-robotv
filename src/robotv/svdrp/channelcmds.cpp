@@ -26,6 +26,7 @@
 #include "robotv/controllers/channelcontroller.h"
 #include "config/config.h"
 #include "tools/hash.h"
+#include "live/channelcache.h"
 
 using json = nlohmann::json;
 
@@ -49,6 +50,7 @@ cString ChannelCmds::SVDRPCommand(const char* Command, const char* Option, int& 
 
 cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode) {
     RoboTVChannels& c = RoboTVChannels::instance();
+    ChannelCache& channelCache = ChannelCache::instance();
 
     if(!c.lock(false)) {
         ReplyCode = 500;
@@ -65,7 +67,7 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
             continue;
         }
 
-        list.push_back(jsonFromChannel(channel, groupName.c_str(), true));
+        list.push_back(jsonFromChannel(channel, groupName.c_str(), channelCache.isEnabled(channel)));
     }
 
     c.Unlock();

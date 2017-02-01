@@ -22,8 +22,8 @@
  *
  */
 
+#include <live/channelcache.h>
 #include "channelcontroller.h"
-#include "config/config.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
 #include "tools/hash.h"
@@ -51,6 +51,8 @@ bool ChannelController::process(MsgPacket* request, MsgPacket* response) {
 
 bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* response) {
     RoboTVChannels& c = RoboTVChannels::instance();
+    ChannelCache& channelCache = ChannelCache::instance();
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
     isyslog("Fetching channels ...");
 
@@ -109,10 +111,9 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
         }
 
         // skip disabled channels if filtering is enabled
-        // TODO - need new table managing enabled / disabled channels
-        /*if(config.filterChannels && !channelCache.isEnabled(channel)) {
+        if(config.filterChannels && !channelCache.isEnabled(channel)) {
             continue;
-        }*/
+        }
 
         if(!isChannelWanted(channel, type)) {
             continue;
