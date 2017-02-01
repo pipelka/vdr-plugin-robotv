@@ -25,10 +25,10 @@
 #ifndef ROBOTV_DEMUXER_BASE_H
 #define ROBOTV_DEMUXER_BASE_H
 
-#include "demuxer.h"
-#include "vdr/ringbuffer.h"
+#include "robotvdmx/demuxer.h"
+#include "upstream/ringbuffer.h"
 
-class Parser : public cRingBufferLinear {
+class Parser : public RingBuffer {
 public:
 
     Parser(TsDemuxer* demuxer, int buffersize = 64 * 1024, int packetsize = 4096);
@@ -39,7 +39,7 @@ public:
 
 protected:
 
-    int parsePesHeader(uint8_t* buf, size_t len);
+    int parsePesHeader(uint8_t* buf, int len);
 
     virtual void sendPayload(unsigned char* payload, int length);
 

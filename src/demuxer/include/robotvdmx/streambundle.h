@@ -25,7 +25,7 @@
 #ifndef ROBOTV_STREAMBUNDLE_H
 #define ROBOTV_STREAMBUNDLE_H
 
-#include "demuxer/streaminfo.h"
+#include "streaminfo.h"
 #include <map>
 
 class StreamBundle : public std::map<int, StreamInfo> {

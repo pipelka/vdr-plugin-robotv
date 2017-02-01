@@ -22,7 +22,7 @@
  *
  */
 
-#include "demuxer_H264.h"
+#include "parser_h264.h"
 
 // H264 profiles
 #define PROFILE_BASELINE  66
@@ -47,17 +47,17 @@ const ParserH264::pixel_aspect_t ParserH264::m_aspect_ratios[17] = {
 };
 
 // golomb decoding
-uint32_t ParserH264::readGolombUe(cBitStream* bs) {
+uint32_t ParserH264::readGolombUe(BitStream* bs) {
     int leadingZeroBits = -1;
 
     for(uint32_t b = 0; !b; ++leadingZeroBits) {
-        b = bs->GetBits(1);
+        b = bs->getBits(1);
     }
 
-    return ((1 << leadingZeroBits) - 1) + bs->GetBits(leadingZeroBits);
+    return ((1 << leadingZeroBits) - 1) + bs->getBits(leadingZeroBits);
 }
 
-int32_t ParserH264::readGolombSe(cBitStream* bs) {
+int32_t ParserH264::readGolombSe(BitStream* bs) {
     int32_t v = readGolombUe(bs);
 
     if(v == 0) {
@@ -91,10 +91,6 @@ uint8_t* ParserH264::extractNal(uint8_t* packet, int length, int nal_offset, int
 
     uint8_t* nal_data = new uint8_t[l];
     nal_len = nalUnescape(nal_data, packet + nal_offset, l);
-
-    if(nal_len + nal_offset > length) {
-        esyslog("nal overrun: nal len: %i, offset: %i, packet length: %i", nal_len, nal_offset, length);
-    }
 
     return nal_data;
 }
@@ -180,8 +176,8 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
     pixel_aspect_t pixelaspect = { 1, 1 };
 
     // IDR frame ?
-    if(m_frameType != StreamInfo::ftIFRAME && idr_frame) {
-        m_frameType = StreamInfo::ftIFRAME;
+    if(m_frameType != StreamInfo::FrameType::IFRAME && idr_frame) {
+        m_frameType = StreamInfo::FrameType::IFRAME;
     }
 
     bool rc = parseSps(nal_data, nal_len, pixelaspect, width, height);
@@ -194,7 +190,7 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
     double PAR = (double)pixelaspect.num / (double)pixelaspect.den;
     double DAR = (PAR * width) / height;
 
-    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
+    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000));
     return length;
 }
 
@@ -216,7 +212,7 @@ int ParserH264::nalUnescape(uint8_t* dst, const uint8_t* src, int len) {
 }
 
 void ParserH264::parseSlh(uint8_t* buf, int len) {
-    cBitStream bs(buf, len * 8);
+    BitStream bs(buf, len * 8);
 
     readGolombUe(&bs); // first_mb_in_slice
     int type = readGolombUe(&bs);;
@@ -227,19 +223,19 @@ void ParserH264::parseSlh(uint8_t* buf, int len) {
 
     switch(type) {
         case 0:
-            m_frameType = StreamInfo::ftPFRAME;
+            m_frameType = StreamInfo::FrameType::PFRAME;
             break;
 
         case 1:
-            m_frameType = StreamInfo::ftBFRAME;
+            m_frameType = StreamInfo::FrameType::BFRAME;
             break;
 
         case 2:
-            m_frameType = StreamInfo::ftIFRAME;
+            m_frameType = StreamInfo::FrameType::IFRAME;
             break;
 
         default:
-            m_frameType = StreamInfo::ftUNKNOWN;
+            m_frameType = StreamInfo::FrameType::UNKNOWN;
             break;
     }
 
@@ -248,9 +244,9 @@ void ParserH264::parseSlh(uint8_t* buf, int len) {
 
 bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
     bool seq_scaling_matrix_present = false;
-    cBitStream bs(buf, len * 8);
+    BitStream bs(buf, len * 8);
 
-    int profile_idc = bs.GetBits(8); // profile idc
+    int profile_idc = bs.getBits(8); // profile idc
 
     // check for valid profile
     if(profile_idc != PROFILE_BASELINE &&
@@ -261,13 +257,12 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
             profile_idc != PROFILE_HI422 &&
             profile_idc != PROFILE_HI444 &&
             profile_idc != PROFILE_CAVLC444) {
-        esyslog("H264: invalid profile idc: %i", profile_idc);
         return false;
     }
 
-    bs.SkipBits(8); // constraint set flag 0-4, 4 bits reserved
+    bs.skipBits(8); // constraint set flag 0-4, 4 bits reserved
 
-    bs.SkipBits(8); // level idc
+    bs.skipBits(8); // level idc
     readGolombUe(&bs); // sequence parameter set id
 
     // high profile ?
@@ -279,18 +274,18 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         int chroma_format_idc = readGolombUe(&bs);
 
         if(chroma_format_idc == 3) { // chroma_format_idc
-            bs.SkipBits(1);    // residual_colour_transform_flag
+            bs.skipBits(1);    // residual_colour_transform_flag
         }
 
         readGolombUe(&bs); // bit_depth_luma - 8
         readGolombUe(&bs); // bit_depth_chroma - 8
-        bs.SkipBits(1); // transform_bypass
+        bs.skipBits(1); // transform_bypass
 
-        seq_scaling_matrix_present = bs.GetBit();
+        seq_scaling_matrix_present = bs.getBit();
 
         if(seq_scaling_matrix_present) { // seq_scaling_matrix_present
             for(int i = 0; i < 8; i++) {
-                if(bs.GetBit()) { // seq_scaling_list_present
+                if(bs.getBit()) { // seq_scaling_list_present
                     int last = 8, next = 8, size = (i < 6) ? 16 : 64;
 
                     for(int j = 0; j < size; j++) {
@@ -312,7 +307,7 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         readGolombUe(&bs);    // log2_max_poc_lsb - 4
     }
     else if(pic_order_cnt_type == 1) {
-        bs.SkipBits(1); // delta_pic_order_always_zero
+        bs.skipBits(1); // delta_pic_order_always_zero
         readGolombSe(&bs); // offset_for_non_ref_pic
         readGolombSe(&bs); // offset_for_top_to_bottom_field
 
@@ -323,28 +318,27 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         }
     }
     else if(pic_order_cnt_type != 2) {
-        esyslog("pic_order_cnt_type = %i", pic_order_cnt_type);
         return false;
     }
 
     readGolombUe(&bs); // ref_frames
-    bs.SkipBits(1); // gaps_in_frame_num_allowed
+    bs.skipBits(1); // gaps_in_frame_num_allowed
 
     width = readGolombUe(&bs) + 1;
     height = readGolombUe(&bs) + 1;
-    unsigned int frame_mbs_only = bs.GetBit();
+    unsigned int frame_mbs_only = bs.getBit();
 
     width  *= 16;
     height *= 16 * (2 - frame_mbs_only);
 
     if(!frame_mbs_only) {
-        bs.SkipBits(1);    // mb_adaptive_frame_field_flag
+        bs.skipBits(1);    // mb_adaptive_frame_field_flag
     }
 
-    bs.SkipBits(1); // direct_8x8_inference_flag
+    bs.skipBits(1); // direct_8x8_inference_flag
 
     // frame_cropping_flag
-    if(bs.GetBit()) {
+    if(bs.getBit()) {
         uint32_t crop_left = readGolombUe(&bs);
         uint32_t crop_right = readGolombUe(&bs);
         uint32_t crop_top = readGolombUe(&bs);
@@ -363,14 +357,14 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
     // VUI parameters
     pixelaspect.num = 0;
 
-    if(bs.GetBit()) { // vui_parameters_present flag
-        if(bs.GetBit()) { // aspect_ratio_info_present
-            uint32_t aspect_ratio_idc = bs.GetBits(8);
+    if(bs.getBit()) { // vui_parameters_present flag
+        if(bs.getBit()) { // aspect_ratio_info_present
+            uint32_t aspect_ratio_idc = bs.getBits(8);
 
             // Extended_SAR
             if(aspect_ratio_idc == 255) {
-                pixelaspect.num = bs.GetBits(16); // sar width
-                pixelaspect.den = bs.GetBits(16); // sar height
+                pixelaspect.num = bs.getBits(16); // sar width
+                pixelaspect.den = bs.getBits(16); // sar height
             }
             else if(aspect_ratio_idc < sizeof(m_aspect_ratios) / sizeof(pixel_aspect_t)) {
                 pixelaspect = m_aspect_ratios[aspect_ratio_idc];
@@ -378,38 +372,38 @@ bool ParserH264::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
         }
 
         // overscan info
-        if(bs.GetBit()) {
-            bs.SkipBits(1); // overscan appropriate flag
+        if(bs.getBit()) {
+            bs.skipBits(1); // overscan appropriate flag
         }
 
         // video signal type present
-        if(bs.GetBit()) {
-            bs.SkipBits(3); // video format
-            bs.SkipBits(1); // video full range flag
+        if(bs.getBit()) {
+            bs.skipBits(3); // video format
+            bs.skipBits(1); // video full range flag
 
             // color description present
-            if(bs.GetBit()) {
-                bs.SkipBits(8); // color primaries
-                bs.SkipBits(8); // transfer characteristics
-                bs.SkipBits(8); // matrix coefficients
+            if(bs.getBit()) {
+                bs.skipBits(8); // color primaries
+                bs.skipBits(8); // transfer characteristics
+                bs.skipBits(8); // matrix coefficients
             }
         }
 
         // chroma loc info present
-        if(bs.GetBit()) {
+        if(bs.getBit()) {
             readGolombUe(&bs); // type top field
             readGolombUe(&bs); // type bottom field
         }
 
         // timing info present
-        if(bs.GetBit()) {
+        if(bs.getBit()) {
             // get timing
 
-            uint32_t num_units_in_tick = bs.GetBits(32);
-            uint32_t time_scale = bs.GetBits(32);
+            uint32_t num_units_in_tick = bs.getBits(32);
+            uint32_t time_scale = bs.getBits(32);
 
             // fixed frame rate flag
-            if(bs.GetBit()) {
+            if(bs.getBit()) {
                 num_units_in_tick *= 2;
                 m_duration = (90000 * num_units_in_tick) / time_scale;
                 m_rate = time_scale;

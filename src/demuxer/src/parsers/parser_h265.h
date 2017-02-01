@@ -22,47 +22,27 @@
  *
  */
 
-#ifndef ROBOTV_DEMUXER_H264_H
-#define ROBOTV_DEMUXER_H264_H
+#ifndef ROBOTV_DEMUXER_H265_H
+#define ROBOTV_DEMUXER_H265_H
 
-#include "demuxer_PES.h"
+#include "parser_h264.h"
 
-class ParserH264 : public ParserPes {
+class ParserH265 : public ParserH264 {
 public:
 
-    ParserH264(TsDemuxer* demuxer);
+    ParserH265(TsDemuxer* demuxer);
 
     int parsePayload(unsigned char* data, int length);
 
-protected:
-
-    typedef struct {
-        int num;
-        int den;
-    } pixel_aspect_t;
-
-    // pixel aspect ratios
-    static const pixel_aspect_t m_aspect_ratios[17];
-
-    uint8_t* extractNal(uint8_t* packet, int length, int nal_offset, int& nal_len);
-
-    int nalUnescape(uint8_t* dst, const uint8_t* src, int len);
-
-    uint32_t readGolombUe(cBitStream* bs);
-
-    int32_t readGolombSe(cBitStream* bs);
-
-    int m_scale;
-
-    int m_rate;
-
 private:
 
-    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    void skipScalingList(BitStream& bs);
 
-    void parseSlh(uint8_t* buf, int len);
+    void skipShortTermRefPicSets(BitStream& bs);
+
+    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
 
 };
 
 
-#endif // ROBOTV_DEMUXER_H264_H
+#endif // ROBOTV_DEMUXER_H265_H

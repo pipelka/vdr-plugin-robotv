@@ -29,7 +29,7 @@
 #include "tools/hash.h"
 
 StreamController::StreamController(RoboTvClient* parent) :
-    m_langStreamType(StreamInfo::stAC3),
+    m_langStreamType(StreamInfo::Type::AC3),
     m_parent(parent) {
 }
 

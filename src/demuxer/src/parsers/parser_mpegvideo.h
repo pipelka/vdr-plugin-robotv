@@ -22,27 +22,34 @@
  *
  */
 
-#ifndef ROBOTV_DEMUXER_H265_H
-#define ROBOTV_DEMUXER_H265_H
+#ifndef ROBOTV_DEMUXER_MPEGVIDEO_H
+#define ROBOTV_DEMUXER_MPEGVIDEO_H
 
-#include "demuxer_H264.h"
+#include "robotvdmx/streaminfo.h"
 
-class ParserH265 : public ParserH264 {
+#include "parser_pes.h"
+#include <map>
+
+class ParserMpeg2Video : public ParserPes {
 public:
 
-    ParserH265(TsDemuxer* demuxer);
+    ParserMpeg2Video(TsDemuxer* demuxer);
+
+protected:
 
     int parsePayload(unsigned char* data, int length);
 
+    void sendPayload(unsigned char* payload, int length);
+
 private:
 
-    void skipScalingList(cBitStream& bs);
+    void parseSequenceStart(unsigned char* data, int length);
 
-    void skipShortTermRefPicSets(cBitStream& bs);
+    StreamInfo::FrameType parsePicture(unsigned char* data, int length);
 
-    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+    int64_t m_frameDifference;
 
+    int64_t m_lastDts;
 };
 
-
-#endif // ROBOTV_DEMUXER_H265_H
+#endif // ROBOTV_DEMUXER_MPEGVIDEO_H

@@ -1,7 +1,7 @@
 /*
  *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
- *      Copyright (C) 2016 Alexander Pipelka
+ *      Copyright (C) 2016 Aleaxander Pipelka
  *
  *      https://github.com/pipelka/vdr-plugin-robotv
  *
@@ -22,33 +22,24 @@
  *
  */
 
-#ifndef ROBOTV_DEMUXER_MPEGVIDEO_H
-#define ROBOTV_DEMUXER_MPEGVIDEO_H
+#ifndef ROBOTV_DEMUXER_LATM_H
+#define ROBOTV_DEMUXER_LATM_H
 
-#include "demuxer_PES.h"
-#include "streaminfo.h"
-#include <map>
+#include "parser.h"
 
-class ParserMpeg2Video : public ParserPes {
+class BitStream;
+
+class ParserLatm : public Parser {
 public:
 
-    ParserMpeg2Video(TsDemuxer* demuxer);
+    ParserLatm(TsDemuxer* demuxer);
 
 protected:
 
-    int parsePayload(unsigned char* data, int length);
+    bool checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse);
 
-    void sendPayload(unsigned char* payload, int length);
+    void readStreamMuxConfig(BitStream* bs);
 
-private:
-
-    void parseSequenceStart(unsigned char* data, int length);
-
-    StreamInfo::FrameType parsePicture(unsigned char* data, int length);
-
-    int64_t m_frameDifference;
-
-    int64_t m_lastDts;
 };
 
-#endif // ROBOTV_DEMUXER_MPEGVIDEO_H
+#endif // ROBOTV_DEMUXER_LATM_H

@@ -22,7 +22,7 @@
  *
  */
 
-#include "demuxer_MPEGAudio.h"
+#include "parser_mpegaudio.h"
 
 #define MPA_MONO 3
 
@@ -115,7 +115,7 @@ bool ParserMpeg2Audio::checkAlignmentHeader(unsigned char* buffer, int& framesiz
     m_duration = (framesize * 8 * 1000 * 90) / m_bitRate;
 
     if(parse) {
-        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate);
     }
 
     return true;

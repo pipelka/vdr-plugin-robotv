@@ -22,47 +22,49 @@
  *
  */
 
-#include "demuxer_ADTS.h"
-#include "aaccommon.h"
+#include <upstream/bitstream.h>
+#include "robotvdmx/aaccommon.h"
+
+#include "parser_adts.h"
 
 ParserAdts::ParserAdts(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) {
     m_headerSize = 9; // header is 9 bytes long (with CRC)
 }
 
 bool ParserAdts::ParseAudioHeader(uint8_t* buffer, int& channels, int& samplerate, int& framesize) {
-    cBitStream bs(buffer, m_headerSize * 8);
+    BitStream bs(buffer, m_headerSize * 8);
 
     // sync
-    if(bs.GetBits(12) != 0xFFF) {
+    if(bs.getBits(12) != 0xFFF) {
         return false;
     }
 
-    bs.SkipBits(1); // MPEG Version (0 = MPEG4 / 1 = MPEG2)
+    bs.skipBits(1); // MPEG Version (0 = MPEG4 / 1 = MPEG2)
 
     // layer is always 0
-    if(bs.GetBits(2) != 0) {
+    if(bs.getBits(2) != 0) {
         return false;
     }
 
-    bs.SkipBits(1); // Protection absent
-    bs.SkipBits(2); // AOT
-    int samplerateindex = bs.GetBits(4); // sample rate index
+    bs.skipBits(1); // Protection absent
+    bs.skipBits(2); // AOT
+    int samplerateindex = bs.getBits(4); // sample rate index
 
     if(samplerateindex == 15) {
         return false;
     }
 
-    bs.SkipBits(1);      // Private bit
+    bs.skipBits(1);      // Private bit
 
-    int channelindex = bs.GetBits(3); // channel index
+    int channelindex = bs.getBits(3); // channel index
 
     if(channelindex > 7) {
         return false;
     }
 
-    bs.SkipBits(4); // original, copy, copyright, ...
+    bs.skipBits(4); // original, copy, copyright, ...
 
-    framesize = bs.GetBits(13);
+    framesize = bs.getBits(13);
 
     m_sampleRate = aac_samplerates[samplerateindex];
     m_channels = aac_channels[channelindex];
@@ -77,7 +79,7 @@ bool ParserAdts::checkAlignmentHeader(unsigned char* buffer, int& framesize, boo
     }
 
     if(parse) {
-        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0);
     }
 
     return true;

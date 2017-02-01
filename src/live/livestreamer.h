@@ -63,7 +63,7 @@ private:
 
     std::string m_language;
 
-    StreamInfo::Type m_langStreamType = StreamInfo::stAC3;
+    StreamInfo::Type m_langStreamType = StreamInfo::Type::AC3;
 
     uint32_t m_uid;
 
@@ -99,7 +99,7 @@ public:
 
     bool isPaused();
 
-    void setLanguage(const char* lang, StreamInfo::Type streamtype = StreamInfo::stAC3);
+    void setLanguage(const char* lang, StreamInfo::Type streamtype = StreamInfo::Type::AC3);
 
     void setWaitForKeyFrame(bool waitForKeyFrame);
 

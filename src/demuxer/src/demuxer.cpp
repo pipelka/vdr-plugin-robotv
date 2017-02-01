@@ -22,16 +22,20 @@
  *
  */
 
-#include "parser.h"
-#include "pes.h"
-#include "demuxer_LATM.h"
-#include "demuxer_ADTS.h"
-#include "demuxer_AC3.h"
-#include "demuxer_H264.h"
-#include "demuxer_H265.h"
-#include "demuxer_MPEGAudio.h"
-#include "demuxer_MPEGVideo.h"
-#include "demuxer_Subtitle.h"
+#include <stdint.h>
+#include <cstring>
+
+#include "robotvdmx/pes.h"
+
+#include "parsers/parser.h"
+#include "parsers/parser_latm.h"
+#include "parsers/parser_adts.h"
+#include "parsers/parser_ac3.h"
+#include "parsers/parser_h264.h"
+#include "parsers/parser_h265.h"
+#include "parsers/parser_mpegaudio.h"
+#include "parsers/parser_mpegvideo.h"
+#include "parsers/parser_subtitle.h"
 
 #define DVD_TIME_BASE 1000000
 
@@ -46,39 +50,38 @@ TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, StreamInfo::Type type, int p
 
 Parser* TsDemuxer::createParser(StreamInfo::Type type) {
     switch(type) {
-        case stMPEG2VIDEO:
+        case Type::MPEG2VIDEO:
             return new ParserMpeg2Video(this);
 
-        case stH264:
+        case Type::H264:
             return new ParserH264(this);
 
-        case stH265:
+        case Type::H265:
             return new ParserH265(this);
 
-        case stMPEG2AUDIO:
+        case Type::MPEG2AUDIO:
             return new ParserMpeg2Audio(this);
 
-        case stAAC:
+        case Type::AAC:
             return new ParserAdts(this);
 
-        case stLATM:
+        case Type::LATM:
             return new ParserLatm(this);
 
-        case stAC3:
-        case stEAC3:
+        case Type::AC3:
+        case Type::EAC3:
             return new ParserAc3(this);
 
-        case stTELETEXT:
+        case Type::TELETEXT:
             m_parsed = true;
             return new ParserPes(this);
 
-        case stDVBSUB:
+        case Type::DVBSUB:
             return new ParserSubtitle(this);
 
         default:
-            esyslog("Unrecognized type %i", m_type);
-            m_content = scNONE;
-            m_type = stNONE;
+            m_content = Content::NONE;
+            m_type = Type::NONE;
             break;
     }
 
@@ -97,22 +100,12 @@ int64_t TsDemuxer::rescale(int64_t a) {
 }
 
 void TsDemuxer::sendPacket(StreamPacket* pkt) {
-    // raw pts/dts
-    pkt->rawDts = pkt->dts;
-    pkt->rawPts = pkt->pts;
-
-    int64_t dts = (pkt->dts == DVD_NOPTS_VALUE) ? pkt->dts : rescale(pkt->dts);
-    int64_t pts = (pkt->pts == DVD_NOPTS_VALUE) ? pkt->pts : rescale(pkt->pts);
-
-    // Rescale
     pkt->type     = m_type;
     pkt->content  = m_content;
     pkt->pid      = getPid();
-    pkt->dts      = dts;
-    pkt->pts      = pts;
-    pkt->duration = rescale(pkt->duration);
+    pkt->duration = (int)rescale(pkt->duration);
 
-    m_streamer->sendStreamPacket(pkt);
+    m_streamer->onStreamPacket(pkt);
 }
 
 bool TsDemuxer::processTsPacket(unsigned char* data) const {
@@ -133,7 +126,6 @@ bool TsDemuxer::processTsPacket(unsigned char* data) const {
     }
 
     if(TsError(data)) {
-        esyslog("transport error");
         return false;
     }
 
@@ -157,77 +149,42 @@ bool TsDemuxer::processTsPacket(unsigned char* data) const {
     return true;
 }
 
-void TsDemuxer::setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, int Aspect, int num, int den) {
+void TsDemuxer::setVideoInformation(int fpsScale, int fpsRate, uint16_t height, uint16_t width, int aspect) {
     // check for sane picture information
-    if(Width < 320 || Height < 240 || num <= 0 || den <= 0 || Aspect < 0) {
+    if(width < 320 || height < 240 || aspect < 0) {
         return;
     }
 
     // only register changed video information
-    if(Width == m_width && Height == m_height && Aspect == m_aspect && FpsScale == m_fpsScale && FpsRate == m_fpsRate) {
+    if(width == m_width && height == m_height && aspect == m_aspect && fpsScale == m_fpsScale && fpsRate == m_fpsRate) {
         return;
     }
 
-    isyslog("--------------------------------------");
-    isyslog("NEW PICTURE INFORMATION:");
-    isyslog("Picture Width: %i", Width);
-    isyslog("Picture Height: %i", Height);
-
-    if(num != 1 || den != 1) {
-        isyslog("Pixel Aspect: %i:%i", num, den);
-    }
-
-    if(Aspect == 0) {
-        isyslog("Unknown Display Aspect Ratio");
-    }
-    else {
-        isyslog("Display Aspect Ratio: %.2f", (double)Aspect / 10000);
-    }
-
-    if(FpsScale != 0 && FpsRate != 0) {
-        isyslog("Frames per second: %.2lf", (double)FpsRate / (double)FpsScale);
-    }
-
-    isyslog("--------------------------------------");
-
-    m_fpsScale = FpsScale;
-    m_fpsRate  = FpsRate;
-    m_height   = Height;
-    m_width    = Width;
-    m_aspect   = Aspect;
+    m_fpsScale = fpsScale;
+    m_fpsRate  = fpsRate;
+    m_height   = height;
+    m_width    = width;
+    m_aspect   = aspect;
     m_parsed   = true;
 
-    m_streamer->requestStreamChange();
+    m_streamer->onStreamChange();
 }
 
-void TsDemuxer::setAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign) {
+void TsDemuxer::setAudioInformation(uint8_t channels, uint32_t sampleRate, uint32_t bitRate) {
     // only register changed audio information
-    if(Channels == m_channels && SampleRate == m_sampleRate && BitRate == m_bitRate) {
+    if(channels == m_channels && sampleRate == m_sampleRate && bitRate == m_bitRate) {
         return;
     }
 
-    isyslog("--------------------------------------");
-    isyslog("NEW AUDIO INFORMATION:");
-    isyslog("Channels: %i", Channels);
-    isyslog("Samplerate: %i Hz", SampleRate);
-
-    if(BitRate > 0) {
-        isyslog("Bitrate: %i bps", BitRate);
-    }
-
-    isyslog("--------------------------------------");
-
-    m_channels      = Channels;
-    m_sampleRate    = SampleRate;
-    m_blockAlign    = BlockAlign;
-    m_bitRate       = BitRate;
-    m_bitsPerSample = BitsPerSample;
+    m_channels      = channels;
+    m_sampleRate    = sampleRate;
+    m_bitRate       = bitRate;
     m_parsed        = true;
 
-    m_streamer->requestStreamChange();
+    m_streamer->onStreamChange();
 }
 
-void TsDemuxer::setVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps, int vpsLength) {
+void TsDemuxer::setVideoDecoderData(uint8_t* sps, size_t spsLength, uint8_t* pps, size_t ppsLength, uint8_t* vps, size_t vpsLength) {
     if(sps != NULL && spsLength <= sizeof(m_sps)) {
         m_spsLength = spsLength;
         memcpy(m_sps, sps, spsLength);

@@ -22,61 +22,63 @@
  *
  */
 
-#include "demuxer_LATM.h"
-#include "aaccommon.h"
+#include "robotvdmx/aaccommon.h"
+#include "upstream/bitstream.h"
+
+#include "parser_latm.h"
 
 ParserLatm::ParserLatm(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 8192) { //, m_framelength(0)
 }
 
 bool ParserLatm::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
-    cBitStream bs(buffer, 24 * 8);
+    BitStream bs(buffer, 24 * 8);
 
     // read sync
-    if(bs.GetBits(11) != 0x2B7) {
+    if(bs.getBits(11) != 0x2B7) {
         return false;
     }
 
     // read frame size
-    framesize = bs.GetBits(13) + 3;
+    framesize = bs.getBits(13) + 3;
 
-    if(!bs.GetBit()) {
+    if(!bs.getBit()) {
         readStreamMuxConfig(&bs);
     }
 
     if(parse) {
-        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0, 0, 0);
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, 0);
     }
 
     return true;
 }
 
-void ParserLatm::readStreamMuxConfig(cBitStream *bs)  {
-    int audioMuxVersion = bs->GetBit();
+void ParserLatm::readStreamMuxConfig(BitStream *bs)  {
+    int audioMuxVersion = bs->getBit();
 
     if(audioMuxVersion != 0) {
         return;
     }
 
-    bs->SkipBits(1);    // allStreamSameTimeFraming = 1
-    bs->SkipBits(6);    // numSubFrames = 0
-    bs->SkipBits(4);    // numPrograms = 0
-    bs->SkipBits(3);    // numLayer = 0
+    bs->skipBits(1);    // allStreamSameTimeFraming = 1
+    bs->skipBits(6);    // numSubFrames = 0
+    bs->skipBits(4);    // numPrograms = 0
+    bs->skipBits(3);    // numLayer = 0
 
-    auto aot = bs->GetBits(5);
+    auto aot = bs->getBits(5);
     if(aot == 31) {
-        bs->SkipBits(6);
+        bs->skipBits(6);
     }
 
-    auto sampleRateIndex = bs->GetBits(4);
+    auto sampleRateIndex = bs->getBits(4);
 
     if(sampleRateIndex == 0xf) {
-        m_sampleRate = bs->GetBits(24);
+        m_sampleRate = bs->getBits(24);
     }
     else {
         m_sampleRate = aac_samplerates[sampleRateIndex];
     }
 
-    auto channelIndex = bs->GetBits(4);
+    auto channelIndex = bs->getBits(4);
 
     if(channelIndex < 8) {
         m_channels = aac_channels[channelIndex];

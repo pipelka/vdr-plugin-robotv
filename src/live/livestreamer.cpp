@@ -208,7 +208,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     }
 
     // skip non audio / video packets
-    if(!(pkt->content == StreamInfo::scAUDIO || pkt->content == StreamInfo::scVIDEO)) {
+    if(!(pkt->content == StreamInfo::Content::AUDIO || pkt->content == StreamInfo::Content::VIDEO)) {
         return;
     }
 
@@ -218,7 +218,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     }
 
     // wait for first I-Frame (if enabled)
-    if(m_waitForKeyFrame && pkt->frameType != StreamInfo::ftIFRAME) {
+    if(m_waitForKeyFrame && pkt->frameType != StreamInfo::FrameType::IFRAME) {
         return;
     }
 
@@ -230,8 +230,8 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
 
     // write stream data
     packet->put_U16(pkt->pid);
-    packet->put_S64(pkt->rawPts);
-    packet->put_S64(pkt->rawDts);
+    packet->put_S64(pkt->pts);
+    packet->put_S64(pkt->dts);
     packet->put_U32(pkt->duration);
 
     // write frame type into unused header field clientid
@@ -244,7 +244,7 @@ void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
     // add timestamp (wallclock time in ms)
     packet->put_S64(roboTV::currentTimeMillis().count());
 
-    m_queue->queue(packet, pkt->content, pkt->rawPts);
+    m_queue->queue(packet, pkt->content, pkt->pts);
 }
 
 void LiveStreamer::sendDetach() {
@@ -268,7 +268,7 @@ void LiveStreamer::sendStreamChange() {
     m_demuxers.reorderStreams(m_language.c_str(), m_langStreamType);
 
     MsgPacket* resp = m_demuxers.createStreamChangePacket();
-    m_queue->queue(resp, StreamInfo::scSTREAMINFO);
+    m_queue->queue(resp, StreamInfo::Content::STREAMINFO);
 
     m_requestStreamChange = false;
 }
@@ -349,7 +349,7 @@ void LiveStreamer::requestSignalInfo() {
     }
 
     dsyslog("RequestSignalInfo");
-    m_queue->queue(resp, StreamInfo::scNONE);
+    m_queue->queue(resp, StreamInfo::Content::NONE);
 }
 
 void LiveStreamer::setLanguage(const char* lang, StreamInfo::Type streamtype) {
@@ -473,18 +473,18 @@ StreamBundle LiveStreamer::createFromChannel(const cChannel* channel) {
     int vtype = channel->Vtype();
 
     item.addStream(StreamInfo(vpid,
-                              vtype == 0x02 ? StreamInfo::stMPEG2VIDEO :
-                              vtype == 0x1b ? StreamInfo::stH264 :
-                              vtype == 0x24 ? StreamInfo::stH265 :
-                              StreamInfo::stNONE));
+                              vtype == 0x02 ? StreamInfo::Type::MPEG2VIDEO :
+                              vtype == 0x1b ? StreamInfo::Type::H264 :
+                              vtype == 0x24 ? StreamInfo::Type::H265 :
+                              StreamInfo::Type::NONE));
 
     // add (E)AC3 streams
     for(int i = 0; channel->Dpid(i) != 0; i++) {
         int dtype = channel->Dtype(i);
         item.addStream(StreamInfo(channel->Dpid(i),
-                                  dtype == 0x6A ? StreamInfo::stAC3 :
-                                  dtype == 0x7A ? StreamInfo::stEAC3 :
-                                  StreamInfo::stNONE,
+                                  dtype == 0x6A ? StreamInfo::Type::AC3 :
+                                  dtype == 0x7A ? StreamInfo::Type::EAC3 :
+                                  StreamInfo::Type::NONE,
                                   channel->Dlang(i)));
     }
 
@@ -492,17 +492,17 @@ StreamBundle LiveStreamer::createFromChannel(const cChannel* channel) {
     for(int i = 0; channel->Apid(i) != 0; i++) {
         int atype = channel->Atype(i);
         item.addStream(StreamInfo(channel->Apid(i),
-                                  atype == 0x04 ? StreamInfo::stMPEG2AUDIO :
-                                  atype == 0x03 ? StreamInfo::stMPEG2AUDIO :
-                                  atype == 0x0f ? StreamInfo::stAAC :
-                                  atype == 0x11 ? StreamInfo::stLATM :
-                                  StreamInfo::stNONE,
+                                  atype == 0x04 ? StreamInfo::Type::MPEG2AUDIO :
+                                  atype == 0x03 ? StreamInfo::Type::MPEG2AUDIO :
+                                  atype == 0x0f ? StreamInfo::Type::AAC :
+                                  atype == 0x11 ? StreamInfo::Type::LATM :
+                                  StreamInfo::Type::NONE,
                                   channel->Alang(i)));
     }
 
     // add subtitle streams
     for(int i = 0; channel->Spid(i) != 0; i++) {
-        StreamInfo stream(channel->Spid(i), StreamInfo::stDVBSUB, channel->Slang(i));
+        StreamInfo stream(channel->Spid(i), StreamInfo::Type::DVBSUB, channel->Slang(i));
 
         stream.setSubtitlingDescriptor(
                 channel->SubtitlingType(i),

@@ -25,6 +25,8 @@
 #ifndef ROBOTV_PES_H
 #define ROBOTV_PES_H
 
+#include <stdint.h>
+
 // PES PIDs
 
 #define PRIVATE_STREAM1   0xBD

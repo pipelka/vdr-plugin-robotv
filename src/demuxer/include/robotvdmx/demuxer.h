@@ -33,40 +33,31 @@ class Parser;
 
 #define DVD_NOPTS_VALUE    (-1LL<<52) // should be possible to represent in both double and __int64
 
-struct StreamPacket {
-
-    StreamPacket() {
-        type = StreamInfo::stNONE;
-        content = StreamInfo::scNONE;
-        frameType = StreamInfo::ftUNKNOWN;
-    }
-
-    StreamInfo::FrameType frameType;
-    StreamInfo::Type type;
-    StreamInfo::Content content;
-
-    int64_t pid;
-    int64_t dts;
-    int64_t pts;
-    int64_t rawDts;
-    int64_t rawPts;
-    int duration;
-
-    uint8_t* data;
-    int size;
-};
-
 class TsDemuxer : public StreamInfo {
 public:
+
+    struct StreamPacket {
+        StreamInfo::FrameType frameType = StreamInfo::FrameType::UNKNOWN;
+        StreamInfo::Type type = StreamInfo::Type::NONE;
+        StreamInfo::Content content = StreamInfo::Content::NONE;
+
+        int64_t pid;
+        int64_t dts;
+        int64_t pts;
+        int duration = 0;
+
+        uint8_t* data = nullptr;
+        int size = 0;
+    };
 
     class Listener {
     public:
 
         virtual ~Listener() {};
 
-        virtual void sendStreamPacket(StreamPacket* p) = 0;
+        virtual void onStreamPacket(StreamPacket *p) = 0;
 
-        virtual void requestStreamChange() = 0;
+        virtual void onStreamChange() = 0;
 
     };
 
@@ -96,12 +87,8 @@ public:
         return m_audioType;
     }
 
-    bool isParsed() const {
-        return m_parsed;
-    }
-
     /* Video Stream Information */
-    void setVideoInformation(int FpsScale, int FpsRate, int Height, int Width, int Aspect, int num, int den);
+    void setVideoInformation(int fpsScale, int fpsRate, uint16_t height, uint16_t width, int aspect);
 
     uint32_t getFpsScale() const {
         return m_fpsScale;
@@ -111,11 +98,11 @@ public:
         return m_fpsRate;
     }
 
-    uint32_t getHeight() const {
+    uint16_t getHeight() const {
         return m_height;
     }
 
-    uint32_t getWidth() const {
+    uint16_t getWidth() const {
         return m_width;
     }
 
@@ -124,7 +111,7 @@ public:
     }
 
     /* Audio Stream Information */
-    void setAudioInformation(int Channels, int SampleRate, int BitRate, int BitsPerSample, int BlockAlign);
+    void setAudioInformation(uint8_t channels, uint32_t sampleRate, uint32_t bitRate);
 
     uint32_t getChannels() const {
         return m_channels;
@@ -134,16 +121,8 @@ public:
         return m_sampleRate;
     }
 
-    uint32_t getBlockAlign() const {
-        return m_blockAlign;
-    }
-
     uint32_t getBitRate() const {
         return m_bitRate;
-    }
-
-    uint32_t getBitsPerSample() const {
-        return m_bitsPerSample;
     }
 
     /* Subtitle related stream information */
@@ -159,7 +138,7 @@ public:
     }
 
     /* Decoder specific data */
-    void setVideoDecoderData(uint8_t* sps, int spsLength, uint8_t* pps, int ppsLength, uint8_t* vps = NULL, int vpsLength = 0);
+    void setVideoDecoderData(uint8_t* sps, size_t spsLength, uint8_t* pps, size_t ppsLength, uint8_t* vps = NULL, size_t vpsLength = 0);
 
     uint8_t* getVideoDecoderSps(int& length);
 

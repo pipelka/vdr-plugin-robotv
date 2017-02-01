@@ -22,7 +22,7 @@
  *
  */
 
-#include "demuxer_H265.h"
+#include "parser_h265.h"
 
 // nal_unit_type values from H.265/HEVC (2014) Table 7-1.
 #define RASL_R   9
@@ -44,7 +44,7 @@ int ParserH265::parsePayload(unsigned char* data, int length) {
     int sps_start = -1;
     int nal_len = 0;
 
-    m_frameType = StreamInfo::ftUNKNOWN;
+    m_frameType = StreamInfo::FrameType::UNKNOWN;
 
     if(length < 4) {
         return length;
@@ -62,7 +62,7 @@ int ParserH265::parsePayload(unsigned char* data, int length) {
 
         // key frame ?
         if(nal_type >= BLA_W_LP && nal_type <= CRA_NUT) {
-            m_frameType = StreamInfo::ftIFRAME;
+            m_frameType = StreamInfo::FrameType::IFRAME;
         }
 
         // PPS_NUT
@@ -126,14 +126,14 @@ int ParserH265::parsePayload(unsigned char* data, int length) {
     m_rate = 50;
     m_scale = 1;
 
-    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000), pixelaspect.num, pixelaspect.den);
+    m_demuxer->setVideoInformation(m_scale, m_rate, height, width, (int)(DAR * 10000));
     return length;
 }
 
-void ParserH265::skipScalingList(cBitStream& bs) {
+void ParserH265::skipScalingList(BitStream& bs) {
     for(int sizeId = 0; sizeId < 4; sizeId++) {
         for(int matrixId = 0; matrixId < 6; matrixId += sizeId == 3 ? 3 : 1) {
-            if(!bs.GetBit()) {  // scaling_list_pred_mode_flag[sizeId][matrixId]
+            if(!bs.getBit()) {  // scaling_list_pred_mode_flag[sizeId][matrixId]
                 // scaling_list_pred_matrix_id_delta[sizeId][matrixId]
                 readGolombUe(&bs);
             }
@@ -153,7 +153,7 @@ void ParserH265::skipScalingList(cBitStream& bs) {
     }
 }
 
-void ParserH265::skipShortTermRefPicSets(cBitStream& bs) {
+void ParserH265::skipShortTermRefPicSets(BitStream& bs) {
     int numShortTermRefPicSets = readGolombUe(&bs);
     bool interRefPicSetPredictionFlag = false;
     int numNegativePics = 0;
@@ -162,16 +162,16 @@ void ParserH265::skipShortTermRefPicSets(cBitStream& bs) {
 
     for(int stRpsIdx = 0; stRpsIdx < numShortTermRefPicSets; stRpsIdx++) {
         if(stRpsIdx != 0) {
-            interRefPicSetPredictionFlag = bs.GetBit();
+            interRefPicSetPredictionFlag = bs.getBit();
         }
 
         if(interRefPicSetPredictionFlag) {
-            bs.SkipBits(1); // delta_rps_sign
+            bs.skipBits(1); // delta_rps_sign
             readGolombUe(&bs); // abs_delta_rps_minus1
 
             for(int j = 0; j <= previousNumDeltaPocs; j++) {
-                if(bs.GetBit()) {  // used_by_curr_pic_flag[j]
-                    bs.SkipBits(1); // use_delta_flag[j]
+                if(bs.getBit()) {  // used_by_curr_pic_flag[j]
+                    bs.skipBits(1); // use_delta_flag[j]
                 }
             }
         }
@@ -182,55 +182,55 @@ void ParserH265::skipShortTermRefPicSets(cBitStream& bs) {
 
             for(int i = 0; i < numNegativePics; i++) {
                 readGolombUe(&bs); // delta_poc_s0_minus1[i]
-                bs.SkipBits(1); // used_by_curr_pic_s0_flag[i]
+                bs.skipBits(1); // used_by_curr_pic_s0_flag[i]
             }
 
             for(int i = 0; i < numPositivePics; i++) {
                 readGolombUe(&bs); // delta_poc_s1_minus1[i]
-                bs.SkipBits(1); // used_by_curr_pic_s1_flag[i]
+                bs.skipBits(1); // used_by_curr_pic_s1_flag[i]
             }
         }
     }
 }
 
 bool ParserH265::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, int& width, int& height) {
-    cBitStream bs(buf, len * 8);
-    bs.SkipBits(8 + 4); // NAL header, sps_video_parameter_set_id
-    int maxSubLayersMinus1 = bs.GetBits(3);
-    bs.SkipBits(1); // sps_temporal_id_nesting_flag
+    BitStream bs(buf, len * 8);
+    bs.skipBits(8 + 4); // NAL header, sps_video_parameter_set_id
+    int maxSubLayersMinus1 = bs.getBits(3);
+    bs.skipBits(1); // sps_temporal_id_nesting_flag
 
     // profile_tier_level(1, sps_max_sub_layers_minus1)
-    bs.SkipBits(88); // if (profilePresentFlag) {...}
-    bs.SkipBits(8); // general_level_idc
+    bs.skipBits(88); // if (profilePresentFlag) {...}
+    bs.skipBits(8); // general_level_idc
     int toSkip = 0;
 
     for(int i = 0; i < maxSubLayersMinus1; i++) {
-        if(bs.GetBits(1) == 1) {  // sub_layer_profile_present_flag[i]
+        if(bs.getBits(1) == 1) {  // sub_layer_profile_present_flag[i]
             toSkip += 89;
         }
 
-        if(bs.GetBits(1) == 1) {  // sub_layer_level_present_flag[i]
+        if(bs.getBits(1) == 1) {  // sub_layer_level_present_flag[i]
             toSkip += 8;
         }
     }
 
-    bs.SkipBits(toSkip);
+    bs.skipBits(toSkip);
 
     if(maxSubLayersMinus1 > 0) {
-        bs.SkipBits(2 * (8 - maxSubLayersMinus1));
+        bs.skipBits(2 * (8 - maxSubLayersMinus1));
     }
 
     readGolombUe(&bs); // sps_seq_parameter_set_id
     int chromaFormatIdc = readGolombUe(&bs);
 
     if(chromaFormatIdc == 3) {
-        bs.SkipBits(1); // separate_colour_plane_flag
+        bs.skipBits(1); // separate_colour_plane_flag
     }
 
     width = readGolombUe(&bs);
     height = readGolombUe(&bs);
 
-    if(bs.GetBit()) {  // conformance_window_flag
+    if(bs.getBit()) {  // conformance_window_flag
         int confWinLeftOffset = readGolombUe(&bs);
         int confWinRightOffset = readGolombUe(&bs);
         int confWinTopOffset = readGolombUe(&bs);
@@ -246,7 +246,7 @@ bool ParserH265::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
     readGolombUe(&bs); // bit_depth_chroma_minus8
     int log2MaxPicOrderCntLsbMinus4 = readGolombUe(&bs);
 
-    for(int i = bs.GetBit() ? 0 : maxSubLayersMinus1; i <= maxSubLayersMinus1; i++) {
+    for(int i = bs.getBit() ? 0 : maxSubLayersMinus1; i <= maxSubLayersMinus1; i++) {
         readGolombUe(&bs); // sps_max_dec_pic_buffering_minus1[i]
         readGolombUe(&bs); // sps_max_num_reorder_pics[i]
         readGolombUe(&bs); // sps_max_latency_increase_plus1[i]
@@ -260,50 +260,47 @@ bool ParserH265::parseSps(uint8_t* buf, int len, pixel_aspect_t& pixelaspect, in
     readGolombUe(&bs); // max_transform_hierarchy_depth_intra
 
     // if (scaling_list_enabled_flag) { if (sps_scaling_list_data_present_flag) {...}}
-    if(bs.GetBit() && bs.GetBit()) {
+    if(bs.getBit() && bs.getBit()) {
         skipScalingList(bs);
     }
 
-    bs.SkipBits(2); // amp_enabled_flag (1), sample_adaptive_offset_enabled_flag (1)
+    bs.skipBits(2); // amp_enabled_flag (1), sample_adaptive_offset_enabled_flag (1)
 
-    if(bs.GetBit()) {  // pcm_enabled_flag
+    if(bs.getBit()) {  // pcm_enabled_flag
         // pcm_sample_bit_depth_luma_minus1 (4), pcm_sample_bit_depth_chroma_minus1 (4)
-        bs.SkipBits(8);
+        bs.skipBits(8);
         readGolombUe(&bs); // log2_min_pcm_luma_coding_block_size_minus3
         readGolombUe(&bs); // log2_diff_max_min_pcm_luma_coding_block_size
-        bs.SkipBits(1); // pcm_loop_filter_disabled_flag
+        bs.skipBits(1); // pcm_loop_filter_disabled_flag
     }
 
     // Skips all short term reference picture sets.
     skipShortTermRefPicSets(bs);
 
-    if(bs.GetBit()) {  // long_term_ref_pics_present_flag
+    if(bs.getBit()) {  // long_term_ref_pics_present_flag
         // num_long_term_ref_pics_sps
         for(uint32_t i = 0; i < readGolombUe(&bs); i++) {
             int ltRefPicPocLsbSpsLength = log2MaxPicOrderCntLsbMinus4 + 4;
             // lt_ref_pic_poc_lsb_sps[i], used_by_curr_pic_lt_sps_flag[i]
-            bs.SkipBits(ltRefPicPocLsbSpsLength + 1);
+            bs.skipBits(ltRefPicPocLsbSpsLength + 1);
         }
     }
 
-    bs.SkipBits(2); // sps_temporal_mvp_enabled_flag, strong_intra_smoothing_enabled_flag
+    bs.skipBits(2); // sps_temporal_mvp_enabled_flag, strong_intra_smoothing_enabled_flag
 
     pixelaspect.num = 1;
     pixelaspect.den = 1;
 
-    if(bs.GetBit()) {  // vui_parameters_present_flag
-        if(bs.GetBit()) {  // aspect_ratio_info_present_flag
-            unsigned int aspect_ratio_idc = bs.GetBits(8);
+    if(bs.getBit()) {  // vui_parameters_present_flag
+        if(bs.getBit()) {  // aspect_ratio_info_present_flag
+            unsigned int aspect_ratio_idc = bs.getBits(8);
 
             if(aspect_ratio_idc == 255) {
-                pixelaspect.num = bs.GetBits(16);
-                pixelaspect.den = bs.GetBits(16);
+                pixelaspect.num = bs.getBits(16);
+                pixelaspect.den = bs.getBits(16);
             }
             else if(aspect_ratio_idc < sizeof(m_aspect_ratios) / sizeof(pixel_aspect_t)) {
                 pixelaspect = m_aspect_ratios[aspect_ratio_idc];
-            }
-            else {
-                esyslog("Unexpected aspect_ratio_idc value: %i", aspect_ratio_idc);
             }
         }
     }

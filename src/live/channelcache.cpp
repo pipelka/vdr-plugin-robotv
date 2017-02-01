@@ -56,8 +56,6 @@ void ChannelCache::createDb() {
         "  channels INT DEFAULT 0,\n"
         "  samplerate INT DEFAULT 0,\n"
         "  bitrate INT DEFAULT 0,\n"
-        "  bitspersample INT DEFAULT 0,\n"
-        "  blockalign INT DEFAULT 0,\n"
         "  parsed BOOLEAN DEFAULT 0,\n"
         "  subtitlingtype INT DEFAULT 0,\n"
         "  compositionpageid INT DEFAULT 0,\n"
@@ -123,8 +121,6 @@ void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
             "channels,"
             "samplerate,"
             "bitrate,"
-            "bitspersample,"
-            "blockalign,"
             "parsed,"
             "subtitlingtype,"
             "compositionpageid,"
@@ -133,7 +129,7 @@ void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
             "pps,"
             "vps) "
             "VALUES ("
-            "%i,%i,%i,%i,%Q,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,x'%s',x'%s',x'%s'"
+            "%i,%i,%i,%i,%Q,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,x'%s',x'%s',x'%s'"
             ")",
             channeluid,
             info.m_pid,
@@ -149,8 +145,6 @@ void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
             info.m_channels,
             info.m_sampleRate,
             info.m_bitRate,
-            info.m_bitsPerSample,
-            info.m_blockAlign,
             (int)info.m_parsed,
             info.m_subTitlingType,
             info.m_compositionPageId,
@@ -180,8 +174,6 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
                           "  channels,"
                           "  samplerate,"
                           "  bitrate,"
-                          "  bitspersample,"
-                          "  blockalign,"
                           "  parsed,"
                           "  subtitlingtype,"
                           "  compositionpageid,"
@@ -217,21 +209,19 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
         info.m_channels = sqlite3_column_int(s, 10);
         info.m_sampleRate = sqlite3_column_int(s, 11);
         info.m_bitRate = sqlite3_column_int(s, 12);
-        info.m_bitsPerSample = sqlite3_column_int(s, 13);
-        info.m_blockAlign = sqlite3_column_int(s, 14);
-        info.m_parsed = (sqlite3_column_int(s, 15) == 1);
-        info.m_subTitlingType = sqlite3_column_int(s, 16);
-        info.m_compositionPageId = sqlite3_column_int(s, 17);
-        info.m_ancillaryPageId = sqlite3_column_int(s, 18);
+        info.m_parsed = (sqlite3_column_int(s, 13) == 1);
+        info.m_subTitlingType = sqlite3_column_int(s, 14);
+        info.m_compositionPageId = sqlite3_column_int(s, 15);
+        info.m_ancillaryPageId = sqlite3_column_int(s, 16);
 
-        info.m_spsLength = sqlite3_column_bytes(s, 19);
-        memcpy(info.m_sps, sqlite3_column_text(s, 19), info.m_spsLength);
+        info.m_spsLength = sqlite3_column_bytes(s, 17);
+        memcpy(info.m_sps, sqlite3_column_text(s, 17), info.m_spsLength);
 
-        info.m_ppsLength = sqlite3_column_bytes(s, 20);
-        memcpy(info.m_pps, sqlite3_column_text(s, 20), info.m_ppsLength);
+        info.m_ppsLength = sqlite3_column_bytes(s, 18);
+        memcpy(info.m_pps, sqlite3_column_text(s, 18), info.m_ppsLength);
 
-        info.m_vpsLength = sqlite3_column_bytes(s, 21);
-        memcpy(info.m_vps, sqlite3_column_text(s, 21), info.m_vpsLength);
+        info.m_vpsLength = sqlite3_column_bytes(s, 19);
+        memcpy(info.m_vps, sqlite3_column_text(s, 19), info.m_vpsLength);
 
         bundle.addStream(info);
     }

@@ -67,16 +67,16 @@ OBJS = \
 	src/db/database.o \
 	src/db/storage.o \
 	src/demuxer/demuxer.o \
-	src/demuxer/demuxer_ADTS.o \
-	src/demuxer/demuxer_LATM.o \
-	src/demuxer/demuxer_AC3.o \
-	src/demuxer/demuxer_H264.o \
-	src/demuxer/demuxer_H265.o \
-	src/demuxer/demuxer_MPEGAudio.o \
-	src/demuxer/demuxer_MPEGVideo.o \
-	src/demuxer/demuxer_PES.o \
-	src/demuxer/demuxer_Subtitle.o \
-	src/demuxer/parser.o \
+	src/demuxer/parsers/parser_adts.o \
+	src/demuxer/parsers/parser_latm.o \
+	src/demuxer/parsers/parser_ac3.o \
+	src/demuxer/parsers/parser_h264.o \
+	src/demuxer/parsers/parser_h265.o \
+	src/demuxer/parsers/parser_mpegaudio.o \
+	src/demuxer/parsers/parser_mpegvideo.o \
+	src/demuxer/parsers/parser_pes.o \
+	src/demuxer/parsers/parser_subtitle.o \
+	src/demuxer/parsers/parser.o \
 	src/demuxer/streambundle.o \
 	src/demuxer/demuxerbundle.o \
 	src/demuxer/streaminfo.o \

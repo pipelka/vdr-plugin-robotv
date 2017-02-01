@@ -22,8 +22,10 @@
  *
  */
 
-#include "demuxerbundle.h"
-#include "pes.h"
+#include <string.h>
+
+#include "robotvdmx/demuxerbundle.h"
+#include "robotvdmx/pes.h"
 
 DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
 }
@@ -90,11 +92,11 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 
         // stream type weights
         switch(stream->getContent()) {
-            case StreamInfo::scVIDEO:
+            case StreamInfo::Content::VIDEO:
                 w |= VIDEO_MASK;
                 break;
 
-            case StreamInfo::scAUDIO:
+            case StreamInfo::Content::AUDIO:
                 w |= AUDIO_MASK;
 
                 // weight of audio stream type
@@ -104,7 +106,7 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
                 w |= ((4 - stream->getAudioType()) << 16) & AUDIOTYPE_MASK;
                 break;
 
-            case StreamInfo::scSUBTITLE:
+            case StreamInfo::Content::SUBTITLE:
                 w |= SUBTITLE_MASK;
                 break;
 
@@ -163,7 +165,6 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
         TsDemuxer* dmx = new TsDemuxer(m_listener, infonew);
 
         push_back(dmx);
-        //isyslog("%s", dmx->info().c_str());
     }
 }
 
@@ -177,83 +178,3 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
 
     return demuxer->processTsPacket(packet);
 }
-
-MsgPacket* DemuxerBundle::createStreamChangePacket(int protocolVersion) {
-    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
-
-    resp->put_U8(this->size());
-
-    for(auto idx = begin(); idx != end(); idx++) {
-        TsDemuxer* stream = (*idx);
-
-        int streamid = stream->getPid();
-        resp->put_U32(streamid);
-
-        switch(stream->getContent()) {
-            case StreamInfo::scAUDIO:
-                resp->put_String(stream->typeName());
-                resp->put_String(stream->getLanguage());
-                resp->put_U32(stream->getChannels());
-                resp->put_U32(stream->getSampleRate());
-                resp->put_U32(stream->getBlockAlign());
-                resp->put_U32(stream->getBitRate());
-                resp->put_U32(stream->getBitsPerSample());
-
-                break;
-
-            case StreamInfo::scVIDEO:
-                resp->put_String(stream->typeName());
-                resp->put_U32(stream->getFpsScale());
-                resp->put_U32(stream->getFpsRate());
-                resp->put_U32(stream->getHeight());
-                resp->put_U32(stream->getWidth());
-                resp->put_S64(stream->getAspect());
-
-                {
-                    int length = 0;
-
-                    // put SPS
-                    uint8_t* sps = stream->getVideoDecoderSps(length);
-                    resp->put_U8(length);
-
-                    if(sps != NULL) {
-                        resp->put_Blob(sps, length);
-                    }
-
-                    // put PPS
-                    uint8_t* pps = stream->getVideoDecoderPps(length);
-                    resp->put_U8(length);
-
-                    if(pps != NULL) {
-                        resp->put_Blob(pps, length);
-                    }
-
-                    // put VPS
-                    uint8_t* vps = stream->getVideoDecoderVps(length);
-                    resp->put_U8(length);
-
-                    if(pps != NULL) {
-                        resp->put_Blob(vps, length);
-                    }
-                }
-                break;
-
-            case StreamInfo::scSUBTITLE:
-                resp->put_String(stream->typeName());
-                resp->put_String(stream->getLanguage());
-                resp->put_U32(stream->compositionPageId());
-                resp->put_U32(stream->ancillaryPageId());
-                break;
-
-            case StreamInfo::scTELETEXT:
-                resp->put_String(stream->typeName());
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    return resp;
-}
-

@@ -55,33 +55,33 @@ set(SOURCE_FILES
     src/db/database.h
     src/db/storage.cpp
     src/db/storage.h
-    src/demuxer/aaccommon.h
-    src/demuxer/ac3common.h
+    src/demuxer/include/aaccommon.h
+    src/demuxer/include/ac3common.h
     src/demuxer/demuxer.cpp
     src/demuxer/demuxer.h
-    src/demuxer/demuxer_AC3.cpp
-    src/demuxer/demuxer_AC3.h
-    src/demuxer/demuxer_ADTS.cpp
-    src/demuxer/demuxer_ADTS.h
-    src/demuxer/demuxer_H264.cpp
-    src/demuxer/demuxer_H264.h
-    src/demuxer/demuxer_H265.cpp
-    src/demuxer/demuxer_H265.h
-    src/demuxer/demuxer_LATM.cpp
-    src/demuxer/demuxer_LATM.h
-    src/demuxer/demuxer_MPEGAudio.cpp
-    src/demuxer/demuxer_MPEGAudio.h
-    src/demuxer/demuxer_MPEGVideo.cpp
-    src/demuxer/demuxer_MPEGVideo.h
-    src/demuxer/demuxer_PES.cpp
-    src/demuxer/demuxer_PES.h
-    src/demuxer/demuxer_Subtitle.cpp
-    src/demuxer/demuxer_Subtitle.h
+    src/demuxer/parsers/parser_ac3.cpp
+    src/demuxer/parsers/parser_ac3.h
+    src/demuxer/parsers/parser_adts.cpp
+    src/demuxer/parsers/parser_adts.h
+        src/demuxer/parsers/parser_h264.cpp
+        src/demuxer/parsers/parser_h264.h
+    src/demuxer/parsers/parser_h265.cpp
+    src/demuxer/parsers/parser_h265.h
+    src/demuxer/parsers/parser_latm.cpp
+    src/demuxer/parsers/parser_latm.h
+    src/demuxer/parsers/parser_mpegaudio.cpp
+    src/demuxer/parsers/parser_mpegaudio.h
+    src/demuxer/parsers/parser_mpegvideo.cpp
+    src/demuxer/parsers/parser_mpegvideo.h
+    src/demuxer/parsers/parser_pes.cpp
+    src/demuxer/parsers/parser_pes.h
+    src/demuxer/parsers/parser_subtitle.cpp
+    src/demuxer/parsers/parser_subtitle.h
     src/demuxer/demuxerbundle.cpp
     src/demuxer/demuxerbundle.h
-    src/demuxer/parser.cpp
-    src/demuxer/parser.h
-    src/demuxer/pes.h
+    src/demuxer/parsers/parser.cpp
+    src/demuxer/parsers/parser.h
+    src/demuxer/include/pes.h
     src/demuxer/streambundle.cpp
     src/demuxer/streambundle.h
     src/demuxer/streaminfo.cpp

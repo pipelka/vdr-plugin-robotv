@@ -23,7 +23,7 @@
  */
 
 #include <cstring>
-#include "streaminfo.h"
+#include "robotvdmx/streaminfo.h"
 
 static const char* contentnames[] = {
     "NONE", "VIDEO", "AUDIO", "SUBTITLE", "TELETEXT"
@@ -66,18 +66,16 @@ void StreamInfo::Initialize() {
     m_fpsRate           = 0;
     m_height            = 0;
     m_width             = 0;
-    m_aspect            = 0.0f;
+    m_aspect            = 0;
     m_channels          = 0;
     m_sampleRate        = 0;
     m_bitRate           = 0;
-    m_bitsPerSample     = 0;
-    m_blockAlign        = 0;
     m_subTitlingType    = 0;
     m_compositionPageId = 0;
     m_ancillaryPageId   = 0;
     m_pid               = 0;
-    m_type              = stNONE;
-    m_content           = scNONE;
+    m_type              = Type::NONE;
+    m_content           = Content::NONE;
     m_parsed            = false;
     m_spsLength         = 0;
     m_ppsLength         = 0;
@@ -91,17 +89,17 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
     }
 
     switch(m_content) {
-        case scNONE:
+        case Content::NONE:
             return false;
 
-        case scAUDIO:
+        case Content::AUDIO:
             return
                 (strcmp(m_language, rhs.m_language) == 0) &&
                 (m_audioType == rhs.m_audioType) &&
                 (m_channels == rhs.m_channels) &&
                 (m_sampleRate == rhs.m_sampleRate);
 
-        case scVIDEO:
+        case Content::VIDEO:
             return
                 (m_width == rhs.m_width) &&
                 (m_height == rhs.m_height) &&
@@ -109,21 +107,19 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
                 (m_fpsScale == rhs.m_fpsScale) &&
                 (m_fpsRate == rhs.m_fpsRate);
 
-        case scSUBTITLE:
+        case Content::SUBTITLE:
             return
                 (strcmp(m_language, rhs.m_language) == 0) &&
                 (m_subTitlingType == rhs.m_subTitlingType) &&
                 (m_compositionPageId == rhs.m_compositionPageId) &&
                 (m_ancillaryPageId == rhs.m_ancillaryPageId);
 
-        case scTELETEXT:
+        case Content::TELETEXT:
             return true;
 
-        case scSTREAMINFO:
+        case Content::STREAMINFO:
             return false;
     }
-
-    return false;
 }
 
 bool StreamInfo::isMetaOf(const StreamInfo& rhs) const {
@@ -131,7 +127,7 @@ bool StreamInfo::isMetaOf(const StreamInfo& rhs) const {
         return false;
     }
 
-    if(m_type != rhs.m_type && (m_type != stAC3 && rhs.m_type != stEAC3)) {
+    if(m_type != rhs.m_type && (m_type != Type::AC3 && rhs.m_type != Type::EAC3)) {
         return false;
     }
 
@@ -147,20 +143,20 @@ void StreamInfo::setContent() {
 }
 
 const StreamInfo::Content StreamInfo::getContent(Type type) {
-    if(type == stMPEG2AUDIO || type == stAC3 || type == stEAC3  || type == stAAC || type == stLATM) {
-        return scAUDIO;
+    if(type == Type::MPEG2AUDIO || type == Type::AC3 || type == Type::EAC3  || type == Type::AAC || type == Type::LATM) {
+        return Content::AUDIO;
     }
-    else if(type == stMPEG2VIDEO || type == stH264 || type == stH265) {
-        return scVIDEO;
+    else if(type == Type::MPEG2VIDEO || type == Type::H264 || type == Type::H265) {
+        return Content::VIDEO;
     }
-    else if(type == stDVBSUB) {
-        return scSUBTITLE;
+    else if(type == Type::DVBSUB) {
+        return Content::SUBTITLE;
     }
-    else if(type == stTELETEXT) {
-        return scTELETEXT;
+    else if(type == Type::TELETEXT) {
+        return Content::TELETEXT;
     }
 
-    return scNONE;
+    return Content::NONE;
 }
 
 const char* StreamInfo::typeName() {
@@ -168,11 +164,11 @@ const char* StreamInfo::typeName() {
 }
 
 const char* StreamInfo::typeName(const StreamInfo::Type& type) {
-    return typenames[type];
+    return typenames[(int)type];
 }
 
 const char* StreamInfo::contentName(const StreamInfo::Content& content) {
-    return contentnames[content];
+    return contentnames[(int)content];
 }
 
 std::string StreamInfo::info() const {
@@ -185,19 +181,19 @@ std::string StreamInfo::info() const {
         scale = 1;
     }
 
-    if(m_content == scAUDIO) {
+    if(m_content == Content::AUDIO) {
         snprintf(buffer, sizeof(buffer), "%i Hz, %i channels, Lang: %s", m_sampleRate, m_channels, m_language);
     }
-    else if(m_content == scVIDEO) {
-        snprintf(buffer, sizeof(buffer), "%ix%i DAR: %.2f FPS: %.3f SPS/PPS/VPS: %i/%i/%i bytes", m_width, m_height , (double)m_aspect / 10000, (double)m_fpsRate / (double)scale, m_spsLength, m_ppsLength, m_vpsLength);
+    else if(m_content == Content::VIDEO) {
+        snprintf(buffer, sizeof(buffer), "%ix%i DAR: %.2f FPS: %.3f SPS/PPS/VPS: %i/%i/%i bytes", m_width, m_height , (double)m_aspect / 10000, (double)m_fpsRate / (double)scale, (int)m_spsLength, (int)m_ppsLength, (int)m_vpsLength);
     }
-    else if(m_content == scSUBTITLE) {
+    else if(m_content == Content::SUBTITLE) {
         snprintf(buffer, sizeof(buffer), "Lang: %s", m_language);
     }
-    else if(m_content == scTELETEXT) {
+    else if(m_content == Content::TELETEXT) {
         snprintf(buffer, sizeof(buffer), "TXT");
     }
-    else if(m_content == scNONE) {
+    else if(m_content == Content::NONE) {
         snprintf(buffer, sizeof(buffer), "None");
     }
     else {

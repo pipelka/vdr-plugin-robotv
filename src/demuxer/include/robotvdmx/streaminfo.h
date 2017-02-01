@@ -32,35 +32,35 @@
 class StreamInfo {
 public:
 
-    enum Content {
-        scNONE,
-        scVIDEO,
-        scAUDIO,
-        scSUBTITLE,
-        scTELETEXT,
-        scSTREAMINFO
+    enum class Content {
+        NONE,
+        VIDEO,
+        AUDIO,
+        SUBTITLE,
+        TELETEXT,
+        STREAMINFO
     };
 
-    enum Type {
-        stNONE,
-        stMPEG2AUDIO,
-        stAC3,
-        stEAC3,
-        stAAC,
-        stLATM,
-        stMPEG2VIDEO,
-        stH264,
-        stDVBSUB,
-        stTELETEXT,
-        stH265
+    enum class Type {
+        NONE,
+        MPEG2AUDIO,
+        AC3,
+        EAC3,
+        AAC,
+        LATM,
+        MPEG2VIDEO,
+        H264,
+        DVBSUB,
+        TELETEXT,
+        H265
     };
 
-    enum FrameType {
-        ftUNKNOWN,
-        ftIFRAME,
-        ftPFRAME,
-        ftBFRAME,
-        ftDFRAME
+    enum class FrameType {
+        UNKNOWN,
+        IFRAME,
+        PFRAME,
+        BFRAME,
+        DFRAME
     };
 
 public:
@@ -77,19 +77,19 @@ public:
 
     bool operator !=(const StreamInfo& rhs) const;
 
-    const int getPid() const {
+    inline int getPid() const {
         return m_pid;
     }
 
     static const Content getContent(Type type);
 
-    const Content getContent() const {
+    inline const Content& getContent() const {
         return m_content;
     }
 
     void setContent();
 
-    const Type getType() const {
+    inline const Type& getType() const {
         return m_type;
     }
 
@@ -123,25 +123,21 @@ protected:
 
     uint8_t m_audioType; // ISO 639 audio type
 
-    int m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
+    uint32_t m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
 
-    int m_fpsRate;
+    uint32_t m_fpsRate;
 
-    int m_height; // height of the stream reported by the demuxer
+    uint16_t m_height; // height of the stream reported by the demuxer
 
-    int m_width; // width of the stream reported by the demuxer
+    uint16_t m_width; // width of the stream reported by the demuxer
 
     int m_aspect; // display aspect of stream (*10000 : 1,7777 = 17777)
 
-    int m_channels; // number of audio channels (e.g. 6 for 5.1)
+    uint8_t m_channels; // number of audio channels (e.g. 6 for 5.1)
 
-    int m_sampleRate; // number of audio samples per second (e.g. 48000)
+    uint32_t m_sampleRate; // number of audio samples per second (e.g. 48000)
 
-    int m_bitRate; // audio bitrate (e.g. 160000)
-
-    int m_bitsPerSample; // number of bits per audio sample (e.g. 16)
-
-    int m_blockAlign; // number of bytes per audio block
+    uint32_t m_bitRate; // audio bitrate (e.g. 160000)
 
     bool m_parsed; // stream parsed flag (if all stream data is known)
 
@@ -156,9 +152,9 @@ protected:
     uint8_t m_pps[128]; // PPS data (for decoder)
     uint8_t m_vps[128]; // VPS data (for decoder)
 
-    int m_spsLength;     // SPS length
-    int m_ppsLength;     // PPS length
-    int m_vpsLength;     // VPS length
+    size_t m_spsLength; // SPS length
+    size_t m_ppsLength; // PPS length
+    size_t m_vpsLength; // VPS length
 
     bool m_enabled = false;
 

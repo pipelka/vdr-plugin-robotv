@@ -22,20 +22,20 @@
  *
  */
 
-#include "demuxer/streambundle.h"
+#include "robotvdmx/streambundle.h"
 
 StreamBundle::StreamBundle() : m_changed(false) {
 }
 
 void StreamBundle::addStream(const StreamInfo& s) {
-    if(s.getPid() == 0 || s.getType() == StreamInfo::stNONE) {
+    if(s.getPid() == 0 || s.getType() == StreamInfo::Type::NONE) {
         return;
     }
 
     // allow only one video stream
-    if(s.getContent() == StreamInfo::scVIDEO) {
+    if(s.getContent() == StreamInfo::Content::VIDEO) {
         for(iterator i = begin(); i != end(); i++) {
-            if(i->second.getContent() == StreamInfo::scVIDEO && i->second.getPid() != s.getPid()) {
+            if(i->second.getContent() == StreamInfo::Content::VIDEO && i->second.getPid() != s.getPid()) {
                 return;
             }
         }

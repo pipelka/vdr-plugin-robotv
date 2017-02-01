@@ -235,9 +235,9 @@ bool LiveQueue::write(const PacketData& data) {
     trim(packetEndPosition);
 
     // add keyframe to map
-    bool keyFrame = (p->getClientID() == StreamInfo::FrameType::ftIFRAME);
+    bool keyFrame = (p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME);
 
-    if(keyFrame && content == StreamInfo::Content::scVIDEO) {
+    if(keyFrame && content == StreamInfo::Content::VIDEO) {
         m_indexList.push_back({writePosition, timeStamp, pts, m_wrapCount});
     }
 

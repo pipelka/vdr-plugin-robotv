@@ -22,41 +22,48 @@
  *
  */
 
-#ifndef ROBOTV_DEMUXERBUNDLE_H
-#define ROBOTV_DEMUXERBUNDLE_H
+#ifndef ROBOTV_DEMUXER_H264_H
+#define ROBOTV_DEMUXER_H264_H
 
-#include "demuxer/demuxer.h"
-#include "demuxer/streambundle.h"
-#include "net/msgpacket.h"
-#include "robotv/robotvcommand.h"
+#include <upstream/bitstream.h>
+#include "parser_pes.h"
 
-#include <list>
-
-class DemuxerBundle : public std::list<TsDemuxer*> {
+class ParserH264 : public ParserPes {
 public:
 
-    DemuxerBundle(TsDemuxer::Listener* listener);
+    ParserH264(TsDemuxer* demuxer);
 
-    virtual ~DemuxerBundle();
-
-    void clear();
-
-    TsDemuxer* findDemuxer(int pid) const;
-
-    void reorderStreams(const char* lang, StreamInfo::Type type);
-
-    bool isReady() const;
-
-    void updateFrom(StreamBundle* bundle);
-
-    bool processTsPacket(uint8_t* packet) const;
-
-    MsgPacket* createStreamChangePacket(int protocolVersion = ROBOTV_PROTOCOLVERSION);
+    int parsePayload(unsigned char* data, int length);
 
 protected:
 
-    TsDemuxer::Listener* m_listener = NULL;
+    typedef struct {
+        int num;
+        int den;
+    } pixel_aspect_t;
+
+    // pixel aspect ratios
+    static const pixel_aspect_t m_aspect_ratios[17];
+
+    uint8_t* extractNal(uint8_t* packet, int length, int nal_offset, int& nal_len);
+
+    int nalUnescape(uint8_t* dst, const uint8_t* src, int len);
+
+    uint32_t readGolombUe(BitStream* bs);
+
+    int32_t readGolombSe(BitStream* bs);
+
+    int m_scale;
+
+    int m_rate;
+
+private:
+
+    bool parseSps(uint8_t* buf, int len, pixel_aspect_t& pixel_aspect, int& width, int& height);
+
+    void parseSlh(uint8_t* buf, int len);
 
 };
 
-#endif // ROBOTV_DEMUXERBUNDLE_H
+
+#endif // ROBOTV_DEMUXER_H264_H

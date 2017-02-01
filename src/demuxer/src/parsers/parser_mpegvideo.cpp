@@ -22,8 +22,10 @@
  *
  */
 
-#include "demuxer_MPEGVideo.h"
-#include "pes.h"
+#include <upstream/bitstream.h>
+#include "robotvdmx/pes.h"
+
+#include "parser_mpegvideo.h"
 
 #define MPEG2_SEQUENCE_START 0x000001B3
 #define MPEG2_PICTURE_START  0x00000100
@@ -45,32 +47,32 @@ static const double aspectratios[16] = {
 };
 
 static int GetFrameType(unsigned char* data, int length) {
-    cBitStream bs(data, length * 8);
-    bs.SkipBits(32); // skip picture start code
-    bs.SkipBits(10); // skip temporal reference
+    BitStream bs(data, length * 8);
+    bs.skipBits(32); // skip picture start code
+    bs.skipBits(10); // skip temporal reference
 
-    return bs.GetBits(3);
+    return bs.getBits(3);
 }
 
 static StreamInfo::FrameType ConvertFrameType(int frametype) {
     switch(frametype) {
         case 1:
-            return StreamInfo::ftIFRAME;
+            return StreamInfo::FrameType::IFRAME;
 
         case 2:
-            return StreamInfo::ftPFRAME;
+            return StreamInfo::FrameType::PFRAME;
 
         case 3:
-            return StreamInfo::ftBFRAME;
+            return StreamInfo::FrameType::BFRAME;
 
         case 4:
-            return StreamInfo::ftDFRAME;
+            return StreamInfo::FrameType::DFRAME;
 
         default:
             break;
     }
 
-    return StreamInfo::ftUNKNOWN;
+    return StreamInfo::FrameType::UNKNOWN;
 }
 
 ParserMpeg2Video::ParserMpeg2Video(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024), m_frameDifference(0), m_lastDts(DVD_NOPTS_VALUE) {
@@ -162,21 +164,21 @@ void ParserMpeg2Video::sendPayload(unsigned char* payload, int length) {
 }
 
 void ParserMpeg2Video::parseSequenceStart(unsigned char* data, int length) {
-    cBitStream bs(data, length * 8);
+    BitStream bs(data, length * 8);
 
-    if(bs.Length() < 32) {
+    if(bs.length() < 32) {
         return;
     }
 
-    int width  = bs.GetBits(12);
-    int height = bs.GetBits(12);
+    int width  = bs.getBits(12);
+    int height = bs.getBits(12);
 
     // display aspect ratio
-    double DAR = aspectratios[bs.GetBits(4)];
+    double DAR = aspectratios[bs.getBits(4)];
 
     // frame rate / duration
-    int index = bs.GetBits(4);
+    int index = bs.getBits(4);
     m_duration = framedurations[index];
 
-    m_demuxer->setVideoInformation(framerates[index][1], framerates[index][0], height, width, (int)(DAR * 10000), 1, 1);
+    m_demuxer->setVideoInformation(framerates[index][1], framerates[index][0], height, width, (int)(DAR * 10000));
 }

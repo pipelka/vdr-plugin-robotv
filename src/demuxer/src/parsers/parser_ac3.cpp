@@ -22,8 +22,11 @@
  *
  */
 
-#include "demuxer_AC3.h"
-#include "ac3common.h"
+#include <stdint.h>
+#include <upstream/bitstream.h>
+#include "robotvdmx/ac3common.h"
+
+#include "parser_ac3.h"
 
 ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {
     m_headerSize = AC3_HEADER_SIZE;
@@ -31,41 +34,41 @@ ParserAc3::ParserAc3(TsDemuxer* demuxer) : Parser(demuxer, 64 * 1024, 4096) {
 }
 
 bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse) {
-    cBitStream bs(buffer, AC3_HEADER_SIZE * 8);
+    BitStream bs(buffer, AC3_HEADER_SIZE * 8);
 
-    if(bs.GetBits(16) != 0x0B77) {
+    if(bs.getBits(16) != 0x0B77) {
         return false;
     }
 
-    bs.SkipBits(24); // FFWD to bsid
-    int bsid = bs.GetBits(5); // bsid
+    bs.skipBits(24); // FFWD to bsid
+    int bsid = bs.getBits(5); // bsid
 
     m_enhanced = (bsid > 10);
 
-    bs.Reset(); // rewind to start
-    bs.SkipBits(16); // skip syncword
+    bs.reset(); // rewind to start
+    bs.skipBits(16); // skip syncword
 
     // EAC-3
     if(m_enhanced) {
-        int frametype = bs.GetBits(2);
+        int frametype = bs.getBits(2);
 
         if(frametype == EAC3_FRAME_TYPE_RESERVED) {
             return false;
         }
 
-        bs.SkipBits(3);
+        bs.skipBits(3);
 
-        framesize = (bs.GetBits(11) + 1) << 1;
+        framesize = (bs.getBits(11) + 1) << 1;
 
         if(framesize < AC3_HEADER_SIZE) {
             return false;
         }
 
         int numBlocks = 6;
-        int sr_code = bs.GetBits(2);
+        int sr_code = bs.getBits(2);
 
         if(sr_code == 3) {
-            int sr_code2 = bs.GetBits(2);
+            int sr_code2 = bs.getBits(2);
 
             if(sr_code2 == 3) {
                 return false;
@@ -74,12 +77,12 @@ bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool
             m_sampleRate = AC3SampleRateTable[sr_code2] / 2;
         }
         else {
-            numBlocks = EAC3Blocks[bs.GetBits(2)];
+            numBlocks = EAC3Blocks[bs.getBits(2)];
             m_sampleRate = AC3SampleRateTable[sr_code];
         }
 
-        int channelMode = bs.GetBits(3);
-        int lfeon = bs.GetBits(1);
+        int channelMode = bs.getBits(3);
+        int lfeon = bs.getBits(1);
 
         m_bitRate  = (uint32_t)(8.0 * framesize * m_sampleRate / (numBlocks * 256.0));
         m_channels = AC3ChannelsTable[channelMode] + lfeon;
@@ -88,32 +91,32 @@ bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool
 
         // AC-3
     else {
-        bs.SkipBits(16); // CRC
-        int fscod = bs.GetBits(2);
-        int frmsizecod = bs.GetBits(6);
-        bs.GetBits(5); // bsid
+        bs.skipBits(16); // CRC
+        int fscod = bs.getBits(2);
+        int frmsizecod = bs.getBits(6);
+        bs.getBits(5); // bsid
 
-        bs.SkipBits(3); // bitstream mode
-        int acmod = bs.GetBits(3);
+        bs.skipBits(3); // bitstream mode
+        int acmod = bs.getBits(3);
 
         if(fscod == 3 || frmsizecod > 37) {
             return false;
         }
 
         if(acmod == AC3_CHMODE_STEREO) {
-            bs.SkipBits(2); // skip dsurmod
+            bs.skipBits(2); // skip dsurmod
         }
         else {
             if((acmod & 1) && acmod != AC3_CHMODE_MONO) {
-                bs.SkipBits(2);
+                bs.skipBits(2);
             }
 
             if(acmod & 4) {
-                bs.SkipBits(2);
+                bs.skipBits(2);
             }
         }
 
-        int lfeon = bs.GetBits(1);
+        int lfeon = bs.getBits(1);
 
         m_sampleRate = AC3SampleRateTable[fscod];
         m_bitRate = (AC3BitrateTable[frmsizecod >> 1] * 1000);
@@ -125,7 +128,7 @@ bool ParserAc3::checkAlignmentHeader(unsigned char* buffer, int& framesize, bool
     }
 
     if(parse) {
-        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate, 0, 0);
+        m_demuxer->setAudioInformation(m_channels, m_sampleRate, m_bitRate);
     }
 
     return true;

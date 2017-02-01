@@ -25,6 +25,7 @@
 #include "config/config.h"
 #include "packetplayer.h"
 #include "tools/time.h"
+#include "robotv/robotvcommand.h"
 
 #define MIN_PACKET_SIZE (128 * 1024)
 
@@ -49,7 +50,7 @@ PacketPlayer::~PacketPlayer() {
 
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // skip non video / audio packets
-    if(p->content != StreamInfo::scVIDEO && p->content != StreamInfo::scAUDIO) {
+    if(p->content != StreamInfo::Content::VIDEO && p->content != StreamInfo::Content::AUDIO) {
         return;
     }
 
@@ -60,8 +61,8 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     // write stream data
     packet->put_U16(p->pid);
 
-    packet->put_S64(p->rawPts);
-    packet->put_S64(p->rawDts);
+    packet->put_S64(p->pts);
+    packet->put_S64(p->dts);
     packet->put_U32(p->duration);
 
     // write frame type into unused header field clientid
@@ -72,7 +73,7 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     packet->put_Blob(p->data, p->size);
 
     int64_t currentTime = 0;
-    int64_t currentPts = p->rawPts;
+    int64_t currentPts = p->pts;
 
     // set initial pts
     if(m_startPts == 0) {
@@ -195,13 +196,13 @@ MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
 
     while(p = getPacket()) {
 
-        if(keyFrameMode && p->getClientID() != StreamInfo::FrameType::ftIFRAME) {
+        if(keyFrameMode && p->getClientID() != (uint16_t)StreamInfo::FrameType::IFRAME) {
             delete p;
             continue;
         }
 
         // recheck recording duration
-        if(p->getClientID() == StreamInfo::FrameType::ftIFRAME && update()) {
+        if(p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME && update()) {
             int64_t durationMs = (int)(((double)m_index->Last() * 1000.0) / m_recording->FramesPerSecond());
             m_endTime = m_startTime + std::chrono::milliseconds(durationMs);
         }
@@ -311,18 +312,18 @@ StreamBundle PacketPlayer::createFromPatPmt(const cPatPmtParser* patpmt) {
     int vtype = patpmt->Vtype();
 
     item.addStream(StreamInfo(vpid,
-                              vtype == 0x02 ? StreamInfo::stMPEG2VIDEO :
-                              vtype == 0x1b ? StreamInfo::stH264 :
-                              vtype == 0x24 ? StreamInfo::stH265 :
-                              StreamInfo::stNONE));
+                              vtype == 0x02 ? StreamInfo::Type::MPEG2VIDEO :
+                              vtype == 0x1b ? StreamInfo::Type::H264 :
+                              vtype == 0x24 ? StreamInfo::Type::H265 :
+                              StreamInfo::Type::NONE));
 
     // add (E)AC3 streams
     for(int i = 0; patpmt->Dpid(i) != 0; i++) {
         int dtype = patpmt->Dtype(i);
         item.addStream(StreamInfo(patpmt->Dpid(i),
-                                  dtype == 0x6A ? StreamInfo::stAC3 :
-                                  dtype == 0x7A ? StreamInfo::stEAC3 :
-                                  StreamInfo::stNONE,
+                                  dtype == 0x6A ? StreamInfo::Type::AC3 :
+                                  dtype == 0x7A ? StreamInfo::Type::EAC3 :
+                                  StreamInfo::Type::NONE,
                                   patpmt->Dlang(i)));
     }
 
@@ -330,17 +331,17 @@ StreamBundle PacketPlayer::createFromPatPmt(const cPatPmtParser* patpmt) {
     for(int i = 0; patpmt->Apid(i) != 0; i++) {
         int atype = patpmt->Atype(i);
         item.addStream(StreamInfo(patpmt->Apid(i),
-                                  atype == 0x04 ? StreamInfo::stMPEG2AUDIO :
-                                  atype == 0x03 ? StreamInfo::stMPEG2AUDIO :
-                                  atype == 0x0f ? StreamInfo::stAAC :
-                                  atype == 0x11 ? StreamInfo::stLATM :
-                                  StreamInfo::stNONE,
+                                  atype == 0x04 ? StreamInfo::Type::MPEG2AUDIO :
+                                  atype == 0x03 ? StreamInfo::Type::MPEG2AUDIO :
+                                  atype == 0x0f ? StreamInfo::Type::AAC :
+                                  atype == 0x11 ? StreamInfo::Type::LATM :
+                                  StreamInfo::Type::NONE,
                                   patpmt->Alang(i)));
     }
 
     // add subtitle streams
     for(int i = 0; patpmt->Spid(i) != 0; i++) {
-        StreamInfo stream(patpmt->Spid(i), StreamInfo::stDVBSUB, patpmt->Slang(i));
+        StreamInfo stream(patpmt->Spid(i), StreamInfo::Type::DVBSUB, patpmt->Slang(i));
 
         stream.setSubtitlingDescriptor(
                 patpmt->SubtitlingType(i),

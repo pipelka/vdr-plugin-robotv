@@ -22,23 +22,21 @@
  *
  */
 
-#include "demuxer_Subtitle.h"
+#ifndef ROBOTV_DEMUXER_SUBTITLE_H
+#define ROBOTV_DEMUXER_SUBTITLE_H
 
-ParserSubtitle::ParserSubtitle(TsDemuxer* demuxer) : ParserPes(demuxer, 64 * 1024) {
-}
+#include "parser_pes.h"
 
-void ParserSubtitle::sendPayload(unsigned char* payload, int length) {
+class ParserSubtitle : public ParserPes {
+public:
 
-    if(length < 3 || payload[0] != 0x20 || payload[1] != 0x00) {
-        return;
-    }
+    ParserSubtitle(TsDemuxer* demuxer);
 
-    payload += 2;
-    length -= 3;
+protected:
 
-    if(payload[length] != 0xff) {
-        return;
-    }
+    void sendPayload(unsigned char* payload, int length);
 
-    Parser::sendPayload(payload, length);
-}
+};
+
+
+#endif // ROBOTV_DEMUXER_SUBTITLE_H

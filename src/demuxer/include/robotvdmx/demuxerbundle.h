@@ -1,7 +1,7 @@
 /*
  *      vdr-plugin-robotv - roboTV server plugin for VDR
  *
- *      Copyright (C) 2016 Aleaxander Pipelka
+ *      Copyright (C) 2016 Alexander Pipelka
  *
  *      https://github.com/pipelka/vdr-plugin-robotv
  *
@@ -22,24 +22,40 @@
  *
  */
 
-#ifndef ROBOTV_DEMUXER_LATM_H
-#define ROBOTV_DEMUXER_LATM_H
+#ifndef ROBOTV_DEMUXERBUNDLE_H
+#define ROBOTV_DEMUXERBUNDLE_H
 
-#include "parser.h"
+#include "demuxer.h"
+#include "streambundle.h"
+//#include "net/msgpacket.h"
 
-class cBitStream;
+#include <list>
 
-class ParserLatm : public Parser {
+class DemuxerBundle : public std::list<TsDemuxer*> {
 public:
 
-    ParserLatm(TsDemuxer* demuxer);
+    DemuxerBundle(TsDemuxer::Listener* listener);
+
+    virtual ~DemuxerBundle();
+
+    void clear();
+
+    TsDemuxer* findDemuxer(int pid) const;
+
+    void reorderStreams(const char* lang, StreamInfo::Type type);
+
+    bool isReady() const;
+
+    void updateFrom(StreamBundle* bundle);
+
+    bool processTsPacket(uint8_t* packet) const;
+
+    //MsgPacket* createStreamChangePacket();
 
 protected:
 
-    bool checkAlignmentHeader(unsigned char* buffer, int& framesize, bool parse);
-
-    void readStreamMuxConfig(cBitStream* bs);
+    TsDemuxer::Listener* m_listener = NULL;
 
 };
 
-#endif // ROBOTV_DEMUXER_LATM_H
+#endif // ROBOTV_DEMUXERBUNDLE_H

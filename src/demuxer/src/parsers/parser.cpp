@@ -22,16 +22,17 @@
  *
  */
 
-#include "parser.h"
-#include "pes.h"
+#include "robotvdmx/pes.h"
 
-Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : cRingBufferLinear(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
+#include "parser.h"
+
+Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : RingBuffer(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
     m_sampleRate = 0;
     m_bitRate = 0;
     m_channels = 0;
     m_duration = 0;
     m_headerSize = 0;
-    m_frameType = StreamInfo::ftUNKNOWN;
+    m_frameType = StreamInfo::FrameType::UNKNOWN;
 
     m_curPts = DVD_NOPTS_VALUE;
     m_curDts = DVD_NOPTS_VALUE;
@@ -43,9 +44,9 @@ Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : cRingBuffer
 Parser::~Parser() {
 }
 
-int Parser::parsePesHeader(uint8_t* buf, size_t len) {
+int Parser::parsePesHeader(uint8_t* buf, int len) {
     // parse PES header
-    unsigned int hdr_len = PesPayloadOffset(buf);
+    int hdr_len = PesPayloadOffset(buf);
 
     // PTS / DTS
     int64_t pts = PesHasPts(buf) ? PesGetPts(buf) : DVD_NOPTS_VALUE;
@@ -67,12 +68,12 @@ int Parser::parsePesHeader(uint8_t* buf, size_t len) {
 }
 
 void Parser::sendPayload(unsigned char* payload, int length) {
-    StreamPacket pkt;
-    pkt.data      = payload;
-    pkt.size      = length;
-    pkt.duration  = m_duration;
-    pkt.dts       = m_curDts;
-    pkt.pts       = m_curPts;
+    TsDemuxer::StreamPacket pkt;
+    pkt.data = payload;
+    pkt.size = length;
+    pkt.duration = m_duration;
+    pkt.dts = m_curDts;
+    pkt.pts = m_curPts;
     pkt.frameType = m_frameType;
 
     m_demuxer->sendPacket(&pkt);
@@ -90,12 +91,11 @@ void Parser::putData(unsigned char* data, int length, bool pusi) {
 
     // put data
     if(!m_startup && length > 0 && data != NULL) {
-        int put = Put(data, length);
+        int bytesPut = put(data, length);
 
         // reset buffer on overflow
-        if(put < length) {
-            esyslog("Parser buffer overflow - resetting");
-            Clear();
+        if(bytesPut < length) {
+            clear();
         }
     }
 }
@@ -103,7 +103,7 @@ void Parser::putData(unsigned char* data, int length, bool pusi) {
 void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     // get available data
     int length = 0;
-    uint8_t* buffer = Get(length);
+    uint8_t* buffer = get(length);
 
     // do we have a sync ?
     int framesize = 0;
@@ -115,10 +115,7 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
             // check for the next frame (eliminate false positive header checks)
             int next_framesize = 0;
 
-            if(!checkAlignmentHeader(&buffer[framesize], next_framesize, false)) {
-                esyslog("next frame not found on expected position, searching ...");
-            }
-            else {
+            if(checkAlignmentHeader(&buffer[framesize], next_framesize, false)) {
                 // check if we should extrapolate the timestamps
                 if(m_curPts == DVD_NOPTS_VALUE) {
                     m_curPts = PtsAdd(m_lastPts, m_duration);
@@ -139,7 +136,7 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
                 m_curPts = DVD_NOPTS_VALUE;
                 m_curDts = DVD_NOPTS_VALUE;
 
-                Del(framesize);
+                del(framesize);
                 putData(data, datasize, pusi);
                 return;
             }
@@ -151,11 +148,10 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     int offset = findAlignmentOffset(buffer, length, 1, framesize);
 
     if(offset != -1) {
-        isyslog("sync found at offset %i (streamtype: %s / %i bytes in buffer / framesize: %i bytes)", offset, m_demuxer->typeName(), Available(), framesize);
-        Del(offset);
+        del(offset);
     }
     else if(length > m_headerSize) {
-        Del(length - m_headerSize);
+        del(length - m_headerSize);
     }
 
     putData(data, datasize, pusi);

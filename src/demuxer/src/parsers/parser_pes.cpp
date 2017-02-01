@@ -22,8 +22,9 @@
  *
  */
 
-#include "demuxer_PES.h"
-#include "pes.h"
+#include "robotvdmx/pes.h"
+
+#include "parser_pes.h"
 
 ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffersize, 0), m_length(0) {
     m_startup = true;
@@ -34,12 +35,12 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
     // packet completely assembled ?
     if(!m_startup) {
         int length = 0;
-        uint8_t* buffer = Get(length);
+        uint8_t* buffer = get(length);
 
         if(((length >= m_length && m_length != 0) || (m_length == 0 && pusi)) && buffer != NULL) {
             // get buffer size for packets with undefined length
             if(m_length == 0) {
-                m_length = Available();
+                m_length = available();
             }
 
             // parse payload
@@ -70,11 +71,11 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
         m_startup = false;
 
         // reset buffer
-        Clear();
+        clear();
     }
 
     // we start with the beginning of a packet
     if(!m_startup) {
-        Put(data, size);
+        put(data, size);
     }
 }
