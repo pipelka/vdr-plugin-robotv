@@ -167,9 +167,9 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
             response->put_U8((uint8_t)event->IsRunning());
 
             const cComponents* components = event->Components();
+            response->put_U32((uint32_t)(components ? components->NumComponents() : 0));
 
             if(components != nullptr) {
-                response->put_U32((uint32_t)components->NumComponents());
                 int index = 0;
                 tComponent* component;
                 while((component = components->Component(index++)) != nullptr) {
