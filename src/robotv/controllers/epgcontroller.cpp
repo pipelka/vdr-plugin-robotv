@@ -173,8 +173,8 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
                 int index = 0;
                 tComponent* component;
                 while((component = components->Component(index++)) != nullptr) {
-                    response->put_String(component->description);
-                    response->put_String(component->language);
+                    response->put_String(component->description ? component->description : "");
+                    response->put_String(component->language ? component->language : "");
                     response->put_U8(component->type);
                     response->put_U8(component->stream);
                 }
