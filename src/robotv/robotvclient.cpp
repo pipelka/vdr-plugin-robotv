@@ -149,9 +149,10 @@ void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
 
     isyslog("Sending timer change request to client #%i ...", m_id);
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
+    resp->setProtocolVersion(m_loginController.protocolVersion());
 
     if(Change == tcAdd) {
-        TimerController::timer2Packet(Timer, resp, m_loginController.protocolVersion());
+        TimerController::timer2Packet(Timer, resp);
     }
 
     queueMessage(resp);
@@ -185,6 +186,7 @@ void RoboTvClient::sendMoviesChange() {
 
 void RoboTvClient::onRecording(const cEvent* event, bool on) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
+    resp->setProtocolVersion(m_loginController.protocolVersion());
 
     resp->put_U32(event ? event->Index() : -1);
     resp->put_U32(on);

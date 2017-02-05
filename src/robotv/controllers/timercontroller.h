@@ -42,7 +42,7 @@ public:
 
     static void event2Packet(const cEvent* event, MsgPacket* p);
 
-    static void timer2Packet(const cTimer* timer, MsgPacket* p, uint16_t protocolVersion);
+    static void timer2Packet(const cTimer* timer, MsgPacket* p);
 
     static int checkTimerConflicts(const cTimer* timer);
 

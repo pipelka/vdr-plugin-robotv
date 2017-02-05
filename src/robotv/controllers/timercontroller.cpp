@@ -87,7 +87,7 @@ bool TimerController::process(MsgPacket* request, MsgPacket* response) {
     return false;
 }
 
-void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p, uint16_t protocolVersion) {
+void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     Utf8Conv toUtf8;
     int flags = checkTimerConflicts(timer);
     const char* fileName = timer->File();
@@ -128,7 +128,7 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p, uint16_t p
     p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
     p->put_String(toUtf8.convert(logoUrl)); // !!! filename changed to logo url
 
-    if(protocolVersion >= 8) {
+    if(p->getProtocolVersion() >= 8) {
         p->put_String(MovieController::folderFromName(timer->File()));
     }
 
@@ -157,6 +157,10 @@ void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
     p->put_U32(event->EventID());
     p->put_U32(event->StartTime());
     p->put_U32(event->Duration());
+
+    if(p->getProtocolVersion() >= 8) {
+        p->put_U32(event->Vps());
+    }
 
     int i = 0;
 
@@ -191,7 +195,7 @@ bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* O
     }
 
     response->put_U32(ROBOTV_RET_OK);
-    timer2Packet(timer, response, request->getProtocolVersion());
+    timer2Packet(timer, response);
 
     return true;
 }
@@ -215,7 +219,7 @@ bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) 
             continue;
         }
 
-        timer2Packet(timer, response, request->getProtocolVersion());
+        timer2Packet(timer, response);
     }
 
     return true;
