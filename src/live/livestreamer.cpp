@@ -61,7 +61,19 @@ LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int pr
 }
 
 LiveStreamer::~LiveStreamer() {
-    Detach();
+    cDevice * device = Device();
+
+    if(device != nullptr) {
+        cCamSlot *camSlot = device->CamSlot();
+
+        if (camSlot != nullptr) {
+            isyslog("camslot detached");
+            ChannelCamRelations.ClrChecked(ChannelID(), camSlot->SlotNumber());
+        }
+
+        Detach();
+    }
+
     m_demuxers.clear();
     delete m_queue;
 
