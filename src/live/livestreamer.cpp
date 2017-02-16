@@ -92,7 +92,6 @@ void LiveStreamer::requestStreamChange() {
 }
 
 int LiveStreamer::switchChannel(const cChannel* channel) {
-
     if(channel == nullptr) {
         esyslog("unknown channel !");
         return ROBOTV_RET_ERROR;
@@ -101,6 +100,13 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     // get device for this channel
     cDevice* device = cDevice::GetDevice(channel, LIVEPRIORITY, false);
 
+    // maybe an encrypted channel that cannot be handled
+    // lets try if a device can decrypt it on it's own (without a CAM slot)
+    if(device == nullptr) {
+        device = cDevice::GetDeviceForTransponder(channel, LIVEPRIORITY);
+    }
+
+    // maybe all devices busy
     if(device == nullptr) {
         // return status "recording running" if there is an active timer
         time_t now = time(nullptr);
