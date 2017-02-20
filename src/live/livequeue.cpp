@@ -25,6 +25,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
 
 #include "config/config.h"
 #include "net/msgpacket.h"
@@ -96,12 +98,21 @@ void LiveQueue::createRingBuffer() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     m_pause = false;
+    off_t length = (off_t)m_bufferSize + 1024 * 1024;
 
     m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
     dsyslog("timeshift file: %s", (const char*)m_storage);
 
-    m_writeFd = open(m_storage, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    m_readFd = open(m_storage, O_CREAT | O_RDONLY, 0644);
+    m_writeFd = open(m_storage, O_CREAT | O_WRONLY, 0644);
+    int rc = posix_fallocate(m_writeFd, 0, length);
+
+    if(rc != 0) {
+        dsyslog("unable to pre-allocate %li bytes for timeshift ringbuffer", length);
+        dsyslog("ERROR: %s (status = %i)", strerror(rc), rc);
+    }
+
+    m_readFd = open(m_storage, O_NOATIME | O_RDONLY, 0644);
+    posix_fadvise(m_readFd, 0, length, POSIX_FADV_SEQUENTIAL);
 
     if(m_readFd == -1) {
         esyslog("Failed to create timeshift ringbuffer !");
