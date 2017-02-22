@@ -225,8 +225,10 @@ bool LiveQueue::write(const PacketData& data) {
     // if not -> shift read position forward
 
     while(packetEndPosition >= readPosition && m_wrapped) {
-        if(internalRead() == NULL) {
-            return NULL;
+        if(internalRead() == nullptr) {
+            esyslog("write overlap - wrapped read position behind write position !");
+            delete p;
+            return false;
         }
     }
 
