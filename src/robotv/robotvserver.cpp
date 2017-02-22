@@ -228,6 +228,8 @@ void RoboTVServer::Action(void) {
     isyslog("removing outdated artwork");
     artwork.cleanup();
 
+    m_epgHandler.cleanup();
+
     // get initial state of the recordings
     int recState = -1;
     int recStateOld = -1;

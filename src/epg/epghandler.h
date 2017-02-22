@@ -35,11 +35,11 @@ public:
 
     bool HandleEvent(cEvent* Event);
 
+    void cleanup();
+
     void triggerCleanup();
 
 private:
-
-    void cleanup();
 
     void createDb();
 

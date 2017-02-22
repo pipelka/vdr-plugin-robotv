@@ -28,7 +28,6 @@
 
 EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
     createDb();
-    triggerCleanup();
 }
 
 bool EpgHandler::HandleEvent(cEvent* Event) {
