@@ -42,6 +42,7 @@ LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket)
     m_writerRunning = true;
     m_wrapCount = 0;
     m_queueStartTime = roboTV::currentTimeMillis();
+    m_lastSyncTime = roboTV::currentTimeMillis();
     m_writeThread = nullptr;
 }
 
@@ -243,6 +244,20 @@ bool LiveQueue::write(const PacketData& data) {
 
     if(!success) {
         esyslog("Unable to write packet into timeshift ringbuffer !");
+    }
+
+    // sync every 2 seconds
+    // we just want to avoid delays of the write-back cache hitting
+    // us on buffer-wrap (or any other occasion)
+
+    std::chrono::milliseconds now = roboTV::currentTimeMillis();
+
+    if(now - m_lastSyncTime >= std::chrono::milliseconds(2000)) {
+        if(fdatasync(m_writeFd) != 0) {
+            esyslog("Failed to sync timeshift ring-buffer !");
+        }
+
+        m_lastSyncTime = now;
     }
 
     delete p;

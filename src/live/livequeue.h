@@ -122,6 +122,8 @@ private:
 
     std::atomic<bool> m_writerRunning;
 
+    std::chrono::milliseconds m_lastSyncTime;
+
     std::deque<PacketData> m_writerQueue;
 
     std::mutex m_mutexQueue;
