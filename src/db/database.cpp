@@ -122,12 +122,12 @@ int Database::exec(const std::string& query, ...) {
         }
     }
 
-    releaseQueryBuffer(querybuffer);
-
     if(rc != SQLITE_OK && errmsg != NULL) {
-        esyslog("SQLite: %s", errmsg);
+        esyslog("SQLite: '%s' on statement '%s'", errmsg, querybuffer);
         sqlite3_free(errmsg);
     }
+
+    releaseQueryBuffer(querybuffer);
 
     return rc;
 }
@@ -148,7 +148,7 @@ sqlite3_stmt* Database::query(const std::string& query, ...) {
     std::chrono::milliseconds duration(10);
 
     for(;;) {
-        rc = sqlite3_prepare_v2(m_db, querybuffer, -1, &stmt, NULL);
+        rc = sqlite3_prepare_v2(m_db, querybuffer, -1, &stmt, nullptr);
 
         if(rc == SQLITE_BUSY || rc == SQLITE_LOCKED) {
             std::this_thread::sleep_for(duration);
@@ -158,17 +158,16 @@ sqlite3_stmt* Database::query(const std::string& query, ...) {
         }
     }
 
-    releaseQueryBuffer(querybuffer);
-
     if(rc != SQLITE_OK) {
-        esyslog("SQLite: %s", sqlite3_errmsg(m_db));
+        esyslog("SQLite: %s on statement '%s'", sqlite3_errmsg(m_db), querybuffer);
 
-        if(stmt != NULL) {
+        if(stmt != nullptr) {
             sqlite3_finalize(stmt);
+            stmt = nullptr;
         }
-
-        return NULL;
     }
+
+    releaseQueryBuffer(querybuffer);
 
     return stmt;
 }
