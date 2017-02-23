@@ -97,7 +97,6 @@ void EpgHandler::cleanup() {
     isyslog("removing outdated epg entries");
 
     time_t now = time(NULL);
-    m_storage.exec("DELETE FROM epgsearch WHERE docid IN (SELECT docid FROM epgindex WHERE timestamp < %llu)", (uint64_t)now);
     m_storage.exec("DELETE FROM epgindex WHERE timestamp < %llu", (uint64_t)now);
 }
 
