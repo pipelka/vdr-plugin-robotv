@@ -26,7 +26,7 @@
 #include <tools/hash.h>
 #include "epghandler.h"
 
-EpgHandler::EpgHandler() : m_storage(roboTV::Storage::getInstance()) {
+EpgHandler::EpgHandler() {
     createDb();
 }
 
@@ -49,7 +49,7 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 
     int docId = createStringHash(docIdString.c_str());
 
-    m_storage.exec(
+    exec(
         "INSERT OR REPLACE INTO epgindex(docid,eventid,timestamp,channelid,channelname) VALUES(%i, %u, %llu, %Q, %Q)",
         docId,
         Event->EventID(),
@@ -58,12 +58,22 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
         channelName.c_str()
     );
 
-    m_storage.exec(
+    exec(
         "INSERT OR REPLACE INTO epgsearch(docid, title, subject) VALUES(%i, %Q, %Q)",
         docId,
         Event->Title() ? Event->Title() : "",
         Event->ShortText() ? Event->ShortText() : ""
     );
+    return false;
+}
+
+bool EpgHandler::BeginSegmentTransfer(const cChannel *Channel, bool OnlyRunningStatus) {
+    begin();
+    return false;
+}
+
+bool EpgHandler::EndSegmentTransfer(bool Modified, bool OnlyRunningStatus) {
+    commit();
     return false;
 }
 
@@ -83,13 +93,13 @@ void EpgHandler::createDb() {
         "  subject\n"
         ");\n";
 
-    if(m_storage.exec(schema) != SQLITE_OK) {
+    if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for epg search");
     }
 
     // update older version of table
-    if(!m_storage.tableHasColumn("epgindex", "eventid")) {
-        m_storage.exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
+    if(!tableHasColumn("epgindex", "eventid")) {
+        exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
     }
 }
 
@@ -97,7 +107,7 @@ void EpgHandler::cleanup() {
     isyslog("removing outdated epg entries");
 
     time_t now = time(NULL);
-    m_storage.exec("DELETE FROM epgindex WHERE timestamp < %llu", (uint64_t)now);
+    exec("DELETE FROM epgindex WHERE timestamp < %llu", (uint64_t)now);
 }
 
 void EpgHandler::triggerCleanup() {
