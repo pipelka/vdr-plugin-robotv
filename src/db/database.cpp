@@ -59,7 +59,9 @@ bool Database::open(const std::string& db) {
     }
 
     sqlite3_busy_timeout(m_db, 2000);
-    return (exec("PRAGMA journal_mode = WAL;") == SQLITE_OK);
+    exec("PRAGMA synchronous = NORMAL");
+    exec("PRAGMA mmap_size = 268435456");
+    return (exec("PRAGMA journal_mode = WAL") == SQLITE_OK);
 }
 
 bool Database::close() {
