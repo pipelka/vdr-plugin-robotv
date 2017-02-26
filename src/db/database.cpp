@@ -125,7 +125,6 @@ int Database::exec(const std::string& query, ...) {
     }
 
     if(rc != SQLITE_OK && errmsg != NULL) {
-        esyslog("SQLite: '%s' on statement '%s'", errmsg, querybuffer);
         sqlite3_free(errmsg);
     }
 

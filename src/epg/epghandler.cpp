@@ -49,21 +49,36 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 
     int docId = createStringHash(docIdString.c_str());
 
-    exec(
-        "INSERT OR REPLACE INTO epgindex(docid,eventid,timestamp,channelid,channelname) VALUES(%i, %u, %llu, %Q, %Q)",
+    // try to insert
+    if(exec(
+        "INSERT INTO epgindex(docid,eventid,timestamp,channelid,channelname) VALUES(%i, %u, %llu, %Q, %Q)",
         docId,
         Event->EventID(),
         (uint64_t)Event->StartTime(),
         (const char*)Event->ChannelID().ToString(),
-        channelName.c_str()
-    );
+        channelName.c_str()) == SQLITE_OK) {
 
-    exec(
-        "INSERT OR REPLACE INTO epgsearch(docid, title, subject) VALUES(%i, %Q, %Q)",
-        docId,
-        Event->Title() ? Event->Title() : "",
-        Event->ShortText() ? Event->ShortText() : ""
-    );
+        exec(
+            "INSERT INTO epgsearch(docid, title, subject) VALUES(%i, %Q, %Q)",
+            docId,
+            Event->Title() ? Event->Title() : "",
+            Event->ShortText() ? Event->ShortText() : ""
+        );
+
+        // didn't work -> update entry
+        /*query(
+            "UPDATE epgindex "
+            "SET eventid=%u,timestamp=%llu,channelid=%Q,channelname=%Q "
+            "WHERE docid=%i",
+            Event->EventID(),
+            (uint64_t)Event->StartTime(),
+            (const char*)Event->ChannelID().ToString(),
+            channelName.c_str(),
+            docId
+        );*/
+
+    }
+
     return false;
 }
 
