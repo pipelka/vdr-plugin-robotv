@@ -31,6 +31,12 @@ EpgHandler::EpgHandler() {
 }
 
 bool EpgHandler::HandleEvent(cEvent* Event) {
+
+    // skip entries from the past
+    if(Event->EndTime() <= time(NULL)) {
+        return false;
+    }
+
     std::string channelName;
 
     RoboTVChannels& c = RoboTVChannels::instance();
@@ -49,35 +55,30 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 
     int docId = createStringHash(docIdString.c_str());
 
-    // try to insert
-    if(exec(
-        "INSERT INTO epgindex(docid,eventid,timestamp,channelid,channelname) VALUES(%i, %u, %llu, %Q, %Q)",
+    // insert new epg entry
+    exec(
+        "INSERT OR IGNORE INTO epgindex("
+        "  docid,"
+        "  eventid,"
+        "  timestamp,"
+        "  channelid,"
+        "  channelname,"
+        "  title,"
+        "  subject,"
+        "  description,"
+        "  endtime"
+        ") "
+        "VALUES(%i, %u, %llu, %Q, %Q, %Q, %Q, %Q, %llu)",
         docId,
         Event->EventID(),
         (uint64_t)Event->StartTime(),
         (const char*)Event->ChannelID().ToString(),
-        channelName.c_str()) == SQLITE_OK) {
-
-        exec(
-            "INSERT INTO epgsearch(docid, title, subject) VALUES(%i, %Q, %Q)",
-            docId,
-            Event->Title() ? Event->Title() : "",
-            Event->ShortText() ? Event->ShortText() : ""
-        );
-
-        // didn't work -> update entry
-        /*query(
-            "UPDATE epgindex "
-            "SET eventid=%u,timestamp=%llu,channelid=%Q,channelname=%Q "
-            "WHERE docid=%i",
-            Event->EventID(),
-            (uint64_t)Event->StartTime(),
-            (const char*)Event->ChannelID().ToString(),
-            channelName.c_str(),
-            docId
-        );*/
-
-    }
+        channelName.c_str(),
+        Event->Title() ? Event->Title() : "",
+        Event->ShortText() ? Event->ShortText() : "",
+        Event->Description() ? Event->Description() : "",
+        (uint64_t)Event->EndTime()
+    );
 
     return false;
 }
@@ -99,22 +100,53 @@ void EpgHandler::createDb() {
         "  eventid INTEGER NOT NULL,\n"
         "  timestamp INTEGER NOT NULL,\n"
         "  channelname TEXT NOT NULL,\n"
-        "  channelid TEXT NOT NULL\n"
+        "  channelid TEXT NOT NULL,\n"
+        "  title TEXT NOT NULL,\n"
+        "  subject TEXT NOT NULL,\n"
+        "  description TEXT NOT NULL,\n"
+        "  endtime INTEGER NOT NULL\n"
         ");\n"
-        "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n"
-        "CREATE VIRTUAL TABLE IF NOT EXISTS epgsearch USING fts4(\n"
-        "  content=\"\",\n"
-        "  title,\n"
-        "  subject\n"
-        ");\n";
+        "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
 
     if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for epg search");
     }
 
-    // update older version of table
+    // update older versions of epgindex
     if(!tableHasColumn("epgindex", "eventid")) {
         exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
+    }
+    if(!tableHasColumn("epgindex", "endtime")) {
+        exec("DELETE FROM epgindex");
+        exec("ALTER TABLE epgindex ADD COLUMN title TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN subject TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN endtime INTEGER NOT NULL DEFAULT 0");
+        exec("DROP TABLE epgsearch");
+        exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
+    }
+
+    // new epgsearch table
+    schema =
+        "CREATE VIRTUAL TABLE IF NOT EXISTS epgsearch USING fts4(\n"
+        "  content=\"epgindex\",\n"
+        "  title, subject\n"
+        ");\n"
+        "CREATE TRIGGER IF NOT EXISTS epgindex_bu BEFORE UPDATE ON epgindex BEGIN\n"
+        "  DELETE FROM epgsearch WHERE docid=old.docid;\n"
+        "END;\n"
+        "CREATE TRIGGER IF NOT EXISTS epgindex_bd BEFORE DELETE ON epgindex BEGIN\n"
+        "  DELETE FROM epgsearch WHERE docid=old.docid;\n"
+        "END;\n"
+        "CREATE TRIGGER IF NOT EXISTS epgindex_au AFTER UPDATE ON epgindex BEGIN\n"
+        "  INSERT INTO epgsearch(docid, title, subject) VALUES(new.docid, new.title, new.subject);\n"
+        "END;\n"
+        "CREATE TRIGGER IF NOT EXISTS epgindex_ai AFTER INSERT ON epgindex BEGIN\n"
+        "  INSERT INTO epgsearch(docid, title, subject) VALUES(new.docid, new.title, new.subject);\n"
+        "END;\n";
+
+    if(exec(schema) != SQLITE_OK) {
+        esyslog("Unable to create new epgsearch fts table !");
     }
 }
 
@@ -122,7 +154,7 @@ void EpgHandler::cleanup() {
     isyslog("removing outdated epg entries");
 
     time_t now = time(NULL);
-    exec("DELETE FROM epgindex WHERE timestamp < %llu", (uint64_t)now);
+    exec("DELETE FROM epgindex WHERE endtime < %llu", (uint64_t)now);
 }
 
 void EpgHandler::triggerCleanup() {
