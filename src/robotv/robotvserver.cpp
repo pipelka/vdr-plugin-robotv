@@ -275,8 +275,8 @@ void RoboTVServer::Action(void) {
                 }
             }
 
-            // artwork cleanup (every 12 hours)
-            if(cleanupTimer.Elapsed() >= 12 * 60 * 60 * 1000) {
+            // cleanup (every hour)
+            if(cleanupTimer.Elapsed() >= 60 * 60 * 1000) {
                 isyslog("removing outdated artwork");
                 artwork.triggerCleanup();
                 m_epgHandler.triggerCleanup();
