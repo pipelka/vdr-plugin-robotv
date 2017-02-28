@@ -104,7 +104,8 @@ void EpgHandler::createDb() {
         "  title TEXT NOT NULL,\n"
         "  subject TEXT NOT NULL,\n"
         "  description TEXT NOT NULL,\n"
-        "  endtime INTEGER NOT NULL\n"
+        "  endtime INTEGER NOT NULL,\n"
+        "  url TEXT NOT NULL DEFAULT ''\n"
         ");\n"
         "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
 
@@ -126,7 +127,11 @@ void EpgHandler::createDb() {
         exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
     }
 
-    // new epgsearch table
+    if(!tableHasColumn("epgindex", "url")) {
+        exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
+    }
+
+        // new epgsearch table
     schema =
         "CREATE VIRTUAL TABLE IF NOT EXISTS epgsearch USING fts4(\n"
         "  content=\"epgindex\",\n"

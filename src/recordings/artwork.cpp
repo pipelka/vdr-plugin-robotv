@@ -23,6 +23,8 @@
  */
 
 #include <thread>
+#include <vdr/channels.h>
+#include <tools/hash.h>
 #include "recordings/artwork.h"
 
 Artwork::Artwork() : m_storage(roboTV::Storage::getInstance()) {
@@ -118,4 +120,25 @@ void Artwork::triggerCleanup(int afterDays) {
     });
 
     t.detach();
+}
+
+bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &imageUrl) {
+    if(imageUrl.empty()) {
+        return false;
+    }
+
+    const cChannel* channel = findChannelByUid(channelUid);
+
+    std::string stringId = (const char*)channel->GetChannelID().ToString();
+    stringId += "-" + std::to_string(eventId);
+
+    int docId = createStringHash(stringId.c_str());
+
+    m_storage.exec(
+            "UPDATE OR IGNORE epgindex SET url=%Q WHERE docid=%i",
+            imageUrl.c_str(),
+            docId
+    );
+
+    return true;
 }

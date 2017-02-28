@@ -74,5 +74,15 @@ bool ArtworkController::processSet(MsgPacket* request, MsgPacket* response) {
     uint32_t externalId = request->get_U32();
 
     m_artwork.set(content, title, poster, background, externalId);
+
+    if(!request->eop()) {
+        uint32_t channelUid = request->get_U32();
+        uint32_t eventId = request->get_U32();
+
+        if(channelUid != 0 && eventId != 0) {
+            m_artwork.setEpgImage(channelUid, eventId, background);
+        }
+    }
+
     return true;
 }

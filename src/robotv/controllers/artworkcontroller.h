@@ -49,7 +49,6 @@ private:
 
     ArtworkController(const ArtworkController& orig);
 
-
     Artwork m_artwork;
 };
 
