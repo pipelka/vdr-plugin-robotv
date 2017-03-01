@@ -84,12 +84,18 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 }
 
 bool EpgHandler::BeginSegmentTransfer(const cChannel *Channel, bool OnlyRunningStatus) {
-    begin();
+    if(!OnlyRunningStatus) {
+        begin();
+    }
+
     return false;
 }
 
 bool EpgHandler::EndSegmentTransfer(bool Modified, bool OnlyRunningStatus) {
-    commit();
+    if(!OnlyRunningStatus) {
+        commit();
+    }
+
     return false;
 }
 
