@@ -122,8 +122,8 @@ void Artwork::triggerCleanup(int afterDays) {
     t.detach();
 }
 
-bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &imageUrl) {
-    if(imageUrl.empty()) {
+bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &background, const std::string& poster) {
+    if(background.empty() && poster.empty()) {
         return false;
     }
 
@@ -135,8 +135,9 @@ bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::stri
     int docId = createStringHash(stringId.c_str());
 
     m_storage.exec(
-            "UPDATE OR IGNORE epgindex SET url=%Q WHERE docid=%i",
-            imageUrl.c_str(),
+            "UPDATE OR IGNORE epgindex SET url=%Q, posterurl=%Q WHERE docid=%i",
+            background.c_str(),
+            poster.c_str(),
             docId
     );
 
