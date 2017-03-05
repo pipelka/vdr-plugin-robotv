@@ -44,10 +44,12 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
     cChannels* channels = c.get();
     cChannel* channel = channels->GetByChannelID(Event->ChannelID());
 
-    if(channel != nullptr) {
-        channelName = channel->Name();
+    if(channel == nullptr) {
+        c.unlock();
+        return false;
     }
 
+    channelName = channel->Name();
     c.unlock();
 
     std::string docIdString = (const char*)Event->ChannelID().ToString();
@@ -66,9 +68,10 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
         "  title,"
         "  subject,"
         "  description,"
-        "  endtime"
+        "  endtime,"
+        "  channeluid"
         ") "
-        "VALUES(%i, %u, %llu, %Q, %Q, %Q, %Q, %Q, %llu)",
+        "VALUES(%i, %u, %llu, %Q, %Q, %Q, %Q, %Q, %llu, %i)",
         docId,
         Event->EventID(),
         (uint64_t)Event->StartTime(),
@@ -77,7 +80,8 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
         Event->Title() ? Event->Title() : "",
         Event->ShortText() ? Event->ShortText() : "",
         Event->Description() ? Event->Description() : "",
-        (uint64_t)Event->EndTime()
+        (uint64_t)Event->EndTime(),
+        createChannelUid(channel)
     );
 
     return false;
@@ -111,7 +115,13 @@ void EpgHandler::createDb() {
         "  subject TEXT NOT NULL,\n"
         "  description TEXT NOT NULL,\n"
         "  endtime INTEGER NOT NULL,\n"
-        "  url TEXT NOT NULL DEFAULT ''\n"
+        "  url TEXT NOT NULL DEFAULT '',\n"
+        "  channeluid INTEGER,\n"
+        "  contentid INTEGER,\n"
+        "  season INTEGER,\n"
+        "  episode INTEGER,\n"
+        "  posterurl TEXT,\n"
+        "  tvshow INTEGER"
         ");\n"
         "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
 
@@ -137,7 +147,18 @@ void EpgHandler::createDb() {
         exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
     }
 
-        // new epgsearch table
+    // version step (0.10.1)
+    if(!tableHasColumn("epgindex", "channeluid")) {
+        exec("DELETE FROM epgindex");
+        exec("ALTER TABLE epgindex ADD COLUMN channeluid INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN contentid INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN season INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN episode INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN posterurl TEXT");
+        exec("ALTER TABLE epgindex ADD COLUMN tvshow INTEGER");
+    }
+
+    // new epgsearch table
     schema =
         "CREATE VIRTUAL TABLE IF NOT EXISTS epgsearch USING fts4(\n"
         "  content=\"epgindex\",\n"
