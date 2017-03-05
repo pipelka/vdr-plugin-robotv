@@ -80,7 +80,7 @@ bool ArtworkController::processSet(MsgPacket* request, MsgPacket* response) {
         uint32_t eventId = request->get_U32();
 
         if(channelUid != 0 && eventId != 0) {
-            m_artwork.setEpgImage(channelUid, eventId, background);
+            m_artwork.setEpgImage(channelUid, eventId, background, poster);
         }
     }
 
