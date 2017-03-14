@@ -117,7 +117,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     int pmtVersion = 0;
     int patVersion = 0;
 
-    int packet_count = 1;
+    int packet_count = 20;
     int packet_size = TS_SIZE * packet_count;
 
     unsigned char buffer[packet_size];
@@ -131,7 +131,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     m_position += packet_size;
 
     // new PAT / PMT found ?
-    if(m_parser.ParsePatPmt(buffer, TS_SIZE)) {
+    if(m_parser.ParsePatPmt(buffer, packet_size)) {
         m_parser.GetVersions(m_patVersion, pmtVersion);
 
         if(pmtVersion > m_pmtVersion) {
