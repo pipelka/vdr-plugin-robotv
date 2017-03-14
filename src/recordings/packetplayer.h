@@ -83,8 +83,6 @@ private:
 
     bool m_requestStreamChange;
 
-    bool m_firstKeyFrameSeen;
-
     int m_patVersion;
 
     int m_pmtVersion;

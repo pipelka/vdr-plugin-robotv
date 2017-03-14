@@ -30,7 +30,6 @@
 
 PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_requestStreamChange = true;
-    m_firstKeyFrameSeen = false;
     m_index = new cIndexFile(rec->FileName(), false);
     m_recording = rec;
     m_position = 0;
@@ -49,19 +48,8 @@ PacketPlayer::~PacketPlayer() {
 }
 
 void PacketPlayer::sendStreamPacket(StreamPacket* p) {
-    // check if we've got a key frame
-    if(p->content == StreamInfo::scVIDEO && p->frameType == StreamInfo::ftIFRAME && !m_firstKeyFrameSeen) {
-        isyslog("got first key frame");
-        m_firstKeyFrameSeen = true;
-    }
-
     // skip non video / audio packets
     if(p->content != StreamInfo::scVIDEO && p->content != StreamInfo::scAUDIO) {
-        return;
-    }
-
-    // streaming starts with a key frame
-    if(!m_firstKeyFrameSeen) {
         return;
     }
 
@@ -262,7 +250,6 @@ void PacketPlayer::reset() {
     m_parser.Reset();
     m_demuxers.clear();
     m_requestStreamChange = true;
-    m_firstKeyFrameSeen = false;
     m_patVersion = -1;
     m_pmtVersion = -1;
 
