@@ -103,21 +103,27 @@ MsgPacket* PacketPlayer::getNextPacket() {
     int pmtVersion = 0;
     int patVersion = 0;
 
-    int packet_count = 20;
-    int packet_size = TS_SIZE * packet_count;
+    int packetCount = 20;
+    int packetSize = TS_SIZE * packetCount;
 
-    unsigned char buffer[packet_size];
+    unsigned char buffer[packetSize];
 
     // get next block (TS packets)
-    if(getBlock(buffer, m_position, packet_size) != packet_size) {
-        return NULL;
+    int bytesRead = getBlock(buffer, m_position, packetSize);
+
+    if(bytesRead < TS_SIZE) {
+        return nullptr;
     }
 
+    // round to TS_SIZE border
+    packetCount = (bytesRead / TS_SIZE);
+    packetSize = TS_SIZE * packetCount;
+
     // advance to next block
-    m_position += packet_size;
+    m_position += packetSize;
 
     // new PAT / PMT found ?
-    if(m_parser.ParsePatPmt(buffer, packet_size)) {
+    if(m_parser.ParsePatPmt(buffer, packetSize)) {
         m_parser.GetVersions(m_patVersion, pmtVersion);
 
         if(pmtVersion > m_pmtVersion) {
@@ -136,7 +142,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     // put packets into demuxer
     uint8_t* p = buffer;
 
-    for(int i = 0; i < packet_count; i++) {
+    for(int i = 0; i < packetCount; i++) {
         m_demuxers.processTsPacket(p);
         p += TS_SIZE;
     }
