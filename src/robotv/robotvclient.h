@@ -35,7 +35,7 @@
 #include <vdr/receiver.h>
 #include <vdr/status.h>
 
-#include "demuxer/streaminfo.h"
+#include "robotvdmx/streaminfo.h"
 #include "net/msgpacket.h"
 #include "recordings/artwork.h"
 

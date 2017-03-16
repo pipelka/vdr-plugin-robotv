@@ -25,7 +25,7 @@
 #ifndef ROBOTV_LIVEQUEUE_H
 #define ROBOTV_LIVEQUEUE_H
 
-#include "demuxer/streaminfo.h"
+#include "robotvdmx/streaminfo.h"
 
 #include <deque>
 #include <chrono>

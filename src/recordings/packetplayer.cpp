@@ -22,6 +22,7 @@
  *
  */
 
+#include <live/livestreamer.h>
 #include "config/config.h"
 #include "packetplayer.h"
 #include "tools/time.h"
@@ -48,7 +49,7 @@ PacketPlayer::~PacketPlayer() {
     delete m_index;
 }
 
-void PacketPlayer::sendStreamPacket(StreamPacket* p) {
+void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
     // skip non video / audio packets
     if(p->content != StreamInfo::Content::VIDEO && p->content != StreamInfo::Content::AUDIO) {
         return;
@@ -93,7 +94,7 @@ void PacketPlayer::sendStreamPacket(StreamPacket* p) {
     m_queue.push_back(packet);
 }
 
-void PacketPlayer::requestStreamChange() {
+void PacketPlayer::onStreamChange() {
     isyslog("stream change requested");
     m_requestStreamChange = true;
 }
@@ -160,7 +161,8 @@ MsgPacket* PacketPlayer::getNextPacket() {
 
         isyslog("create streamchange packet");
         m_requestStreamChange = false;
-        return m_demuxers.createStreamChangePacket();
+
+        return LiveStreamer::createStreamChangePacket(m_demuxers);
     }
 
     // get next packet from queue (if any)

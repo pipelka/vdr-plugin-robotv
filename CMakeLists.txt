@@ -55,37 +55,6 @@ set(SOURCE_FILES
     src/db/database.h
     src/db/storage.cpp
     src/db/storage.h
-    src/demuxer/include/aaccommon.h
-    src/demuxer/include/ac3common.h
-    src/demuxer/demuxer.cpp
-    src/demuxer/demuxer.h
-    src/demuxer/parsers/parser_ac3.cpp
-    src/demuxer/parsers/parser_ac3.h
-    src/demuxer/parsers/parser_adts.cpp
-    src/demuxer/parsers/parser_adts.h
-        src/demuxer/parsers/parser_h264.cpp
-        src/demuxer/parsers/parser_h264.h
-    src/demuxer/parsers/parser_h265.cpp
-    src/demuxer/parsers/parser_h265.h
-    src/demuxer/parsers/parser_latm.cpp
-    src/demuxer/parsers/parser_latm.h
-    src/demuxer/parsers/parser_mpegaudio.cpp
-    src/demuxer/parsers/parser_mpegaudio.h
-    src/demuxer/parsers/parser_mpegvideo.cpp
-    src/demuxer/parsers/parser_mpegvideo.h
-    src/demuxer/parsers/parser_pes.cpp
-    src/demuxer/parsers/parser_pes.h
-    src/demuxer/parsers/parser_subtitle.cpp
-    src/demuxer/parsers/parser_subtitle.h
-    src/demuxer/demuxerbundle.cpp
-    src/demuxer/demuxerbundle.h
-    src/demuxer/parsers/parser.cpp
-    src/demuxer/parsers/parser.h
-    src/demuxer/include/pes.h
-    src/demuxer/streambundle.cpp
-    src/demuxer/streambundle.h
-    src/demuxer/streaminfo.cpp
-    src/demuxer/streaminfo.h
     src/epg/epghandler.cpp
     src/epg/epghandler.h
     src/live/channelcache.cpp
@@ -153,8 +122,10 @@ set(SOURCE_FILES
     src/tools/utf8conv.h
     src/tools/utf8conv.cpp)
 
+add_subdirectory(src/demuxer)
+
 add_library(vdr-robotv SHARED ${SOURCE_FILES})
-target_link_libraries(vdr-robotv sqlite z)
+target_link_libraries(vdr-robotv robotvdmx sqlite z)
 target_include_directories(vdr-robotv PRIVATE src ${VDR_INCLUDE_DIRS} ../../../include)
 target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1)
 set_target_properties(vdr-robotv PROPERTIES VERSION "${VDR_APIVERSION}")

@@ -25,9 +25,10 @@
 #ifndef ROBOTV_PACKETPLAYER_H
 #define	ROBOTV_PACKETPLAYER_H
 
+#include "robotvdmx/demuxer.h"
+#include "robotvdmx/demuxerbundle.h"
+
 #include "recordings/recplayer.h"
-#include "demuxer/demuxer.h"
-#include "demuxer/demuxerbundle.h"
 #include "net/msgpacket.h"
 
 #include "vdr/remux.h"
@@ -61,9 +62,9 @@ protected:
 
     MsgPacket* getPacket();
 
-    void sendStreamPacket(StreamPacket* p);
+    void onStreamPacket(TsDemuxer::StreamPacket *p);
 
-    void requestStreamChange();
+    void onStreamChange();
 
     void clearQueue();
 

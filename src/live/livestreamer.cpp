@@ -87,7 +87,7 @@ void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
     m_waitForKeyFrame = waitforiframe;
 }
 
-void LiveStreamer::requestStreamChange() {
+void LiveStreamer::onStreamChange() {
     m_requestStreamChange = true;
 }
 
@@ -170,7 +170,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     isyslog("Creating demuxers");
     createDemuxers(&bundle);
 
-    requestStreamChange();
+    onStreamChange();
 
     isyslog("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
 
@@ -201,7 +201,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     return ROBOTV_RET_OK;
 }
 
-void LiveStreamer::sendStreamPacket(StreamPacket* pkt) {
+void LiveStreamer::onStreamPacket(TsDemuxer::StreamPacket *pkt) {
     // skip empty packets
     if(pkt == nullptr || pkt->size == 0) {
         return;
@@ -267,7 +267,7 @@ void LiveStreamer::sendStreamChange() {
     // reorder streams as preferred
     m_demuxers.reorderStreams(m_language.c_str(), m_langStreamType);
 
-    MsgPacket* resp = m_demuxers.createStreamChangePacket();
+    MsgPacket* resp = createStreamChangePacket(m_demuxers);
     m_queue->queue(resp, StreamInfo::Content::STREAMINFO);
 
     m_requestStreamChange = false;
@@ -513,4 +513,81 @@ StreamBundle LiveStreamer::createFromChannel(const cChannel* channel) {
     }
 
     return item;
+}
+
+MsgPacket *LiveStreamer::createStreamChangePacket(const DemuxerBundle &bundle) {
+    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
+
+    resp->put_U8(bundle.size());
+
+    for(auto stream: bundle) {
+        int streamId = stream->getPid();
+        resp->put_U32(streamId);
+
+        switch(stream->getContent()) {
+            case StreamInfo::Content::AUDIO:
+                resp->put_String(stream->typeName());
+                resp->put_String(stream->getLanguage());
+                resp->put_U32(stream->getChannels());
+                resp->put_U32(stream->getSampleRate());
+                resp->put_U32(0); // UNUSED - BINARY COMPATIBILITY
+                resp->put_U32(stream->getBitRate());
+                resp->put_U32(0); // UNUSED - BINARY COMPATIBILITY
+
+                break;
+
+            case StreamInfo::Content::VIDEO:
+                resp->put_String(stream->typeName());
+                resp->put_U32(stream->getFpsScale());
+                resp->put_U32(stream->getFpsRate());
+                resp->put_U32(stream->getHeight());
+                resp->put_U32(stream->getWidth());
+                resp->put_S64(stream->getAspect());
+
+                {
+                    int length = 0;
+
+                    // put SPS
+                    uint8_t* sps = stream->getVideoDecoderSps(length);
+                    resp->put_U8(length);
+
+                    if(sps != NULL) {
+                        resp->put_Blob(sps, length);
+                    }
+
+                    // put PPS
+                    uint8_t* pps = stream->getVideoDecoderPps(length);
+                    resp->put_U8(length);
+
+                    if(pps != NULL) {
+                        resp->put_Blob(pps, length);
+                    }
+
+                    // put VPS
+                    uint8_t* vps = stream->getVideoDecoderVps(length);
+                    resp->put_U8(length);
+
+                    if(pps != NULL) {
+                        resp->put_Blob(vps, length);
+                    }
+                }
+                break;
+
+            case StreamInfo::Content::SUBTITLE:
+                resp->put_String(stream->typeName());
+                resp->put_String(stream->getLanguage());
+                resp->put_U32(stream->compositionPageId());
+                resp->put_U32(stream->ancillaryPageId());
+                break;
+
+            case StreamInfo::Content::TELETEXT:
+                resp->put_String(stream->typeName());
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    return resp;
 }

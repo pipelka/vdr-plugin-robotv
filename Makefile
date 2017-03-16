@@ -52,7 +52,7 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-INCLUDES += -I./src -I./src/vdr -I./src/sqlite3 -I../../../include
+INCLUDES += -I./src -I./src/demuxer/include -I./src/demuxer/src -I./src/vdr -I./src/sqlite3 -I../../../include
 
 ifdef DEBUG
 INCLUDES += -DDEBUG
@@ -66,21 +66,23 @@ OBJS = \
 	src/config/config.o \
 	src/db/database.o \
 	src/db/storage.o \
-	src/demuxer/demuxer.o \
-	src/demuxer/parsers/parser_adts.o \
-	src/demuxer/parsers/parser_latm.o \
-	src/demuxer/parsers/parser_ac3.o \
-	src/demuxer/parsers/parser_h264.o \
-	src/demuxer/parsers/parser_h265.o \
-	src/demuxer/parsers/parser_mpegaudio.o \
-	src/demuxer/parsers/parser_mpegvideo.o \
-	src/demuxer/parsers/parser_pes.o \
-	src/demuxer/parsers/parser_subtitle.o \
-	src/demuxer/parsers/parser.o \
-	src/demuxer/streambundle.o \
-	src/demuxer/demuxerbundle.o \
-	src/demuxer/streaminfo.o \
-	src/epg/epghandler.o \
+    src/demuxer/src/demuxer.o \
+    src/demuxer/src/demuxerbundle.o \
+    src/demuxer/src/streambundle.o \
+    src/demuxer/src/streaminfo.o \
+    src/demuxer/src/parsers/parser_ac3.o \
+    src/demuxer/src/parsers/parser_adts.o \
+    src/demuxer/src/parsers/parser_h264.o \
+    src/demuxer/src/parsers/parser_h265.o \
+    src/demuxer/src/parsers/parser_latm.o \
+    src/demuxer/src/parsers/parser_mpegaudio.o \
+    src/demuxer/src/parsers/parser_mpegvideo.o \
+    src/demuxer/src/parsers/parser_pes.o \
+    src/demuxer/src/parsers/parser_subtitle.o \
+    src/demuxer/src/parsers/parser.o \
+    src/demuxer/src/upstream/ringbuffer.o \
+    src/demuxer/src/upstream/bitstream.o \
+    src/epg/epghandler.o \
 	src/live/channelcache.o \
 	src/live/livequeue.o \
 	src/live/livestreamer.o \

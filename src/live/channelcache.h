@@ -31,7 +31,7 @@
 
 #include "config/config.h"
 #include "db/storage.h"
-#include "demuxer/streambundle.h"
+#include "robotvdmx/streambundle.h"
 
 class ChannelCache : public roboTV::Storage {
 public:

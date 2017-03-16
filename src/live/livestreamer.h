@@ -30,9 +30,9 @@
 #include <vdr/receiver.h>
 #include <vdr/ringbuffer.h>
 
-#include "demuxer/demuxer.h"
-#include "demuxer/streambundle.h"
-#include "demuxer/demuxerbundle.h"
+#include "robotvdmx/demuxer.h"
+#include "robotvdmx/streambundle.h"
+#include "robotvdmx/demuxerbundle.h"
 #include "robotv/robotvcommand.h"
 
 #include <list>
@@ -113,11 +113,13 @@ public:
 
     int64_t seek(int64_t wallclockPositionMs);
 
+    static MsgPacket* createStreamChangePacket(const DemuxerBundle& bundle);
+
     // TsDemuxer::Listener implementation
 
-    void sendStreamPacket(StreamPacket* pkt);
+    void onStreamPacket(TsDemuxer::StreamPacket *pkt);
 
-    void requestStreamChange();
+    void onStreamChange();
 
 };
 
