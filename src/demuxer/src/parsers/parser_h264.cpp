@@ -105,6 +105,7 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
         return length;
     }
 
+    m_frameType = StreamInfo::FrameType::UNKNOWN;
     bool idr_frame = false;
 
     // iterate through all NAL units
@@ -166,6 +167,12 @@ int ParserH264::parsePayload(unsigned char* data, int length) {
 
     if(nal_data == NULL) {
         return length;
+    }
+
+    // no SLH present but SPS
+    // assume it's a stream with IDR frames
+    if(m_frameType == StreamInfo::FrameType::UNKNOWN) {
+        m_frameType = StreamInfo::FrameType::IFRAME;
     }
 
     // register SPS data (decoder specific data)
