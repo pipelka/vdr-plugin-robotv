@@ -239,10 +239,7 @@ void RoboTVServer::Action(void) {
 
     recStateOld = recState;
 
-    // wait for other services
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    // liasten for connections
+    // listen for connections
     listen(m_serverFd, 10);
 
     isyslog("roboTV Server started");
