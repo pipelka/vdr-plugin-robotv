@@ -365,6 +365,16 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
         cTimer* t = Timers.GetTimer(timer);
 
         if(t == nullptr) {
+
+            // check for conflicts
+            int timerFlags = checkTimerConflicts(timer);
+            if(timerFlags > 2048) {
+                isyslog("Timer %s has conflicts - unable to add", *timer->ToDescr());
+                response->put_U32(ROBOTV_RET_TIMER_CONFLICT);
+                delete timer;
+                return true;
+            }
+
             cSchedulesLock MutexLock;
             const cSchedules* schedules = cSchedules::Schedules(MutexLock);
             timer->SetEventFromSchedule(schedules);
@@ -483,6 +493,14 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     if(!t.Parse(buffer)) {
         esyslog("Error in timer settings");
         response->put_U32(ROBOTV_RET_DATAINVALID);
+        return true;
+    }
+
+    // check for conflicts
+    int timerFlags = checkTimerConflicts(&t);
+    if(timerFlags > 2048) {
+        isyslog("Timer %s has conflicts - unable to update", *timer->ToDescr());
+        response->put_U32(ROBOTV_RET_TIMER_CONFLICT);
         return true;
     }
 

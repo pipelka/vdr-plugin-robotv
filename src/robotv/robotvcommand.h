@@ -130,6 +130,7 @@
 /** Packet return codes */
 #define ROBOTV_RET_OK              0
 #define ROBOTV_RET_RECRUNNING      1
+#define ROBOTV_RET_TIMER_CONFLICT  993
 #define ROBOTV_RET_ENCRYPTED       994
 #define ROBOTV_RET_NOTSUPPORTED    995
 #define ROBOTV_RET_DATAUNKNOWN     996
