@@ -39,7 +39,7 @@ public:
 
     bool set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId);
 
-    bool setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string& background, const std::string& poster);
+    bool setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string& background, const std::string& poster, int content = 0);
 
     void cleanup(int afterDays = 4);
 

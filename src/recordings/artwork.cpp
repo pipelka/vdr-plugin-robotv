@@ -122,23 +122,20 @@ void Artwork::triggerCleanup(int afterDays) {
     t.detach();
 }
 
-bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &background, const std::string& poster) {
+bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &background, const std::string& poster, int content) {
     if(background.empty() && poster.empty()) {
         return false;
     }
 
-    const cChannel* channel = findChannelByUid(channelUid);
-
-    std::string stringId = (const char*)channel->GetChannelID().ToString();
-    stringId += "-" + std::to_string(eventId);
-
-    int docId = createStringHash(stringId.c_str());
+    dsyslog("set epg image (channelUid: %i, eventid: %i) '%s' (contentid: %i)", channelUid, eventId, background.c_str(), content);
 
     m_storage.exec(
-            "UPDATE OR IGNORE epgindex SET url=%Q, posterurl=%Q WHERE docid=%i",
+            "UPDATE OR IGNORE epgindex SET url=%Q, posterurl=%Q, contentid=%i WHERE channeluid=%i AND eventid=%i",
             background.c_str(),
             poster.c_str(),
-            docId
+            content,
+            channelUid,
+            eventId
     );
 
     return true;
