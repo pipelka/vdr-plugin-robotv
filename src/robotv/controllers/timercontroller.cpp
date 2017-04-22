@@ -28,7 +28,6 @@
 #include "robotv/robotvchannels.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
-#include "tools/utf8conv.h"
 #include "vdr/menu.h"
 #include "service/epgsearch/services.h"
 
@@ -337,16 +336,16 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
 
     const cChannel* channel = findChannelByUid(channelid);
 
-    if(channel != NULL) {
-        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+    if(channel == NULL) {
+        esyslog("channel with id '%i' not found - unable to add timer !", channelid);
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return true;
     }
 
-    c.unlock();
+    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
 
     // replace invalid characters in file
     char* p = (char*)file;
@@ -479,16 +478,16 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
 
     const cChannel* channel = findChannelByUid(channelid);
 
-    if(channel != NULL) {
-        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+    if(channel == NULL) {
+        esyslog("channel with id '%i' not found - unable to update timer !", channelid);
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return true;
     }
 
-    c.unlock();
+    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
 
     if(!t.Parse(buffer)) {
         esyslog("Error in timer settings");
