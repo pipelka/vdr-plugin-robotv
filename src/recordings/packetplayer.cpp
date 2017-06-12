@@ -103,7 +103,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     int pmtVersion = 0;
     int patVersion = 0;
 
-    int packetCount = 20;
+    int packetCount = 100;
     int packetSize = TS_SIZE * packetCount;
 
     unsigned char buffer[packetSize];
