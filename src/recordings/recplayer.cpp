@@ -89,7 +89,7 @@ bool RecPlayer::update() {
         return false;
     }
 
-    m_rescanInterval = 10000; // 10s rescan interval
+    m_rescanInterval = 30000; // 30s rescan interval
     m_rescanTime.Set(0);
     scan();
 
