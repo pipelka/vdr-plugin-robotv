@@ -193,7 +193,7 @@ MsgPacket* PacketPlayer::getPacket() {
     return p;
 }
 
-MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
+MsgPacket* PacketPlayer::requestPacket() {
     MsgPacket* p = NULL;
 
     // create payload packet
@@ -202,12 +202,7 @@ MsgPacket* PacketPlayer::requestPacket(bool keyFrameMode) {
         m_streamPacket->disablePayloadCheckSum();
     }
 
-    while(p = getPacket()) {
-
-        if(keyFrameMode && p->getClientID() != (uint16_t)StreamInfo::FrameType::IFRAME) {
-            delete p;
-            continue;
-        }
+    while((p = getPacket()) != nullptr) {
 
         // recheck recording duration
         if(p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME && update()) {

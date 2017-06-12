@@ -42,7 +42,7 @@ public:
 
     virtual ~PacketPlayer();
 
-    MsgPacket* requestPacket(bool keyFrameMode);
+    MsgPacket* requestPacket();
 
     int64_t seek(int64_t position);
 

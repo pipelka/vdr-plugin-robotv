@@ -377,7 +377,7 @@ void LiveStreamer::pause(bool on) {
     m_queue->pause(on);
 }
 
-MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
+MsgPacket* LiveStreamer::requestPacket() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     // create payload packet
@@ -391,7 +391,7 @@ MsgPacket* LiveStreamer::requestPacket(bool keyFrameMode) {
     // request packet from queue
     MsgPacket* p = nullptr;
 
-    while((p = m_queue->read(keyFrameMode)) != nullptr) {
+    while((p = m_queue->read()) != nullptr) {
 
         // add data
         m_streamPacket->put_U16(p->getMsgID());

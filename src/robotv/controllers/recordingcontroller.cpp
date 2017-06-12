@@ -70,7 +70,7 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
     if(recording && m_recPlayer == NULL) {
         m_recPlayer = new PacketPlayer(recording);
 
-        delete m_recPlayer->requestPacket(false);
+        delete m_recPlayer->requestPacket();
         m_recPlayer->reset();
 
         uint32_t length = (m_recPlayer->endTime().count() - m_recPlayer->startTime().count()) / 1000;
@@ -105,9 +105,7 @@ bool RecordingController::processRequest(MsgPacket* request, MsgPacket* response
         return false;
     }
 
-    bool keyFrameMode = request->get_U8();
-
-    MsgPacket* p = m_recPlayer->requestPacket(keyFrameMode);
+    MsgPacket* p = m_recPlayer->requestPacket();
 
     if(p == NULL) {
         return true;
