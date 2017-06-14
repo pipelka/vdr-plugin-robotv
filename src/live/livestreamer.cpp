@@ -207,11 +207,6 @@ void LiveStreamer::onStreamPacket(TsDemuxer::StreamPacket *pkt) {
         return;
     }
 
-    // skip non audio / video packets
-    if(!(pkt->content == StreamInfo::Content::AUDIO || pkt->content == StreamInfo::Content::VIDEO)) {
-        return;
-    }
-
     // send stream change on demand
     if(m_requestStreamChange && m_demuxers.isReady()) {
         sendStreamChange();
