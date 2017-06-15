@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(robotv)
 
 set(PLUGIN "robotv")
-set(ROBOTV_VERSION "0.10.1")
+set(ROBOTV_VERSION "0.10.2")
 
 # check for pkg-config
 find_package(PkgConfig REQUIRED)
@@ -63,8 +63,18 @@ set(SOURCE_FILES
     src/live/livequeue.h
     src/live/livestreamer.cpp
     src/live/livestreamer.h
+    src/net/msgcondition.cpp
+    src/net/msgcondition.h
+    src/net/msghandlerbase.cpp
+    src/net/msghandlerbase.h
     src/net/msgpacket.cpp
     src/net/msgpacket.h
+    src/net/msgserver.cpp
+    src/net/msgserver.h
+    src/net/msgthread.cpp
+    src/net/msgthread.h
+    src/net/msgthreadqueue.cpp
+    src/net/msgthreadqueue.h
     src/net/os-config.cpp
     src/net/os-config.h
     src/recordings/artwork.cpp
