@@ -45,6 +45,7 @@ protected:
     }
 
     inline MsgPacket* createResponse(MsgPacket* request, MsgPacket* payload) {
+        payload->setType(ROBOTV_CHANNEL_REQUEST_RESPONSE);
         payload->setMsgID(request->getMsgID());
         payload->setUID(request->getUID());
         payload->setProtocolVersion(request->getProtocolVersion());
