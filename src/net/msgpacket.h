@@ -393,6 +393,14 @@ public:
     void setProtocolVersion(uint16_t version);
 
     /**
+    Set unique message id.
+    Sets the unique message id of the packet
+
+    @param uid unique id of the packet
+    */
+    void setUID(uint32_t uid);
+
+    /**
     Set message id.
     Sets the user-defined message id
 
@@ -478,14 +486,6 @@ public:
 protected:
 
     void Init(uint16_t msgid, uint16_t type = 0, uint32_t uid = 0);
-
-    /**
-    Set unique message id.
-    Sets the unique message id of the packet
-
-    @param uid unique id of the packet
-    */
-    void setUID(uint32_t uid);
 
     /**
     Compute a CRC32 checksum.

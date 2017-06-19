@@ -37,13 +37,13 @@ public:
 
     virtual ~ArtworkController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
 protected:
 
-    bool processGet(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGet(MsgPacket* request);
 
-    bool processSet(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSet(MsgPacket* request);
 
 private:
 

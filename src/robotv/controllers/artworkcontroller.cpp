@@ -35,19 +35,19 @@ ArtworkController::ArtworkController(const ArtworkController& orig) {
 ArtworkController::~ArtworkController() {
 }
 
-bool ArtworkController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* ArtworkController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_ARTWORK_GET:
-            return processGet(request, response);
+            return processGet(request);
 
         case ROBOTV_ARTWORK_SET:
-            return processSet(request, response);
+            return processSet(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool ArtworkController::processGet(MsgPacket* request, MsgPacket* response) {
+MsgPacket* ArtworkController::processGet(MsgPacket* request) {
     const char* title = request->get_String();
     uint32_t content = request->get_U32();
 
@@ -59,14 +59,16 @@ bool ArtworkController::processGet(MsgPacket* request, MsgPacket* response) {
         background = "x";
     }
 
+    MsgPacket* response = createResponse(request);
+
     response->put_String(poster.c_str());
     response->put_String(background.c_str());
     response->put_U32(0); // TODO - externalId
 
-    return true;
+    return response;
 }
 
-bool ArtworkController::processSet(MsgPacket* request, MsgPacket* response) {
+MsgPacket* ArtworkController::processSet(MsgPacket* request) {
     const char* title = request->get_String();
     uint32_t content = request->get_U32();
     const char* poster = request->get_String();
@@ -84,5 +86,5 @@ bool ArtworkController::processSet(MsgPacket* request, MsgPacket* response) {
         }
     }
 
-    return true;
+    return createResponse(request);
 }

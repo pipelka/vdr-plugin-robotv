@@ -39,19 +39,19 @@ EpgController::EpgController(const EpgController& orig) {
 EpgController::~EpgController() {
 }
 
-bool EpgController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* EpgController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_EPG_GETFORCHANNEL:
-            return processGet(request, response);
+            return processGet(request);
 
         case ROBOTV_EPG_SEARCH:
-            return processSearch(request, response);
+            return processSearch(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
+MsgPacket* EpgController::processGet(MsgPacket* request) {
     uint32_t channelUid = request->get_U32();
     uint32_t startTime = request->get_U32();
     uint32_t duration = request->get_U32();
@@ -67,12 +67,14 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
     }
 
+    MsgPacket* response = createResponse(request);
+
     if(!channel) {
         response->put_U32(0);
         c.unlock();
 
         esyslog("written 0 because channel = NULL");
-        return true;
+        return response;
     }
 
     cSchedulesLock MutexLock;
@@ -83,7 +85,7 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         c.unlock();
 
         dsyslog("written 0 because Schedule!s! = NULL");
-        return true;
+        return response;
     }
 
     const cSchedule* Schedule = Schedules->GetSchedule(channel->GetChannelID());
@@ -93,7 +95,7 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
         c.unlock();
 
         dsyslog("written 0 because Schedule = NULL");
-        return true;
+        return response;
     }
 
     for(const cEvent* event = Schedule->Events()->First(); event; event = Schedule->Events()->Next(event)) {
@@ -186,10 +188,10 @@ bool EpgController::processGet(MsgPacket* request, MsgPacket* response) {
     c.unlock();
     response->compress(9);
 
-    return true;
+    return response;
 }
 
-bool EpgController::processSearch(MsgPacket* request, MsgPacket* response) {
+MsgPacket* EpgController::processSearch(MsgPacket* request) {
     cSchedulesLock MutexLock;
 
     std::string searchTerm = request->get_String();
@@ -197,8 +199,10 @@ bool EpgController::processSearch(MsgPacket* request, MsgPacket* response) {
 
     const cSchedules* schedules = cSchedules::Schedules(MutexLock);
 
+    MsgPacket* response = createResponse(request);
+
     if(schedules == nullptr) {
-        return true;
+        return response;
     }
 
     RoboTVChannels& c = RoboTVChannels::instance();
@@ -231,7 +235,7 @@ bool EpgController::processSearch(MsgPacket* request, MsgPacket* response) {
 
     response->compress(9);
     c.unlock();
-    return true;
+    return response;
 }
 
 bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback) {

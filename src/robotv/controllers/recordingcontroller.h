@@ -38,19 +38,19 @@ public:
 
     virtual ~RecordingController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
 protected:
 
-    bool processOpen(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processOpen(MsgPacket* request);
 
-    bool processClose(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processClose(MsgPacket* request);
 
-    bool processRequest(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processRequest(MsgPacket* request);
 
-    bool processSeek(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSeek(MsgPacket* request);
 
-    bool processPause(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processPause(MsgPacket* request);
 
 private:
 

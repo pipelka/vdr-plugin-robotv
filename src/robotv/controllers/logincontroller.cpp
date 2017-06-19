@@ -23,9 +23,7 @@
  */
 
 #include "logincontroller.h"
-#include "net/msgpacket.h"
 #include "config/config.h"
-#include "robotv/robotvcommand.h"
 
 LoginController::LoginController() {
 }
@@ -36,19 +34,19 @@ LoginController::LoginController(const LoginController& orig) {
 LoginController::~LoginController() {
 }
 
-bool LoginController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* LoginController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_LOGIN:
-            return processLogin(request, response);
+            return processLogin(request);
 
         case ROBOTV_GETCONFIG:
-            return processGetConfig(request, response);
+            return processGetConfig(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
+MsgPacket* LoginController::processLogin(MsgPacket* request) {
     m_protocolVersion = request->getProtocolVersion();
     m_compressionLevel = request->get_U8();
     const char* clientName = request->get_String();
@@ -65,7 +63,7 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
 
     if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 7) {
         esyslog("Client '%s' has unsupported protocol version '%u', terminating client", clientName, m_protocolVersion);
-        return false;
+        return nullptr;
     }
 
     isyslog("Welcome client '%s' with protocol version '%u' and priority %i", clientName, m_protocolVersion, m_socketPriority);
@@ -75,6 +73,8 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
     struct tm* timeStruct = localtime(&timeNow);
     int timeOffset = timeStruct->tm_gmtoff;
 
+    MsgPacket* response = createResponse(request);
+
     response->setProtocolVersion(m_protocolVersion);
     response->put_U32(timeNow);
     response->put_S32(timeOffset);
@@ -82,13 +82,14 @@ bool LoginController::processLogin(MsgPacket* request, MsgPacket* response) {
     response->put_String(ROBOTV_VERSION);
 
     m_loggedIn = true;
-    return true;
+    return response;
 }
 
-bool LoginController::processGetConfig(MsgPacket* request, MsgPacket* response) {
+MsgPacket* LoginController::processGetConfig(MsgPacket* request) {
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
     const char* key = request->get_String();
+    MsgPacket* response = createResponse(request);
 
     if(!strcasecmp(key, "EpgImageUrl")) {
         response->put_String(config.epgImageUrl.c_str());
@@ -97,5 +98,5 @@ bool LoginController::processGetConfig(MsgPacket* request, MsgPacket* response) 
         response->put_String(config.seriesFolder.c_str());
     }
 
-    return true;
+    return response;
 }

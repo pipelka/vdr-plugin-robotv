@@ -25,15 +25,32 @@
 #ifndef ROBOTV_CONTROLLER_H
 #define ROBOTV_CONTROLLER_H
 
-class MsgPacket;
+#include <net/msgpacket.h>
+#include <robotv/robotvcommand.h>
 
 class Controller {
 public:
 
     virtual ~Controller() = default;
 
-    virtual bool process(MsgPacket* request, MsgPacket* response) = 0;
+    virtual MsgPacket* process(MsgPacket* request) = 0;
 
+protected:
+
+    inline MsgPacket* createResponse(MsgPacket* request) {
+        MsgPacket* response = new MsgPacket(request->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, request->getUID());
+        response->setProtocolVersion(request->getProtocolVersion());
+
+        return response;
+    }
+
+    inline MsgPacket* createResponse(MsgPacket* request, MsgPacket* payload) {
+        payload->setMsgID(request->getMsgID());
+        payload->setUID(request->getUID());
+        payload->setProtocolVersion(request->getProtocolVersion());
+
+        return payload;
+    }
 };
 
 #endif // ROBOTV_CONTROLLER_H

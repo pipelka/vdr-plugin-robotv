@@ -40,33 +40,33 @@ StreamController::~StreamController() {
     stopStreaming();
 }
 
-bool StreamController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* StreamController::process(MsgPacket* request) {
     /** OPCODE 20 - 39: RoboTV network functions for live streaming */
 
     switch(request->getMsgID()) {
         case ROBOTV_CHANNELSTREAM_OPEN:
-            return processOpen(request, response);
+            return processOpen(request);
 
         case ROBOTV_CHANNELSTREAM_CLOSE:
-            return processClose(request, response);
+            return processClose(request);
 
         case ROBOTV_CHANNELSTREAM_REQUEST:
-            return processRequest(request, response);
+            return processRequest(request);
 
         case ROBOTV_CHANNELSTREAM_PAUSE:
-            return processPause(request, response);
+            return processPause(request);
 
         case ROBOTV_CHANNELSTREAM_SIGNAL:
-            return processSignal(request, response);
+            return processSignal(request);
 
         case ROBOTV_CHANNELSTREAM_SEEK:
-            return processSeek(request, response);
+            return processSeek(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
+MsgPacket* StreamController::processOpen(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     int32_t priority = 50;
     bool waitForKeyFrame = false;
@@ -105,10 +105,12 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
 
     c.unlock();
 
+    MsgPacket* response = createResponse(request);
+
     if(channel == NULL) {
         esyslog("Can't find channel %08x", uid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     int status = startStreaming(
@@ -126,38 +128,31 @@ bool StreamController::processOpen(MsgPacket* request, MsgPacket* response) {
     }
 
     response->put_U32(status);
-    return true;
+    return response;
 }
 
-bool StreamController::processClose(MsgPacket* request, MsgPacket* response) {
+MsgPacket* StreamController::processClose(MsgPacket* request) {
     stopStreaming();
-    return true;
+    return createResponse(request);
 }
 
-bool StreamController::processRequest(MsgPacket* request, MsgPacket* response) {
-    if(m_streamer == NULL) {
-        return false;
+MsgPacket* StreamController::processRequest(MsgPacket* request) {
+    if(m_streamer == nullptr) {
+        return nullptr;
     }
 
     MsgPacket* p = m_streamer->requestPacket();
 
-    if(p == NULL) {
-        return true;
+    if(p == nullptr) {
+        return createResponse(request);
     }
 
-    int packetLen = p->getPayloadLength();
-    uint8_t* packetData = p->consume(packetLen);
-
-    response->setMsgID(p->getMsgID());
-    response->put_Blob(packetData, packetLen);
-    delete p;
-
-    return true;
+    return createResponse(request, p);
 }
 
-bool StreamController::processPause(MsgPacket* request, MsgPacket* response) {
-    if(m_streamer == 0) {
-        return false;
+MsgPacket* StreamController::processPause(MsgPacket* request) {
+    if(m_streamer == nullptr) {
+        return nullptr;
     }
 
     bool on = request->get_U32();
@@ -165,16 +160,16 @@ bool StreamController::processPause(MsgPacket* request, MsgPacket* response) {
 
     m_streamer->pause(on);
 
-    return true;
+    return createResponse(request);
 }
 
-bool StreamController::processSignal(MsgPacket* request, MsgPacket* response) {
-    if(m_streamer == NULL) {
-        return false;
+MsgPacket* StreamController::processSignal(MsgPacket* request) {
+    if(m_streamer == nullptr) {
+        return nullptr;
     }
 
     m_streamer->requestSignalInfo();
-    return false;
+    return nullptr;
 }
 
 void StreamController::processChannelChange(const cChannel* Channel) {
@@ -201,16 +196,17 @@ void StreamController::stopStreaming() {
     m_streamer = NULL;
 }
 
-bool StreamController::processSeek(MsgPacket* request, MsgPacket* response) {
+MsgPacket* StreamController::processSeek(MsgPacket* request) {
     std::lock_guard<std::mutex> lock(m_lock);
 
-    if(m_streamer == NULL) {
-        return false;
+    if(m_streamer == nullptr) {
+        return nullptr;
     }
 
     int64_t position = request->get_S64();
     int64_t pts = m_streamer->seek(position);
 
+    MsgPacket* response = createResponse(request);
     response->put_S64(pts);
-    return true;
+    return response;
 }

@@ -219,17 +219,14 @@ bool RoboTvClient::processRequest() {
         m_request->setProtocolVersion(m_loginController.protocolVersion());
     }
 
-    m_response = new MsgPacket(m_request->getMsgID(), ROBOTV_CHANNEL_REQUEST_RESPONSE, m_request->getUID());
-    m_response->setProtocolVersion(m_loginController.protocolVersion());
-
     for(auto i : m_controllers) {
-        if(i->process(m_request, m_response)) {
-            queueMessage(m_response);
+        MsgPacket* response = i->process(m_request);
+        if(response != nullptr){
+            queueMessage(response);
             return true;
         }
     }
 
-    delete m_response;
     return false;
 }
 

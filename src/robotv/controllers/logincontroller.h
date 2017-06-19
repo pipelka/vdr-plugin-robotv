@@ -37,7 +37,7 @@ public:
 
     virtual ~LoginController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
     bool statusEnabled() const {
         return m_statusInterfaceEnabled;
@@ -57,9 +57,9 @@ public:
 
 protected:
 
-    bool processLogin(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processLogin(MsgPacket* request);
 
-    bool processGetConfig(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetConfig(MsgPacket* request);
 
 private:
 

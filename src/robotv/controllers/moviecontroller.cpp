@@ -42,58 +42,60 @@ MovieController::MovieController(const MovieController& orig) {
 MovieController::~MovieController() {
 }
 
-bool MovieController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_RECORDINGS_DISKSIZE:
-            return processGetDiskSpace(request, response);
+            return processGetDiskSpace(request);
 
         case ROBOTV_RECORDINGS_GETFOLDERS:
-            return processGetFolders(request, response);
+            return processGetFolders(request);
 
         case ROBOTV_RECORDINGS_GETLIST:
-            return processGetList(request, response);
+            return processGetList(request);
 
         case ROBOTV_RECORDINGS_RENAME:
-            return processRename(request, response);
+            return processRename(request);
 
         case ROBOTV_RECORDINGS_DELETE:
-            return processDelete(request, response);
+            return processDelete(request);
 
         case ROBOTV_RECORDINGS_SETPLAYCOUNT:
-            return processSetPlayCount(request, response);
+            return processSetPlayCount(request);
 
         case ROBOTV_RECORDINGS_SETPOSITION:
-            return processSetPosition(request, response);
+            return processSetPosition(request);
 
         case ROBOTV_RECORDINGS_SETURLS:
-            return processSetUrls(request, response);
+            return processSetUrls(request);
 
         case ROBOTV_RECORDINGS_GETPOSITION:
-            return processGetPosition(request, response);
+            return processGetPosition(request);
 
         case ROBOTV_RECORDINGS_GETMARKS:
-            return processGetMarks(request, response);
+            return processGetMarks(request);
 
         case ROBOTV_RECORDINGS_SEARCH:
-            return processSearch(request, response);
+            return processSearch(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool MovieController::processGetDiskSpace(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processGetDiskSpace(MsgPacket* request) {
     int freeMb = 0;
     int percent = cVideoDirectory::VideoDiskSpace(&freeMb);
     int total = (freeMb / (100 - percent)) * 100;
+
+    MsgPacket* response = createResponse(request);
 
     response->put_U32(total);
     response->put_U32(freeMb);
     response->put_U32(percent);
 
-    return true;
+    return response;
 }
 
-bool MovieController::processGetFolders(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processGetFolders(MsgPacket* request) {
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
     std::set<std::string> folders;
     size_t size = config.seriesFolder.length();
@@ -112,25 +114,29 @@ bool MovieController::processGetFolders(MsgPacket* request, MsgPacket* response)
         folders.insert(folder);
     }
 
+    MsgPacket* response = createResponse(request);
+
     for(auto& folder: folders) {
         response->put_String(folder);
     }
 
     response->compress(9);
-    return true;
+    return response;
 }
 
-bool MovieController::processGetList(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processGetList(MsgPacket* request) {
+    MsgPacket* response = createResponse(request);
+
     for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
         recordingToPacket(recording, response);
     }
 
     response->compress(9);
-    return true;
+    return response;
 
 }
 
-bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processRename(MsgPacket* request) {
     uint32_t uid = 0;
     const char* recid = request->get_String();
     uid = recid2uid(recid);
@@ -146,12 +152,13 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
         s++;
     }
 
+    MsgPacket* response = createResponse(request);
     cRecording* recording = RecordingsCache::instance().lookup(uid);
 
     if(recording == nullptr) {
         esyslog("recording with id '%s' not found!", recid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     isyslog("renaming recording '%s' to '%s'", recording->Name(), newName);
@@ -166,18 +173,19 @@ bool MovieController::processRename(MsgPacket* request, MsgPacket* response) {
     Recordings.TouchUpdate();
 
     response->put_U32(success ? 0 : -1);
-    return true;
+    return response;
 }
 
-bool MovieController::processDelete(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processDelete(MsgPacket* request) {
     const char* recid = request->get_String();
     uint32_t uid = recid2uid(recid);
     cRecording* recording = RecordingsCache::instance().lookup(uid);
+    MsgPacket* response = createResponse(request);
 
-    if(recording == NULL) {
+    if(recording == nullptr) {
         esyslog("Recording not found !");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
+        return response;
     }
 
     dsyslog("deleting recording: %s", recording->Name());
@@ -187,62 +195,64 @@ bool MovieController::processDelete(MsgPacket* request, MsgPacket* response) {
     if(rc != NULL) {
         esyslog("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
         response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
+        return response;
     }
 
     if(!recording->Delete()) {
         esyslog("Error while deleting recording!");
         response->put_U32(ROBOTV_RET_ERROR);
-        return true;
+        return response;
     }
 
     Recordings.DelByName(recording->FileName());
     isyslog("Recording \"%s\" deleted", recording->FileName());
     response->put_U32(ROBOTV_RET_OK);
 
-    return true;
+    return response;
 }
 
-bool MovieController::processSetPlayCount(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processSetPlayCount(MsgPacket* request) {
     const char* recid = request->get_String();
     uint32_t count = request->get_U32();
 
     uint32_t uid = recid2uid(recid);
     RecordingsCache::instance().setPlayCount(uid, count);
 
-    return true;
+    return createResponse(request);
 }
 
-bool MovieController::processSetPosition(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processSetPosition(MsgPacket* request) {
     const char* recid = request->get_String();
     uint64_t position = request->get_U64();
 
     uint32_t uid = recid2uid(recid);
     RecordingsCache::instance().setLastPlayedPosition(uid, position);
 
-    return true;
+    return createResponse(request);
 }
 
-bool MovieController::processGetPosition(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processGetPosition(MsgPacket* request) {
     const char* recid = request->get_String();
 
     uint32_t uid = recid2uid(recid);
     uint64_t position = RecordingsCache::instance().getLastPlayedPosition(uid);
 
+    MsgPacket* response = createResponse(request);
     response->put_U64(position);
-    return true;
+    return response;
 }
 
-bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processGetMarks(MsgPacket* request) {
     const char* recid = request->get_String();
     uint32_t uid = recid2uid(recid);
 
     cRecording* recording = RecordingsCache::instance().lookup(uid);
+    MsgPacket* response = createResponse(request);
 
     if(recording == NULL) {
         esyslog("GetMarks: recording not found !");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
+        return response;
     }
 
     cMarks marks;
@@ -250,7 +260,7 @@ bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
     if(!marks.Load(recording->FileName(), recording->FramesPerSecond(), recording->IsPesRecording())) {
         isyslog("no marks found for: '%s'", recording->FileName());
         response->put_U32(ROBOTV_RET_NOTSUPPORTED);
-        return true;
+        return response;
     }
 
     response->put_U32(ROBOTV_RET_OK);
@@ -270,10 +280,10 @@ bool MovieController::processGetMarks(MsgPacket* request, MsgPacket* response) {
         }
     }
 
-    return true;
+    return response;
 }
 
-bool MovieController::processSetUrls(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processSetUrls(MsgPacket* request) {
     RecordingsCache& cache = RecordingsCache::instance();
 
     const char* recid = request->get_String();
@@ -286,13 +296,14 @@ bool MovieController::processSetUrls(MsgPacket* request, MsgPacket* response) {
     cache.setBackgroundUrl(uid, background);
     cache.setMovieID(uid, id);
 
-    return true;
+    return createResponse(request);
 }
 
-bool MovieController::processSearch(MsgPacket* request, MsgPacket* response) {
+MsgPacket* MovieController::processSearch(MsgPacket* request) {
     RecordingsCache& cache = RecordingsCache::instance();
 
     const char* searchTerm = request->get_String();
+    MsgPacket* response = createResponse(request);
 
     cache.search(searchTerm, [&](uint32_t recid) {
         cRecording* recording = cache.lookup(recid);
@@ -304,7 +315,7 @@ bool MovieController::processSearch(MsgPacket* request, MsgPacket* response) {
         recordingToPacket(recording, response);
     });
 
-    return true;
+    return response;
 }
 
 std::string MovieController::folderFromName(const std::string& name) {

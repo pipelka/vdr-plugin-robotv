@@ -38,7 +38,7 @@ public:
 
     virtual ~TimerController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
     static void event2Packet(const cEvent* event, MsgPacket* p);
 
@@ -48,17 +48,17 @@ public:
 
 private:
 
-    bool processGet(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGet(MsgPacket* request);
 
-    bool processGetTimers(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetTimers(MsgPacket* request);
 
-    bool processGetSearchTimers(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetSearchTimers(MsgPacket* request);
 
-    bool processAdd(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processAdd(MsgPacket* request);
 
-    bool processDelete(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processDelete(MsgPacket* request);
 
-    bool processUpdate(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processUpdate(MsgPacket* request);
 
     TimerController(const TimerController& orig);
 

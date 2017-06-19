@@ -38,34 +38,35 @@ RecordingController::~RecordingController() {
     delete m_recPlayer;
 }
 
-bool RecordingController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* RecordingController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_RECSTREAM_OPEN:
-            return processOpen(request, response);
+            return processOpen(request);
 
         case ROBOTV_RECSTREAM_CLOSE:
-            return processClose(request, response);
+            return processClose(request);
 
         case ROBOTV_RECSTREAM_REQUEST:
-            return processRequest(request, response);
+            return processRequest(request);
 
         case ROBOTV_RECSTREAM_SEEK:
-            return processSeek(request, response);
+            return processSeek(request);
 
         case ROBOTV_RECSTREAM_PAUSE:
-            return processPause(request, response);
+            return processPause(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
+MsgPacket* RecordingController::processOpen(MsgPacket* request) {
     cRecording* recording = NULL;
 
     const char* recid = request->get_String();
     unsigned int uid = recid2uid(recid);
     dsyslog("lookup recid: %s (uid: %u)", recid, uid);
     recording = RecordingsCache::instance().lookup(uid);
+    MsgPacket* response = createResponse(request);
 
     if(recording && m_recPlayer == NULL) {
         m_recPlayer = new PacketPlayer(recording);
@@ -87,55 +88,51 @@ bool RecordingController::processOpen(MsgPacket* request, MsgPacket* response) {
         esyslog("%s - unable to start recording !", __FUNCTION__);
     }
 
-    return true;
+    return response;
 }
 
-bool RecordingController::processClose(MsgPacket* request, MsgPacket* response) {
+MsgPacket* RecordingController::processClose(MsgPacket* request) {
     if(m_recPlayer) {
         delete m_recPlayer;
         m_recPlayer = NULL;
     }
 
+    MsgPacket* response = createResponse(request);
     response->put_U32(ROBOTV_RET_OK);
-    return true;
+    return response;
 }
 
-bool RecordingController::processRequest(MsgPacket* request, MsgPacket* response) {
+MsgPacket* RecordingController::processRequest(MsgPacket* request) {
     if(!m_recPlayer) {
-        return false;
+        return nullptr;
     }
 
     MsgPacket* p = m_recPlayer->requestPacket();
 
-    if(p == NULL) {
-        return true;
+    if(p == nullptr) {
+        return createResponse(request);
     }
 
-    int packetLen = p->getPayloadLength();
-    uint8_t* packetData = p->consume(packetLen);
-
-    response->put_Blob(packetData, packetLen);
-    delete p;
-
-    return true;
+    return createResponse(request, p);
 }
 
-bool RecordingController::processSeek(MsgPacket* request, MsgPacket* response) {
-    if(m_recPlayer == NULL) {
-        return false;
+MsgPacket* RecordingController::processSeek(MsgPacket* request) {
+    if(m_recPlayer == nullptr) {
+        return nullptr;
     }
 
     int64_t position = request->get_S64();
     int64_t pts = m_recPlayer->seek(position);
 
+    MsgPacket* response = createResponse(request);
     response->put_S64(pts);
-    return true;
+    return response;
 }
 
-bool RecordingController::processPause(MsgPacket* request, MsgPacket* response) {
-    if(m_recPlayer == NULL) {
-        return false;
+MsgPacket* RecordingController::processPause(MsgPacket* request) {
+    if(m_recPlayer == nullptr) {
+        return nullptr;
     }
 
-    return true;
+    return createResponse(request);
 }

@@ -61,29 +61,29 @@ TimerController::TimerController(const TimerController& orig) {
 TimerController::~TimerController() {
 }
 
-bool TimerController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::process(MsgPacket* request) {
     switch(request->getMsgID()) {
         case ROBOTV_TIMER_GET:
-            return processGet(request, response);
+            return processGet(request);
 
         case ROBOTV_TIMER_GETLIST:
-            return processGetTimers(request, response);
+            return processGetTimers(request);
 
         case ROBOTV_SEARCHTIMER_GETLIST:
-            return processGetSearchTimers(request, response);
+            return processGetSearchTimers(request);
 
         case ROBOTV_TIMER_ADD:
-            return processAdd(request, response);
+            return processAdd(request);
 
         case ROBOTV_TIMER_DELETE:
-            return processDelete(request, response);
+            return processDelete(request);
 
         case ROBOTV_TIMER_UPDATE:
-            return processUpdate(request, response);
+            return processUpdate(request);
             break;
     }
 
-    return false;
+    return nullptr;
 }
 
 void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
@@ -178,32 +178,35 @@ void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
     p->put_String(toUtf8.convert(!isempty(event->Description()) ? event->Description() : ""));
 }
 
-bool TimerController::processGet(MsgPacket* request, MsgPacket* response) { /* OPCODE 81 */
+MsgPacket* TimerController::processGet(MsgPacket* request) { /* OPCODE 81 */
     uint32_t number = request->get_U32();
+    MsgPacket* response = createResponse(request);
 
     if(Timers.Count() == 0) {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
+        return response;
     }
 
     cTimer* timer = Timers.Get(number - 1);
 
     if(timer == NULL) {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
+        return response;
     }
 
     response->put_U32(ROBOTV_RET_OK);
     timer2Packet(timer, response);
 
-    return true;
+    return response;
 }
 
-bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::processGetTimers(MsgPacket* request) {
+    MsgPacket* response = createResponse(request);
+
     if(Timers.BeingEdited()) {
         esyslog("Unable to delete timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
+        return response;
     }
 
     cTimer* timer;
@@ -221,19 +224,20 @@ bool TimerController::processGetTimers(MsgPacket* request, MsgPacket* response) 
         timer2Packet(timer, response);
     }
 
-    return true;
+    return response;
 }
 
-bool TimerController::processGetSearchTimers(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
     auto toInt = [](const std::string& s) {
         return strtol(s.c_str(), nullptr, 10);
     };
 
     auto service = getEpgServiceData();
+    MsgPacket* response = createResponse(request);
 
     if(service == nullptr) {
         response->put_U32(ROBOTV_RET_ERROR);
-        return true;
+        return response;
     }
 
     response->put_U32(ROBOTV_RET_OK);
@@ -296,14 +300,16 @@ bool TimerController::processGetSearchTimers(MsgPacket* request, MsgPacket* resp
     delete service;
 
     response->compress(9);
-    return true;
+    return response;
 }
 
-bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::processAdd(MsgPacket* request) {
+    MsgPacket* response = createResponse(request);
+
     if(Timers.BeingEdited()) {
         esyslog("Unable to add timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
+        return response;
     }
 
     request->get_U32(); // index unused
@@ -342,7 +348,7 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
     if(channel == NULL) {
         esyslog("channel with id '%i' not found - unable to add timer !", channelid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
@@ -371,7 +377,7 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
                 isyslog("Timer %s has conflicts - unable to add", *timer->ToDescr());
                 response->put_U32(ROBOTV_RET_TIMER_CONFLICT);
                 delete timer;
-                return true;
+                return response;
             }
 
             cSchedulesLock MutexLock;
@@ -383,7 +389,7 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
 
             isyslog("Timer %s added", *timer->ToDescr());
             response->put_U32(ROBOTV_RET_OK);
-            return true;
+            return response;
         }
         else {
             esyslog("Timer already defined: %d %s", t->Index() + 1, *t->ToText());
@@ -397,31 +403,32 @@ bool TimerController::processAdd(MsgPacket* request, MsgPacket* response) {
 
     delete timer;
 
-    return true;
+    return response;
 }
 
-bool TimerController::processDelete(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::processDelete(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     bool force = request->get_U32();
 
     cTimer* timer = findTimerByUid(uid);
+    MsgPacket* response = createResponse(request);
 
     if(timer == NULL) {
         esyslog("Unable to delete timer - invalid timer identifier");
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     if(Timers.BeingEdited()) {
         esyslog("Unable to delete timer - timers being edited at VDR");
         response->put_U32(ROBOTV_RET_DATALOCKED);
-        return true;
+        return response;
     }
 
     if(timer->Recording() && !force) {
         esyslog("Timer is recording and can be deleted (use force to stop it)");
         response->put_U32(ROBOTV_RET_RECRUNNING);
-        return true;
+        return response;
     }
 
     timer->Skip();
@@ -432,25 +439,26 @@ bool TimerController::processDelete(MsgPacket* request, MsgPacket* response) {
     Timers.SetModified();
     response->put_U32(ROBOTV_RET_OK);
 
-    return true;
+    return response;
 }
 
-bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
+MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     bool active = request->get_U32();
 
     cTimer* timer = findTimerByUid(uid);
+    MsgPacket* response = createResponse(request);
 
     if(timer == NULL) {
         esyslog("Timer not defined");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return true;
+        return response;
     }
 
     if(timer->Recording()) {
         isyslog("Will not update timer - currently recording");
         response->put_U32(ROBOTV_RET_OK);
-        return true;
+        return response;
     }
 
     cTimer t = *timer;
@@ -484,7 +492,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     if(channel == NULL) {
         esyslog("channel with id '%i' not found - unable to update timer !", channelid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
@@ -492,7 +500,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     if(!t.Parse(buffer)) {
         esyslog("Error in timer settings");
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return true;
+        return response;
     }
 
     // check for conflicts
@@ -500,7 +508,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
     if(timerFlags > 2048) {
         isyslog("Timer %s has conflicts - unable to update", *timer->ToDescr());
         response->put_U32(ROBOTV_RET_TIMER_CONFLICT);
-        return true;
+        return response;
     }
 
     *timer = t;
@@ -508,7 +516,7 @@ bool TimerController::processUpdate(MsgPacket* request, MsgPacket* response) {
 
     response->put_U32(ROBOTV_RET_OK);
 
-    return true;
+    return response;
 }
 
 int TimerController::checkTimerConflicts(const cTimer* timer) {

@@ -39,33 +39,33 @@ public:
 
     virtual ~MovieController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
     static std::string folderFromName(const std::string& name);
 
 protected:
 
-    bool processGetDiskSpace(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetDiskSpace(MsgPacket* request);
 
-    bool processGetFolders(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetFolders(MsgPacket* request);
 
-    bool processGetList(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetList(MsgPacket* request);
 
-    bool processRename(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processRename(MsgPacket* request);
 
-    bool processDelete(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processDelete(MsgPacket* request);
 
-    bool processSetPlayCount(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSetPlayCount(MsgPacket* request);
 
-    bool processSetPosition(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSetPosition(MsgPacket* request);
 
-    bool processGetPosition(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetPosition(MsgPacket* request);
 
-    bool processGetMarks(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetMarks(MsgPacket* request);
 
-    bool processSetUrls(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSetUrls(MsgPacket* request);
 
-    bool processSearch(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSearch(MsgPacket* request);
 
 private:
 

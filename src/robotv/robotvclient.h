@@ -61,8 +61,6 @@ private:
 
     MsgPacket* m_request = NULL;
 
-    MsgPacket* m_response = NULL;
-
     Utf8Conv m_toUtf8;
 
     int m_timeout = 3000;

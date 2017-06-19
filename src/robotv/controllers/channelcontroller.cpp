@@ -24,8 +24,6 @@
 
 #include <live/channelcache.h>
 #include "channelcontroller.h"
-#include "net/msgpacket.h"
-#include "robotv/robotvcommand.h"
 #include "tools/hash.h"
 #include "tools/urlencode.h"
 
@@ -38,18 +36,17 @@ ChannelController::ChannelController(const ChannelController& orig) {
 ChannelController::~ChannelController() {
 }
 
-bool ChannelController::process(MsgPacket* request, MsgPacket* response) {
+MsgPacket* ChannelController::process(MsgPacket* request) {
 
     switch(request->getMsgID()) {
         case ROBOTV_CHANNELS_GETCHANNELS:
-            return processGetChannels(request, response);
-            break;
+            return processGetChannels(request);
     }
 
-    return false;
+    return nullptr;
 }
 
-bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* response) {
+MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
     RoboTVChannels& c = RoboTVChannels::instance();
     ChannelCache& channelCache = ChannelCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
@@ -96,8 +93,10 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     m_languageIndex = I18nLanguageIndex(language);
     m_channelCount = channelCount();
 
+    MsgPacket* response = createResponse(request);
+
     if(!c.lock(false)) {
-        return true;
+        return response;
     }
 
     cChannels* channels = c.get();
@@ -125,7 +124,7 @@ bool ChannelController::processGetChannels(MsgPacket* request, MsgPacket* respon
     c.unlock();
 
     isyslog("client got %i channels", m_channelCount);
-    return true;
+    return response;
 }
 
 int ChannelController::channelCount() {

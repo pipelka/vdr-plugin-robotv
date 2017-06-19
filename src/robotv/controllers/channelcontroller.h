@@ -40,7 +40,7 @@ public:
 
     virtual ~ChannelController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
     void addChannelToPacket(const cChannel* channel, MsgPacket* packet, const char* group = NULL);
 
@@ -54,7 +54,7 @@ public:
 
 protected:
 
-    bool processGetChannels(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGetChannels(MsgPacket* request);
 
 private:
 

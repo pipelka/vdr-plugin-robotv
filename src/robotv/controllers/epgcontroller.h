@@ -38,13 +38,13 @@ public:
 
     virtual ~EpgController();
 
-    bool process(MsgPacket* request, MsgPacket* response);
+    MsgPacket* process(MsgPacket* request);
 
 protected:
 
-    bool processGet(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processGet(MsgPacket* request);
 
-    bool processSearch(MsgPacket* request, MsgPacket* response);
+    MsgPacket* processSearch(MsgPacket* request);
 
 private:
 
