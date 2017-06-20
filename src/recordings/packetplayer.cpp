@@ -107,10 +107,23 @@ MsgPacket* PacketPlayer::getNextPacket() {
     int packetSize = TS_SIZE * packetCount;
 
     unsigned char buffer[packetSize];
+    unsigned char* p = &buffer[0];
 
     // get next block (TS packets)
     int bytesRead = getBlock(buffer, m_position, packetSize);
 
+    // TS sync check
+    int offset = 0;
+    while(*p != TS_SYNC_BYTE && offset < bytesRead) {
+        p++;
+        offset++;
+    }
+
+    // skip bytes until next sync
+    bytesRead -= offset;
+    m_position += offset;
+
+    // we need at least one TS packet
     if(bytesRead < TS_SIZE) {
         return nullptr;
     }
@@ -123,7 +136,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     m_position += packetSize;
 
     // new PAT / PMT found ?
-    if(m_parser.ParsePatPmt(buffer, packetSize)) {
+    if(m_parser.ParsePatPmt(p, packetSize)) {
         m_parser.GetVersions(m_patVersion, pmtVersion);
 
         if(pmtVersion > m_pmtVersion) {
@@ -140,10 +153,12 @@ MsgPacket* PacketPlayer::getNextPacket() {
     }
 
     // put packets into demuxer
-    uint8_t* p = buffer;
 
     for(int i = 0; i < packetCount; i++) {
-        m_demuxers.processTsPacket(p);
+        if(*p == TS_SYNC_BYTE) {
+            m_demuxers.processTsPacket(p);
+        }
+
         p += TS_SIZE;
     }
 
