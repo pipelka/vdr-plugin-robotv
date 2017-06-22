@@ -22,8 +22,8 @@
  *
  */
 
+#include <inttypes.h>
 #include "recplayer.h"
-#include "config/config.h"
 
 #ifndef O_NOATIME
 #define O_NOATIME 0
@@ -57,7 +57,6 @@ void RecPlayer::cleanup() {
 
 void RecPlayer::scan() {
     struct stat s;
-    uint64_t len = m_totalLength;
     m_totalLength = 0;
 
     cleanup();
@@ -76,10 +75,6 @@ void RecPlayer::scan() {
         m_segments.Append(segment);
 
         m_totalLength += s.st_size;
-    }
-
-    if(len != m_totalLength) {
-        isyslog("recording scan: %lu bytes", m_totalLength);
     }
 }
 
@@ -148,21 +143,13 @@ void RecPlayer::closeFile() {
     m_fileOpen = -1;
 }
 
-uint64_t RecPlayer::getLengthBytes() {
+int64_t RecPlayer::getLengthBytes() {
     return m_totalLength;
 }
 
-int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
-    // dont let the block be larger than 256 kb
-    if(amount > 256 * 1024) {
-        amount = 256 * 1024;
-    }
-
-    if((uint64_t)amount > m_totalLength) {
-        amount = m_totalLength;
-    }
-
+int RecPlayer::getBlock(unsigned char* buffer, int64_t position, int64_t amount) {
     if(position >= m_totalLength) {
+        esyslog("RecPlayer: position %lu past size of %lu bytes", position, m_totalLength);
         return 0;
     }
 
@@ -182,27 +169,30 @@ int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
 
     // segment not found / invalid position
     if(segmentNumber == -1) {
+        esyslog("RecPlayer: segment number for position %lu not found !", position);
         return 0;
     }
 
     // open file (if not already open)
     if(!openFile(segmentNumber)) {
+        esyslog("RecPlayer: unable to open segment #%i", segmentNumber);
         return 0;
     }
 
     // work out position in current file
-    uint64_t filePosition = position - m_segments[segmentNumber]->start;
+    int64_t filePosition = position - m_segments[segmentNumber]->start;
 
     // seek to position
     if(lseek(m_file, filePosition, SEEK_SET) == -1) {
-        esyslog("unable to seek to position: %lu", filePosition);
+        esyslog("RecPlayer: unable to seek to position: %lu", filePosition);
         return 0;
     }
 
     // try to read the block
-    int bytes_read = read(m_file, buffer, amount);
+    ssize_t bytes_read = read(m_file, buffer, (size_t)amount);
 
     if(bytes_read <= 0) {
+        esyslog("RecPlayer: read returned %lu", bytes_read);
         return 0;
     }
 
@@ -216,5 +206,5 @@ int RecPlayer::getBlock(unsigned char* buffer, uint64_t position, int amount) {
         bytes_read += getBlock(&buffer[bytes_read], position + bytes_read, amount - bytes_read);
     }
 
-    return bytes_read;
+    return (int)bytes_read;
 }

@@ -31,8 +31,8 @@
 
 class Segment {
 public:
-    uint64_t start;
-    uint64_t end;
+    int64_t start;
+    int64_t end;
 };
 
 class RecPlayer {
@@ -42,9 +42,9 @@ public:
 
     ~RecPlayer();
 
-    uint64_t getLengthBytes();
+    int64_t getLengthBytes();
 
-    int getBlock(unsigned char* buffer, uint64_t position, int amount);
+    int getBlock(unsigned char* buffer, int64_t position, int64_t amount);
 
     bool openFile(int index);
 
@@ -54,7 +54,7 @@ protected:
 
     bool update();
 
-    uint64_t m_totalLength;
+    int64_t m_totalLength;
 
     cVector<Segment*> m_segments;
 
@@ -65,8 +65,6 @@ private:
     void cleanup();
 
     char* fileNameFromIndex(int index);
-
-    void checkBufferSize(int s);
 
     bool m_pesrecording;
 
