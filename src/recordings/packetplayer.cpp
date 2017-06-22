@@ -23,10 +23,8 @@
  */
 
 #include <live/livestreamer.h>
-#include "config/config.h"
+#include <tools/time.h>
 #include "packetplayer.h"
-#include "tools/time.h"
-#include "robotv/robotvcommand.h"
 
 #define MIN_PACKET_SIZE (128 * 1024)
 
@@ -38,6 +36,7 @@ PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_patVersion = -1;
     m_pmtVersion = -1;
     m_startPts = 0;
+    m_currentTime = 0;
 
     // initial start / end time
     m_startTime = roboTV::currentTimeMillis();
@@ -86,10 +85,13 @@ void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
         currentPts += 0x200000000ULL;
     }
 
-    currentTime = m_startTime.count() + (currentPts - m_startPts) / 90;
+    int64_t durationMs = (currentPts - m_startPts) / 90;
+    currentTime = m_startTime.count() + durationMs;
+
+    m_currentTime = max(m_currentTime, currentTime);
 
     // add timestamp (wallclock time in ms starting at m_startTime)
-    packet->put_S64(currentTime);
+    packet->put_S64(m_currentTime);
 
     m_queue.push_back(packet);
 }
@@ -112,7 +114,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     int pmtVersion = 0;
     int patVersion = 0;
 
-    int packetCount = 100;
+    int packetCount = 200;
     int packetSize = TS_SIZE * packetCount;
 
     unsigned char buffer[packetSize];
@@ -128,12 +130,17 @@ MsgPacket* PacketPlayer::getNextPacket() {
         offset++;
     }
 
+    if(offset > 0) {
+        esyslog("skipping %i bytes until next TS sync !", offset);
+    }
+
     // skip bytes until next sync
     bytesRead -= offset;
     m_position += offset;
 
     // we need at least one TS packet
     if(bytesRead < TS_SIZE) {
+        esyslog("PacketPlayer: packet (%i bytes) smaller than TS packet size", bytesRead);
         return nullptr;
     }
 
@@ -175,6 +182,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     if(m_requestStreamChange) {
         // first we need valid PAT/PMT
         if(!m_parser.GetVersions(patVersion, pmtVersion)) {
+            isyslog("PacketPlayer: valid PAT/PMT not yet found !");
             return NULL;
         }
 
@@ -195,9 +203,9 @@ MsgPacket* PacketPlayer::getNextPacket() {
         return LiveStreamer::createStreamChangePacket(m_demuxers);
     }
 
-    // get next packet from queue (if any)
-    if(m_queue.size() == 0) {
-        return NULL;
+    // recheck packet queue
+    if(m_queue.empty()) {
+        return nullptr;
     }
 
     MsgPacket* packet = m_queue.front();
@@ -207,10 +215,16 @@ MsgPacket* PacketPlayer::getNextPacket() {
 }
 
 MsgPacket* PacketPlayer::getPacket() {
-    MsgPacket* p = NULL;
+    if(m_position >= m_totalLength) {
+        dsyslog("PacketPlayer: end of file reached (position=%ld / total=%ld)", m_position, m_totalLength);
+        // TODO - send end of stream packet
+        return nullptr;
+    }
+
+    MsgPacket* p = nullptr;
 
     // process data until the next packet drops out
-    while(m_position < m_totalLength && p == NULL) {
+    while(m_position < m_totalLength && p == nullptr) {
         p = getNextPacket();
     }
 
@@ -218,10 +232,10 @@ MsgPacket* PacketPlayer::getPacket() {
 }
 
 MsgPacket* PacketPlayer::requestPacket() {
-    MsgPacket* p = NULL;
+    MsgPacket* p = nullptr;
 
     // create payload packet
-    if(m_streamPacket == NULL) {
+    if(m_streamPacket == nullptr) {
         m_streamPacket = new MsgPacket();
         m_streamPacket->disablePayloadCheckSum();
     }
@@ -246,7 +260,7 @@ MsgPacket* PacketPlayer::requestPacket() {
 
         // add payload
         uint8_t* data = p->getPayload();
-        int length = p->getPayloadLength();
+        uint32_t length = p->getPayloadLength();
         m_streamPacket->put_Blob(data, length);
 
         delete p;
@@ -254,13 +268,14 @@ MsgPacket* PacketPlayer::requestPacket() {
         // send payload packet if it's big enough
         if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
             MsgPacket* result = m_streamPacket;
-            m_streamPacket = NULL;
+            m_streamPacket = nullptr;
 
             return result;
         }
     }
 
-    return NULL;
+    dsyslog("PacketPlayer: requestPacket didn't get any packet !");
+    return nullptr;
 }
 
 void PacketPlayer::clearQueue() {
@@ -280,6 +295,7 @@ void PacketPlayer::reset() {
     m_requestStreamChange = true;
     m_patVersion = -1;
     m_pmtVersion = -1;
+    m_currentTime = 0;
 
     // reset current stream packet
     delete m_streamPacket;

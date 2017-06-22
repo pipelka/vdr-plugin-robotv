@@ -82,7 +82,7 @@ private:
 
     DemuxerBundle m_demuxers;
 
-    uint64_t m_position;
+    int64_t m_position;
 
     bool m_requestStreamChange;
 
@@ -99,6 +99,8 @@ private:
     std::chrono::milliseconds m_endTime;
 
     int64_t m_startPts;
+
+    int64_t m_currentTime;
 
 };
 
