@@ -100,6 +100,15 @@ void PacketPlayer::onStreamChange() {
 }
 
 MsgPacket* PacketPlayer::getNextPacket() {
+
+    // first check packet queue
+    if(!m_queue.empty()) {
+        MsgPacket* packet = m_queue.front();
+        m_queue.pop_front();
+
+        return packet;
+    }
+
     int pmtVersion = 0;
     int patVersion = 0;
 
