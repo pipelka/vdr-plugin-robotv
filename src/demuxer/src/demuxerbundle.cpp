@@ -132,6 +132,10 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 }
 
 bool DemuxerBundle::isReady() const {
+    if(empty()) {
+        return false;
+    }
+
     for(auto i = begin(); i != end(); i++) {
         if(!(*i)->isParsed()) {
             return false;
