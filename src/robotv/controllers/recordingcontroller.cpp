@@ -74,7 +74,7 @@ MsgPacket* RecordingController::processOpen(MsgPacket* request) {
         delete m_recPlayer->requestPacket();
         m_recPlayer->reset();
 
-        uint32_t length = (m_recPlayer->endTime().count() - m_recPlayer->startTime().count()) / 1000;
+        uint32_t length = (uint32_t)(m_recPlayer->endTime().count() - m_recPlayer->startTime().count()) / 1000;
 
         response->put_U32(ROBOTV_RET_OK);
         response->put_U32(0);
