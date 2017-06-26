@@ -100,10 +100,11 @@ int64_t TsDemuxer::rescale(int64_t a) {
 }
 
 void TsDemuxer::sendPacket(StreamPacket* pkt) {
-    pkt->type     = m_type;
-    pkt->content  = m_content;
-    pkt->pid      = getPid();
+    pkt->type = m_type;
+    pkt->content = m_content;
+    pkt->pid  = getPid();
     pkt->duration = (int)rescale(pkt->duration);
+    pkt->streamPosition = m_streamPosition;
 
     m_streamer->onStreamPacket(pkt);
 }

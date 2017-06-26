@@ -35,20 +35,48 @@ PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
     m_position = 0;
     m_patVersion = -1;
     m_pmtVersion = -1;
-    m_startPts = 0;
-    m_currentTime = 0;
 
     // initial start / end time
-    m_startTime = roboTV::currentTimeMillis();
-    m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
+    m_startTime = std::chrono::milliseconds(0);
+    m_endTime = std::chrono::milliseconds(0);
+
+    // allocate buffer
+    m_buffer = (uint8_t*)malloc(TS_SIZE * maxPacketCount);
 }
 
 PacketPlayer::~PacketPlayer() {
     clearQueue();
+    free(m_buffer);
     delete m_index;
 }
 
 void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
+    // stream change needed / requested
+    if(m_requestStreamChange && m_demuxers.isReady()) {
+
+        isyslog("demuxers ready");
+
+        for(auto i : m_demuxers) {
+            isyslog("%s", i->info().c_str());
+        }
+
+        isyslog("create streamchange packet");
+        m_requestStreamChange = false;
+
+        // push streamchange into queue
+        MsgPacket* packet = LiveStreamer::createStreamChangePacket(m_demuxers);
+        m_queue.push_back(packet);
+
+        // push pre-queued packets
+        dsyslog("processing %lu pre-queued packets", m_preQueue.size());
+
+        while(!m_preQueue.empty()) {
+            packet = m_preQueue.front();
+            m_preQueue.pop_front();
+            m_queue.push_back(packet);
+        }
+    }
+
     // skip non video / audio packets
     if(p->content != StreamInfo::Content::VIDEO && p->content != StreamInfo::Content::AUDIO) {
         return;
@@ -72,38 +100,39 @@ void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
     packet->put_U32(p->size);
     packet->put_Blob(p->data, p->size);
 
-    int64_t currentTime = 0;
-    int64_t currentPts = p->pts;
-
-    // set initial pts
-    if(m_startPts == 0) {
-        m_startPts = currentPts;
-    }
-
-    // pts wrap ?
-    if(currentPts < m_startPts - 90000) {
-        currentPts += 0x200000000ULL;
-    }
-
-    int64_t durationMs = (currentPts - m_startPts) / 90;
-    currentTime = m_startTime.count() + durationMs;
-
-    m_currentTime = max(m_currentTime, currentTime);
+    int64_t durationMs = (m_recording->LengthInSeconds() * 1000 * p->streamPosition) / m_totalLength;
+    int64_t currentTime = m_startTime.count() + durationMs;
 
     // add timestamp (wallclock time in ms starting at m_startTime)
-    packet->put_S64(m_currentTime);
+    dsyslog("timestamp: %lu", currentTime / 1000);
+    packet->put_S64(currentTime);
+
+    // pre-queue packet
+    if(!m_demuxers.isReady()) {
+        if(m_preQueue.size() > 50) {
+            esyslog("pre-queue full - skipping packet");
+            delete packet;
+            return;
+        }
+
+        m_preQueue.push_back(packet);
+        return;
+    }
 
     m_queue.push_back(packet);
 }
 
 void PacketPlayer::onStreamChange() {
-    isyslog("stream change requested");
+    if(!m_requestStreamChange) {
+        isyslog("stream change requested");
+    }
+
     m_requestStreamChange = true;
 }
 
 MsgPacket* PacketPlayer::getNextPacket() {
 
-    // first check packet queue
+    // check packet queue first
     if(!m_queue.empty()) {
         MsgPacket* packet = m_queue.front();
         m_queue.pop_front();
@@ -112,26 +141,20 @@ MsgPacket* PacketPlayer::getNextPacket() {
     }
 
     int pmtVersion = 0;
-    int patVersion = 0;
-
-    int packetCount = 200;
-    int packetSize = TS_SIZE * packetCount;
-
-    unsigned char buffer[packetSize];
-    unsigned char* p = &buffer[0];
+    unsigned char* p = m_buffer;
 
     // get next block (TS packets)
-    int bytesRead = getBlock(buffer, m_position, packetSize);
+    int bytesRead = getBlock(p, m_position, maxPacketCount * TS_SIZE);
 
-    // TS sync check
+    // TS sync
     int offset = 0;
-    while(*p != TS_SYNC_BYTE && offset < bytesRead) {
+    while(offset < (bytesRead - TS_SIZE) && (*p != TS_SYNC_BYTE || p[TS_SIZE] != TS_SYNC_BYTE || !TsHasPayload(p))) {
         p++;
         offset++;
     }
 
     if(offset > 0) {
-        esyslog("skipping %i bytes until next TS sync !", offset);
+        isyslog("skipping %i bytes until next TS packet !", offset);
     }
 
     // skip bytes until next sync
@@ -145,14 +168,14 @@ MsgPacket* PacketPlayer::getNextPacket() {
     }
 
     // round to TS_SIZE border
-    packetCount = (bytesRead / TS_SIZE);
-    packetSize = TS_SIZE * packetCount;
+    int count = (bytesRead / TS_SIZE);
+    int bufferSize = TS_SIZE * count;
 
     // advance to next block
-    m_position += packetSize;
+    m_position += bufferSize;
 
     // new PAT / PMT found ?
-    if(m_parser.ParsePatPmt(p, packetSize)) {
+    if(m_parser.ParsePatPmt(p, bufferSize)) {
         m_parser.GetVersions(m_patVersion, pmtVersion);
 
         if(pmtVersion > m_pmtVersion) {
@@ -169,49 +192,16 @@ MsgPacket* PacketPlayer::getNextPacket() {
     }
 
     // put packets into demuxer
-
-    for(int i = 0; i < packetCount; i++) {
+    for(int i = 0; i < count; i++) {
         if(*p == TS_SYNC_BYTE) {
-            m_demuxers.processTsPacket(p);
+            m_demuxers.processTsPacket(p, m_position);
         }
 
         p += TS_SIZE;
     }
 
-    // stream change needed / requested
-    if(m_requestStreamChange) {
-        // first we need valid PAT/PMT
-        if(!m_parser.GetVersions(patVersion, pmtVersion)) {
-            isyslog("PacketPlayer: valid PAT/PMT not yet found !");
-            return NULL;
-        }
-
-        // demuxers need to be ready
-        if(!m_demuxers.isReady()) {
-            return NULL;
-        }
-
-        isyslog("demuxers ready");
-
-        for(auto i : m_demuxers) {
-            isyslog("%s", i->info().c_str());
-        }
-
-        isyslog("create streamchange packet");
-        m_requestStreamChange = false;
-
-        return LiveStreamer::createStreamChangePacket(m_demuxers);
-    }
-
-    // recheck packet queue
-    if(m_queue.empty()) {
-        return nullptr;
-    }
-
-    MsgPacket* packet = m_queue.front();
-    m_queue.pop_front();
-
-    return packet;
+    // currently there isn't any packet available
+    return nullptr;
 }
 
 MsgPacket* PacketPlayer::getPacket() {
@@ -243,9 +233,11 @@ MsgPacket* PacketPlayer::requestPacket() {
     while((p = getPacket()) != nullptr) {
 
         // recheck recording duration
-        if(p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME && update()) {
-            int64_t durationMs = (int)(((double)m_index->Last() * 1000.0) / m_recording->FramesPerSecond());
-            m_endTime = m_startTime + std::chrono::milliseconds(durationMs);
+        if((p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME && update()) || endTime().count() == 0) {
+            if(startTime().count() == 0) {
+                m_startTime = roboTV::currentTimeMillis();
+            }
+            m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
         }
 
         // add start / endtime
@@ -295,7 +287,6 @@ void PacketPlayer::reset() {
     m_requestStreamChange = true;
     m_patVersion = -1;
     m_pmtVersion = -1;
-    m_currentTime = 0;
 
     // reset current stream packet
     delete m_streamPacket;
@@ -306,22 +297,10 @@ void PacketPlayer::reset() {
 }
 
 int64_t PacketPlayer::filePositionFromClock(int64_t wallclockTimeMs) {
-    double offsetMs = wallclockTimeMs - m_startTime.count();
-    double fps = m_recording->FramesPerSecond();
-    int frames = (int)((offsetMs * fps) / 1000.0);
+    int64_t durationSinceStartMs = wallclockTimeMs - startTime().count();
+    int64_t durationMs = endTime().count() - startTime().count();
 
-    int index = m_index->GetClosestIFrame(frames);
-
-    uint16_t fileNumber = 0;
-    off_t fileOffset = 0;
-
-    m_index->Get(index, &fileNumber, &fileOffset);
-
-    if(fileNumber == 0) {
-        return 0;
-    }
-
-    return m_segments[--fileNumber]->start + fileOffset;
+    return (m_totalLength * durationSinceStartMs) / durationMs;
 }
 
 int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
@@ -330,14 +309,18 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
 
     // invalid position ?
     if(m_position >= m_totalLength) {
-        return -1;
+        m_position = m_totalLength;
+    }
+
+    if(m_position < 0) {
+        m_position = 0;
     }
 
     isyslog("seek: %lu / %lu", m_position, m_totalLength);
+    dsyslog("SEEK timestamp: %lu", wallclockTimeMs / 1000);
 
     // reset parser
     reset();
-
     return 0;
 }
 

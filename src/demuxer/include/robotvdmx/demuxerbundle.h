@@ -48,7 +48,7 @@ public:
 
     void updateFrom(StreamBundle* bundle);
 
-    bool processTsPacket(uint8_t* packet) const;
+    bool processTsPacket(uint8_t* packet, int64_t streamPosition = 0) const;
 
     //MsgPacket* createStreamChangePacket();
 

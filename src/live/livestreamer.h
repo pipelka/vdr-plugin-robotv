@@ -34,6 +34,7 @@
 #include "robotvdmx/streambundle.h"
 #include "robotvdmx/demuxerbundle.h"
 #include "robotv/robotvcommand.h"
+#include "livequeue.h"
 
 #include <list>
 #include <mutex>
@@ -74,6 +75,8 @@ private:
     MsgPacket* m_streamPacket = NULL;
 
     bool m_cacheEnabled;
+
+    std::deque<LiveQueue::PacketData> m_prequeue;
 
 protected:
 

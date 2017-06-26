@@ -61,13 +61,13 @@ public:
 
     int64_t getTimeshiftStartPosition();
 
-protected:
-
     struct PacketData {
         MsgPacket* p;
         StreamInfo::Content content;
         int64_t pts;
     };
+
+protected:
 
     struct PacketIndex {
         off_t filePosition;

@@ -172,7 +172,7 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
     }
 }
 
-bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
+bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) const {
     int pid = TsPid(packet);
     TsDemuxer* demuxer = findDemuxer(pid);
 
@@ -180,5 +180,6 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet) const {
         return false;
     }
 
+    demuxer->setStreamPosition(streamPosition);
     return demuxer->processTsPacket(packet);
 }

@@ -44,6 +44,7 @@ public:
         int64_t pid;
         int64_t dts;
         int64_t pts;
+        int64_t streamPosition = 0;
         int duration = 0;
 
         uint8_t* data = nullptr;
@@ -137,6 +138,10 @@ public:
         return m_ancillaryPageId;
     }
 
+    inline void setStreamPosition(int64_t position) {
+        m_streamPosition = position;
+    }
+
     /* Decoder specific data */
     void setVideoDecoderData(uint8_t* sps, size_t spsLength, uint8_t* pps, size_t ppsLength, uint8_t* vps = NULL, size_t vpsLength = 0);
 
@@ -153,6 +158,8 @@ protected:
     friend class Parser;
 
 private:
+
+    int64_t m_streamPosition;
 
     Parser* createParser(StreamInfo::Type type);
 

@@ -92,16 +92,17 @@ private:
 
     std::deque<MsgPacket*> m_queue;
 
+    std::deque<MsgPacket*> m_preQueue;
+
     MsgPacket* m_streamPacket = NULL;
 
     std::chrono::milliseconds m_startTime;
 
     std::chrono::milliseconds m_endTime;
 
-    int64_t m_startPts;
+    static const int maxPacketCount = 200;
 
-    int64_t m_currentTime;
-
+    uint8_t* m_buffer;
 };
 
 #endif	// ROBOTV_PACKETPLAYER_H
