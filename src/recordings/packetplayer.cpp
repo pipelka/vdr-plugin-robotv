@@ -51,6 +51,15 @@ PacketPlayer::~PacketPlayer() {
 }
 
 void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
+
+    // recheck recording duration
+    if((p->frameType == StreamInfo::FrameType::IFRAME && update()) || endTime().count() == 0) {
+        if(startTime().count() == 0) {
+            m_startTime = roboTV::currentTimeMillis();
+        }
+        m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
+    }
+
     // stream change needed / requested
     if(m_requestStreamChange && m_demuxers.isReady()) {
 
@@ -232,14 +241,6 @@ MsgPacket* PacketPlayer::requestPacket() {
 
     while((p = getPacket()) != nullptr) {
 
-        // recheck recording duration
-        if((p->getClientID() == (uint16_t)StreamInfo::FrameType::IFRAME && update()) || endTime().count() == 0) {
-            if(startTime().count() == 0) {
-                m_startTime = roboTV::currentTimeMillis();
-            }
-            m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
-        }
-
         // add start / endtime
         if(m_streamPacket->eop()) {
             m_streamPacket->put_S64(startTime().count());
@@ -261,7 +262,6 @@ MsgPacket* PacketPlayer::requestPacket() {
         if(m_streamPacket->getPayloadLength() >= MIN_PACKET_SIZE) {
             MsgPacket* result = m_streamPacket;
             m_streamPacket = nullptr;
-
             return result;
         }
     }
