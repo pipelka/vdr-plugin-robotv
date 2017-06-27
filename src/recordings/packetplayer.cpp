@@ -113,7 +113,6 @@ void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
     int64_t currentTime = m_startTime.count() + durationMs;
 
     // add timestamp (wallclock time in ms starting at m_startTime)
-    dsyslog("timestamp: %lu", currentTime / 1000);
     packet->put_S64(currentTime);
 
     // pre-queue packet
@@ -316,8 +315,7 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
         m_position = 0;
     }
 
-    isyslog("seek: %lu / %lu", m_position, m_totalLength);
-    dsyslog("SEEK timestamp: %lu", wallclockTimeMs / 1000);
+    isyslog("seek: %lu / %lu (%lu)", m_position, m_totalLength, wallclockTimeMs / 1000);
 
     // reset parser
     reset();
