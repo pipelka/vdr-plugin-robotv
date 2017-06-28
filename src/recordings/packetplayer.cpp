@@ -182,25 +182,25 @@ MsgPacket* PacketPlayer::getNextPacket() {
     // advance to next block
     m_position += bufferSize;
 
-    // new PAT / PMT found ?
-    if(m_parser.ParsePatPmt(p, bufferSize)) {
-        m_parser.GetVersions(m_patVersion, pmtVersion);
-
-        if(pmtVersion > m_pmtVersion) {
-            isyslog("found new PMT version (%i)", pmtVersion);
-            m_pmtVersion = pmtVersion;
-
-            // update demuxers from new PMT
-            isyslog("updating demuxers");
-            StreamBundle streamBundle = createFromPatPmt(&m_parser);
-            m_demuxers.updateFrom(&streamBundle);
-
-            m_requestStreamChange = true;
-        }
-    }
-
-    // put packets into demuxer
     for(int i = 0; i < count; i++) {
+        // new PAT / PMT found ?
+        if(m_parser.ParsePatPmt(p, TS_SIZE)) {
+            m_parser.GetVersions(m_patVersion, pmtVersion);
+
+            if(pmtVersion > m_pmtVersion) {
+                isyslog("found new PMT version (%i)", pmtVersion);
+                m_pmtVersion = pmtVersion;
+
+                // update demuxers from new PMT
+                isyslog("updating demuxers");
+                StreamBundle streamBundle = createFromPatPmt(&m_parser);
+                m_demuxers.updateFrom(&streamBundle);
+
+                m_requestStreamChange = true;
+            }
+        }
+
+        // put packets into demuxer
         if(*p == TS_SYNC_BYTE) {
             m_demuxers.processTsPacket(p, m_position);
         }
