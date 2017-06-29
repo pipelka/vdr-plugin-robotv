@@ -76,8 +76,6 @@ private:
 
     bool m_cacheEnabled;
 
-    std::deque<LiveQueue::PacketData> m_prequeue;
-
 protected:
 
 #if VDRVERSNUM < 20300

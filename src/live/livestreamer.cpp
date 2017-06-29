@@ -212,6 +212,10 @@ void LiveStreamer::onStreamPacket(TsDemuxer::StreamPacket *pkt) {
         sendStreamChange();
     }
 
+    if(!m_demuxers.isReady()) {
+        return;
+    }
+
     // wait for first I-Frame (if enabled)
     if(m_waitForKeyFrame && pkt->frameType != StreamInfo::FrameType::IFRAME) {
         return;
@@ -239,17 +243,6 @@ void LiveStreamer::onStreamPacket(TsDemuxer::StreamPacket *pkt) {
     // add timestamp (wallclock time in ms)
     packet->put_S64(roboTV::currentTimeMillis().count());
 
-    if(!m_demuxers.isReady()) {
-        if(m_prequeue.size() > 50) {
-            esyslog("pre-queue full - skipping packet");
-            delete packet;
-            return;
-        }
-
-        m_prequeue.push_back({packet, pkt->content, pkt->pts});
-        return;
-    }
-
     m_queue->queue(packet, pkt->content, pkt->pts);
 }
 
@@ -275,15 +268,6 @@ void LiveStreamer::sendStreamChange() {
 
     MsgPacket* resp = createStreamChangePacket(m_demuxers);
     m_queue->queue(resp, StreamInfo::Content::STREAMINFO);
-
-    // process pre-queued packets
-    dsyslog("processing %lu pre-queued packets", m_prequeue.size());
-
-    while(!m_prequeue.empty()) {
-        LiveQueue::PacketData p = m_prequeue.front();
-        m_prequeue.pop_front();
-        m_queue->queue(p.p, p.content, p.pts);
-    }
 
     m_requestStreamChange = false;
 }
