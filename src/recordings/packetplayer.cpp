@@ -316,7 +316,7 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
 
     // invalid position ?
     if(m_position >= m_totalLength) {
-        m_position = m_totalLength;
+        return 0;
     }
 
     if(m_position < 0) {
