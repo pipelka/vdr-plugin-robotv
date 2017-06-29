@@ -51,12 +51,18 @@ PacketPlayer::~PacketPlayer() {
 }
 
 void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
+    // skip empty packets
+    if(p == nullptr || p->size == 0 || p->data == nullptr) {
+        return;
+    }
 
     // recheck recording duration
-    if((p->frameType == StreamInfo::FrameType::IFRAME && update()) || endTime().count() == 0) {
+    if((p->frameType == StreamInfo::FrameType::IFRAME) || endTime().count() == 0) {
         if(startTime().count() == 0) {
             m_startTime = roboTV::currentTimeMillis();
         }
+
+        update();
         m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
     }
 
@@ -156,22 +162,24 @@ MsgPacket* PacketPlayer::getNextPacket() {
 
     // TS sync
     int offset = 0;
-    while(offset < (bytesRead - TS_SIZE) && (*p != TS_SYNC_BYTE || p[TS_SIZE] != TS_SYNC_BYTE || !TsHasPayload(p))) {
+    while(offset <= (bytesRead - TS_SIZE) && (*p != TS_SYNC_BYTE || p[TS_SIZE] != TS_SYNC_BYTE || TsError(p))) {
         p++;
         offset++;
     }
 
-    if(offset > 0) {
-        isyslog("skipping %i bytes until next TS packet !", offset);
-    }
-
-    // skip bytes until next sync
+    // skip bytes (maybe) until next sync
     bytesRead -= offset;
     m_position += offset;
 
+    // continue from current position
+    if(offset > 0) {
+        isyslog("PacketPlayer: skipping %i bytes", offset);
+        return nullptr;
+    }
+
     // we need at least one TS packet
     if(bytesRead < TS_SIZE) {
-        esyslog("PacketPlayer: packet (%i bytes) smaller than TS packet size", bytesRead);
+        isyslog("PacketPlayer: packet (%i bytes) smaller than TS packet size - retrying", bytesRead);
         return nullptr;
     }
 
