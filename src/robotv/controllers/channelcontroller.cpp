@@ -47,7 +47,6 @@ MsgPacket* ChannelController::process(MsgPacket* request) {
 }
 
 MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
-    RoboTVChannels& c = RoboTVChannels::instance();
     ChannelCache& channelCache = ChannelCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
@@ -95,14 +94,9 @@ MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
 
     MsgPacket* response = createResponse(request);
 
-    if(!c.lock(false)) {
-        return response;
-    }
-
-    cChannels* channels = c.get();
     std::string groupName;
 
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
 
         if(channel->GroupSep()) {
             groupName = m_toUtf8.convert(channel->Name());
@@ -121,19 +115,14 @@ MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
         addChannelToPacket(channel, response, groupName.c_str());
     }
 
-    c.unlock();
-
     isyslog("client got %i channels", m_channelCount);
     return response;
 }
 
 int ChannelController::channelCount() {
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-    cChannels* channels = c.get();
     int count = 0;
 
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
         if(isChannelWanted(channel, false)) {
             count++;
         }
@@ -143,7 +132,6 @@ int ChannelController::channelCount() {
         }
     }
 
-    c.unlock();
     return count;
 }
 

@@ -24,7 +24,6 @@
 
 #include "streamcontroller.h"
 #include "config/config.h"
-#include "robotv/robotvchannels.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
 
@@ -91,19 +90,13 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
 
     stopStreaming();
 
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-    const cChannel* channel = NULL;
-
     // try to find channel by uid first
-    channel = findChannelByUid(uid);
+    const cChannel* channel = findChannelByUid(uid);
 
     // try channelnumber
     if(channel == NULL) {
-        channel = c.get()->GetByNumber(uid);
+        channel = Channels.GetByNumber(uid);
     }
-
-    c.unlock();
 
     MsgPacket* response = createResponse(request);
 

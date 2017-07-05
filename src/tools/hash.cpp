@@ -25,7 +25,6 @@
 
 #include <vdr/tools.h>
 #include <vdr/channels.h>
-#include "robotv/robotvchannels.h"
 
 #include "hash.h"
 
@@ -100,13 +99,9 @@ uint32_t createChannelUid(const cChannel* channel) {
 
 const cChannel* findChannelByUid(uint32_t channelUID) {
     cChannel* result = NULL;
-    RoboTVChannels& c = RoboTVChannels::instance();
-
-    c.lock(false);
-    cChannels* channels = c.get();
 
     // maybe we need to use a lookup table
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
         cString channelid = channel->GetChannelID().ToString();
 
         if(channelUID == createStringHash(channelid)) {
@@ -115,7 +110,6 @@ const cChannel* findChannelByUid(uint32_t channelUID) {
         }
     }
 
-    c.unlock();
     return result;
 }
 

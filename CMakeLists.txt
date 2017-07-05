@@ -96,8 +96,6 @@ set(SOURCE_FILES
     src/robotv/svdrp/channelcmds.h
     src/robotv/robotv.cpp
     src/robotv/robotv.h
-    src/robotv/robotvchannels.cpp
-    src/robotv/robotvchannels.h
     src/robotv/robotvclient.cpp
     src/robotv/robotvclient.h
     src/robotv/robotvcommand.h

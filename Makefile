@@ -109,8 +109,7 @@ OBJS = \
 	src/robotv/svdrp/channelcmds.o \
 	src/robotv/robotv.o \
 	src/robotv/robotvclient.o \
-	src/robotv/robotvserver.o \
-	src/robotv/robotvchannels.o
+	src/robotv/robotvserver.o
 
 SQLITE_OBJS = \
 	src/db/sqlite3.o

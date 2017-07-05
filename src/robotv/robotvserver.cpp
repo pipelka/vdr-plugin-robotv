@@ -41,7 +41,6 @@
 
 #include "robotvserver.h"
 #include "robotvclient.h"
-#include "robotvchannels.h"
 #include "live/channelcache.h"
 #include "recordings/recordingscache.h"
 #include "recordings/artwork.h"

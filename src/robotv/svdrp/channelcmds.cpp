@@ -49,19 +49,12 @@ cString ChannelCmds::SVDRPCommand(const char* Command, const char* Option, int& 
 }
 
 cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode) {
-    RoboTVChannels& c = RoboTVChannels::instance();
     ChannelCache& channelCache = ChannelCache::instance();
 
-    if(!c.lock(false)) {
-        ReplyCode = 500;
-        return NULL;
-    }
-
-    cChannels* channels = c.get();
     json list = json::array();
     std::string groupName;
 
-    for(cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
         if(channel->GroupSep()) {
             groupName = m_toUtf8.convert(channel->Name());
             continue;
@@ -69,8 +62,6 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
 
         list.push_back(jsonFromChannel(channel, groupName.c_str(), channelCache.isEnabled(channel)));
     }
-
-    c.Unlock();
 
     return cString(list.dump().c_str());
 }

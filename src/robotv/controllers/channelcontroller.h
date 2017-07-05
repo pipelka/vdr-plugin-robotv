@@ -28,7 +28,6 @@
 #include <list>
 #include <tools/utf8conv.h>
 #include "vdr/channels.h"
-#include "robotv/robotvchannels.h"
 #include "controller.h"
 
 class MsgPacket;

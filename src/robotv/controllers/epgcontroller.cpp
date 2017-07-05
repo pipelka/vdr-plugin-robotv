@@ -25,7 +25,6 @@
 #include "epgcontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
-#include "robotv/robotvchannels.h"
 #include "tools/hash.h"
 #include "db/storage.h"
 #include "timercontroller.h"
@@ -56,12 +55,7 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
     uint32_t startTime = request->get_U32();
     uint32_t duration = request->get_U32();
 
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-
-    const cChannel* channel = NULL;
-
-    channel = findChannelByUid(channelUid);
+    const cChannel* channel = findChannelByUid(channelUid);
 
     if(channel != NULL) {
         dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
@@ -71,7 +65,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 
     if(!channel) {
         response->put_U32(0);
-        c.unlock();
 
         esyslog("written 0 because channel = NULL");
         return response;
@@ -82,7 +75,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 
     if(!Schedules) {
         response->put_U32(0);
-        c.unlock();
 
         dsyslog("written 0 because Schedule!s! = NULL");
         return response;
@@ -92,7 +84,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 
     if(!Schedule) {
         response->put_U32(0);
-        c.unlock();
 
         dsyslog("written 0 because Schedule = NULL");
         return response;
@@ -185,7 +176,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
         }
     }
 
-    c.unlock();
     response->compress(9);
 
     return response;
@@ -204,10 +194,6 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
     if(schedules == nullptr) {
         return response;
     }
-
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-    cChannels* channels = c.get();
 
     searchEpg(searchTerm, [&](tEventID eventId, time_t timeStamp, tChannelID channelId) {
         if(timeStamp < now) {
@@ -228,13 +214,12 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
 
         TimerController::event2Packet(event, response);
 
-        cChannel* channel = channels->GetByChannelID(channelId);
+        cChannel* channel = Channels.GetByChannelID(channelId);
         response->put_String(channel ? channel->Name() : "");
         response->put_U32(createChannelUid(channel));
     });
 
     response->compress(9);
-    c.unlock();
     return response;
 }
 

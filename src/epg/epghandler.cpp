@@ -22,7 +22,7 @@
  *
  */
 
-#include <robotv/robotvchannels.h>
+#include <vdr/channels.h>
 #include <tools/hash.h>
 #include "epghandler.h"
 
@@ -39,18 +39,13 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
 
     std::string channelName;
 
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-    cChannels* channels = c.get();
-    cChannel* channel = channels->GetByChannelID(Event->ChannelID());
+    cChannel* channel = Channels.GetByChannelID(Event->ChannelID());
 
     if(channel == nullptr) {
-        c.unlock();
         return false;
     }
 
     channelName = channel->Name();
-    c.unlock();
 
     std::string docIdString = (const char*)Event->ChannelID().ToString();
     docIdString += "-" + std::to_string(Event->EventID());

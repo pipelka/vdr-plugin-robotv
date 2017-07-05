@@ -25,7 +25,6 @@
 #include "timercontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
-#include "robotv/robotvchannels.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
 #include "vdr/menu.h"
@@ -520,9 +519,6 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
 }
 
 int TimerController::checkTimerConflicts(const cTimer* timer) {
-    RoboTVChannels& c = RoboTVChannels::instance();
-    c.lock(false);
-
     // check for timer conflicts
     dsyslog("Checking conflicts for: %s", (const char*)timer->ToText(true));
 
@@ -616,7 +612,6 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
         dsyslog("No conflicts");
     }
 
-    c.unlock();
     return cflags;
 }
 
