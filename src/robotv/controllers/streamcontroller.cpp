@@ -107,7 +107,6 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
     }
 
     int status = startStreaming(
-                     request->getProtocolVersion(),
                      channel,
                      priority,
                      waitForKeyFrame);
@@ -171,7 +170,7 @@ void StreamController::processChannelChange(const cChannel* Channel) {
     }
 }
 
-int StreamController::startStreaming(int version, const cChannel* channel, int32_t priority, bool waitForKeyFrame) {
+int StreamController::startStreaming(const cChannel* channel, int32_t priority, bool waitForKeyFrame) {
     std::lock_guard<std::mutex> lock(m_lock);
     const RoboTVServerConfig& config = RoboTVServerConfig::instance();
 

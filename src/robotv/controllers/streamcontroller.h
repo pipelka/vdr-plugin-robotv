@@ -62,7 +62,7 @@ private:
 
     StreamController(const StreamController& orig);
 
-    int startStreaming(int version, const cChannel* channel, int32_t priority, bool waitforiframe = false);
+    int startStreaming(const cChannel* channel, int32_t priority, bool waitforiframe = false);
 
     void stopStreaming();
 
