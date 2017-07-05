@@ -23,8 +23,6 @@
  */
 
 #include "timercontroller.h"
-#include "net/msgpacket.h"
-#include "robotv/robotvcommand.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
 #include "vdr/menu.h"
@@ -79,7 +77,8 @@ MsgPacket* TimerController::process(MsgPacket* request) {
 
         case ROBOTV_TIMER_UPDATE:
             return processUpdate(request);
-            break;
+        default:
+            return nullptr;
     }
 
     return nullptr;
@@ -117,11 +116,11 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
 
     p->put_U32(createTimerUid(timer));
     p->put_U32(timer->Flags() | flags);
-    p->put_U32(timer->Priority());
-    p->put_U32(timer->Lifetime());
+    p->put_U32((uint32_t)timer->Priority());
+    p->put_U32((uint32_t)timer->Lifetime());
     p->put_U32(createChannelUid(channel));
-    p->put_U32(timer->StartTime());
-    p->put_U32(timer->StopTime());
+    p->put_U32((uint32_t)timer->StartTime());
+    p->put_U32((uint32_t)timer->StopTime());
     p->put_U32(searchTimerId); // !! day changed to searchTimerId
     p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
     p->put_String(toUtf8.convert(logoUrl)); // !!! filename changed to logo url
@@ -153,11 +152,11 @@ void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
     Utf8Conv toUtf8;
 
     p->put_U32(event->EventID());
-    p->put_U32(event->StartTime());
-    p->put_U32(event->Duration());
+    p->put_U32((uint32_t)event->StartTime());
+    p->put_U32((uint32_t)event->Duration());
 
     if(p->getProtocolVersion() >= 8) {
-        p->put_U32(event->Vps());
+        p->put_U32((uint32_t)event->Vps());
     }
 
     int i = 0;
@@ -171,7 +170,7 @@ void TimerController::event2Packet(const cEvent* event, MsgPacket* p) {
         }
     }
 
-    p->put_U32(event->ParentalRating());
+    p->put_U32((uint32_t)event->ParentalRating());
     p->put_String(toUtf8.convert(!isempty(event->Title()) ? event->Title() : ""));
     p->put_String(toUtf8.convert(!isempty(event->ShortText()) ? event->ShortText() : ""));
     p->put_String(toUtf8.convert(!isempty(event->Description()) ? event->Description() : ""));
@@ -211,7 +210,7 @@ MsgPacket* TimerController::processGetTimers(MsgPacket* request) {
     cTimer* timer;
     int numTimers = Timers.Count();
 
-    response->put_U32(numTimers);
+    response->put_U32((uint32_t)numTimers);
 
     for(int i = 0; i < numTimers; i++) {
         timer = Timers.Get(i);
@@ -407,7 +406,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
 MsgPacket* TimerController::processDelete(MsgPacket* request) {
     uint32_t uid = request->get_U32();
-    bool force = request->get_U32();
+    bool force = (request->get_U32() == 1);
 
     cTimer* timer = findTimerByUid(uid);
     MsgPacket* response = createResponse(request);
@@ -443,7 +442,7 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
 
 MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     uint32_t uid = request->get_U32();
-    bool active = request->get_U32();
+    bool active = (request->get_U32() == 1);
 
     cTimer* timer = findTimerByUid(uid);
     MsgPacket* response = createResponse(request);
@@ -556,9 +555,7 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     transponders.insert(timer->Channel()->Transponder()); // we also count ourself
     const cTimer* to_check = timer;
 
-    std::map<time_t, cTimer*>::iterator i;
-
-    for(i = timeline.begin(); i != timeline.end(); i++) {
+    for(auto i = timeline.begin(); i != timeline.end(); i++) {
         cTimer* t = i->second;
 
         // this one is earlier -> no match
