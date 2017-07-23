@@ -28,8 +28,7 @@
 #include <stdint.h>
 #include <list>
 #include <vdr/plugin.h>
-
-#include "wirbelscan_services.h"
+#include <service/wirbelscan/wirbelscan_services.h>
 
 class WirbelScan {
 public:
