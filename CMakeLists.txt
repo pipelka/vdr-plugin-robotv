@@ -119,7 +119,7 @@ set(SOURCE_FILES
     src/tools/urlencode.h
     src/tools/utf8.h
     src/tools/utf8conv.h
-    src/tools/utf8conv.cpp)
+    src/tools/utf8conv.cpp src/robotv/StreamPacketProcessor.cpp src/robotv/StreamPacketProcessor.h)
 
 add_subdirectory(src/demuxer)
 
