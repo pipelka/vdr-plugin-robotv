@@ -28,13 +28,10 @@
 
 #define MIN_PACKET_SIZE (128 * 1024)
 
-PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec), m_demuxers(this) {
-    m_requestStreamChange = true;
+PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec) {
     m_index = new cIndexFile(rec->FileName(), false);
     m_recording = rec;
     m_position = 0;
-    m_patVersion = -1;
-    m_pmtVersion = -1;
 
     // initial start / end time
     m_startTime = std::chrono::milliseconds(0);
@@ -50,12 +47,11 @@ PacketPlayer::~PacketPlayer() {
     delete m_index;
 }
 
-void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
-    // skip empty packets
-    if(p == nullptr || p->size == 0 || p->data == nullptr) {
-        return;
-    }
+void PacketPlayer::onPacket(MsgPacket* p) {
+    m_queue.push_back(p);
+}
 
+int64_t PacketPlayer::getCurrentTime(TsDemuxer::StreamPacket *p) {
     // recheck recording duration
     if((p->frameType == StreamInfo::FrameType::IFRAME) || endTime().count() == 0) {
         if(startTime().count() == 0) {
@@ -66,82 +62,8 @@ void PacketPlayer::onStreamPacket(TsDemuxer::StreamPacket *p) {
         m_endTime = m_startTime + std::chrono::milliseconds(m_recording->LengthInSeconds() * 1000);
     }
 
-    // stream change needed / requested
-    if(m_requestStreamChange && m_demuxers.isReady()) {
-
-        isyslog("demuxers ready");
-
-        for(auto i : m_demuxers) {
-            isyslog("%s", i->info().c_str());
-        }
-
-        isyslog("create streamchange packet");
-        m_requestStreamChange = false;
-
-        // push streamchange into queue
-        MsgPacket* packet = LiveStreamer::createStreamChangePacket(m_demuxers);
-        m_queue.push_back(packet);
-
-        // push pre-queued packets
-        dsyslog("processing %lu pre-queued packets", m_preQueue.size());
-
-        while(!m_preQueue.empty()) {
-            packet = m_preQueue.front();
-            m_preQueue.pop_front();
-            m_queue.push_back(packet);
-        }
-    }
-
-    // skip non video / audio packets
-    if(p->content != StreamInfo::Content::VIDEO && p->content != StreamInfo::Content::AUDIO) {
-        return;
-    }
-
-    // initialise stream packet
-    MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_MUXPKT, ROBOTV_CHANNEL_STREAM);
-    packet->disablePayloadCheckSum();
-
-    // write stream data
-    packet->put_U16(p->pid);
-
-    packet->put_S64(p->pts);
-    packet->put_S64(p->dts);
-    packet->put_U32(p->duration);
-
-    // write frame type into unused header field clientid
-    packet->setClientID((uint16_t)p->frameType);
-
-    // write payload into stream packet
-    packet->put_U32(p->size);
-    packet->put_Blob(p->data, p->size);
-
     int64_t durationMs = (m_recording->LengthInSeconds() * 1000 * p->streamPosition) / m_totalLength;
-    int64_t currentTime = m_startTime.count() + durationMs;
-
-    // add timestamp (wallclock time in ms starting at m_startTime)
-    packet->put_S64(currentTime);
-
-    // pre-queue packet
-    if(!m_demuxers.isReady()) {
-        if(m_preQueue.size() > 50) {
-            esyslog("pre-queue full - skipping packet");
-            delete packet;
-            return;
-        }
-
-        m_preQueue.push_back(packet);
-        return;
-    }
-
-    m_queue.push_back(packet);
-}
-
-void PacketPlayer::onStreamChange() {
-    if(!m_requestStreamChange) {
-        isyslog("stream change requested");
-    }
-
-    m_requestStreamChange = true;
+    return m_startTime.count() + durationMs;
 }
 
 MsgPacket* PacketPlayer::getNextPacket() {
@@ -154,7 +76,6 @@ MsgPacket* PacketPlayer::getNextPacket() {
         return packet;
     }
 
-    int pmtVersion = 0;
     unsigned char* p = m_buffer;
 
     // get next block (TS packets)
@@ -162,7 +83,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
 
     // TS sync
     int offset = 0;
-    while(offset <= (bytesRead - TS_SIZE) && (*p != TS_SYNC_BYTE || p[TS_SIZE] != TS_SYNC_BYTE || TsError(p))) {
+    while(offset < bytesRead && *p != TS_SYNC_BYTE) {
         p++;
         offset++;
     }
@@ -191,28 +112,7 @@ MsgPacket* PacketPlayer::getNextPacket() {
     m_position += bufferSize;
 
     for(int i = 0; i < count; i++) {
-        // new PAT / PMT found ?
-        if(m_parser.ParsePatPmt(p, TS_SIZE)) {
-            m_parser.GetVersions(m_patVersion, pmtVersion);
-
-            if(pmtVersion > m_pmtVersion) {
-                isyslog("found new PMT version (%i)", pmtVersion);
-                m_pmtVersion = pmtVersion;
-
-                // update demuxers from new PMT
-                isyslog("updating demuxers");
-                StreamBundle streamBundle = createFromPatPmt(&m_parser);
-                m_demuxers.updateFrom(&streamBundle);
-
-                m_requestStreamChange = true;
-            }
-        }
-
-        // put packets into demuxer
-        if(*p == TS_SYNC_BYTE) {
-            m_demuxers.processTsPacket(p, m_position);
-        }
-
+        putTsPacket(p, m_position);
         p += TS_SIZE;
     }
 
@@ -288,12 +188,7 @@ void PacketPlayer::clearQueue() {
 }
 
 void PacketPlayer::reset() {
-    // reset parser
-    m_parser.Reset();
-    m_demuxers.clear();
-    m_requestStreamChange = true;
-    m_patVersion = -1;
-    m_pmtVersion = -1;
+    StreamPacketProcessor::reset();
 
     // reset current stream packet
     delete m_streamPacket;
@@ -330,58 +225,3 @@ int64_t PacketPlayer::seek(int64_t wallclockTimeMs) {
     return 0;
 }
 
-StreamBundle PacketPlayer::createFromPatPmt(const cPatPmtParser* patpmt) {
-    StreamBundle item;
-    int patVersion = 0;
-    int pmtVersion = 0;
-
-    if(!patpmt->GetVersions(patVersion, pmtVersion)) {
-        return item;
-    }
-
-    // add video stream
-    int vpid = patpmt->Vpid();
-    int vtype = patpmt->Vtype();
-
-    item.addStream(StreamInfo(vpid,
-                              vtype == 0x02 ? StreamInfo::Type::MPEG2VIDEO :
-                              vtype == 0x1b ? StreamInfo::Type::H264 :
-                              vtype == 0x24 ? StreamInfo::Type::H265 :
-                              StreamInfo::Type::NONE));
-
-    // add (E)AC3 streams
-    for(int i = 0; patpmt->Dpid(i) != 0; i++) {
-        int dtype = patpmt->Dtype(i);
-        item.addStream(StreamInfo(patpmt->Dpid(i),
-                                  dtype == 0x6A ? StreamInfo::Type::AC3 :
-                                  dtype == 0x7A ? StreamInfo::Type::EAC3 :
-                                  StreamInfo::Type::NONE,
-                                  patpmt->Dlang(i)));
-    }
-
-    // add audio streams
-    for(int i = 0; patpmt->Apid(i) != 0; i++) {
-        int atype = patpmt->Atype(i);
-        item.addStream(StreamInfo(patpmt->Apid(i),
-                                  atype == 0x04 ? StreamInfo::Type::MPEG2AUDIO :
-                                  atype == 0x03 ? StreamInfo::Type::MPEG2AUDIO :
-                                  atype == 0x0f ? StreamInfo::Type::AAC :
-                                  atype == 0x11 ? StreamInfo::Type::LATM :
-                                  StreamInfo::Type::NONE,
-                                  patpmt->Alang(i)));
-    }
-
-    // add subtitle streams
-    for(int i = 0; patpmt->Spid(i) != 0; i++) {
-        StreamInfo stream(patpmt->Spid(i), StreamInfo::Type::DVBSUB, patpmt->Slang(i));
-
-        stream.setSubtitlingDescriptor(
-                patpmt->SubtitlingType(i),
-                patpmt->CompositionPageId(i),
-                patpmt->AncillaryPageId(i));
-
-        item.addStream(stream);
-    }
-
-    return item;
-}

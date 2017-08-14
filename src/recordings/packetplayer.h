@@ -28,6 +28,7 @@
 #include "robotvdmx/demuxer.h"
 #include "robotvdmx/demuxerbundle.h"
 
+#include "robotv/StreamPacketProcessor.h"
 #include "recordings/recplayer.h"
 #include "net/msgpacket.h"
 
@@ -35,7 +36,7 @@
 #include <deque>
 #include <chrono>
 
-class PacketPlayer : public RecPlayer, protected TsDemuxer::Listener {
+class PacketPlayer : public RecPlayer, protected StreamPacketProcessor {
 public:
 
     PacketPlayer(cRecording* rec);
@@ -58,13 +59,13 @@ public:
 
 protected:
 
+    void onPacket(MsgPacket* p);
+
+    int64_t getCurrentTime(TsDemuxer::StreamPacket *p);
+
     MsgPacket* getNextPacket();
 
     MsgPacket* getPacket();
-
-    void onStreamPacket(TsDemuxer::StreamPacket *p);
-
-    void onStreamChange();
 
     void clearQueue();
 
@@ -72,27 +73,13 @@ protected:
 
 private:
 
-    StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
-
-    cPatPmtParser m_parser;
-
     cIndexFile* m_index;
 
     cRecording* m_recording;
 
-    DemuxerBundle m_demuxers;
-
     int64_t m_position;
 
-    bool m_requestStreamChange;
-
-    int m_patVersion;
-
-    int m_pmtVersion;
-
     std::deque<MsgPacket*> m_queue;
-
-    std::deque<MsgPacket*> m_preQueue;
 
     MsgPacket* m_streamPacket = NULL;
 
