@@ -68,6 +68,10 @@ int Parser::parsePesHeader(uint8_t* buf, int len) {
 }
 
 void Parser::sendPayload(unsigned char* payload, int length) {
+    if(length <= 0) {
+        return;
+    }
+
     TsDemuxer::StreamPacket pkt;
     pkt.data = payload;
     pkt.size = length;
@@ -125,8 +129,8 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
                     m_curDts = PtsAdd(m_lastDts, m_duration);
                 }
 
-                int length = parsePayload(buffer, framesize);
-                sendPayload(buffer, length);
+                int len = parsePayload(buffer, framesize);
+                sendPayload(buffer, len);
 
                 // keep last timestamp
                 m_lastPts = m_curPts;
