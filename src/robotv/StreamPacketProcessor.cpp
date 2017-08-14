@@ -289,3 +289,11 @@ MsgPacket *StreamPacketProcessor::createStreamChangePacket(DemuxerBundle &bundle
 
     return resp;
 }
+
+void StreamPacketProcessor::flush() {
+    isyslog("flushing pending packets");
+
+    for(auto& i : m_demuxers) {
+        i->flush();
+    }
+}

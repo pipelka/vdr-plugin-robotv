@@ -55,6 +55,12 @@ public:
      */
     virtual void reset();
 
+    /**
+     * Flush pending packets.
+     * Sends pending packets from all demuxers.
+     */
+    void flush();
+
 protected:
 
     /**
