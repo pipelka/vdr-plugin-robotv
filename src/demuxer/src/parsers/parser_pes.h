@@ -34,10 +34,6 @@ public:
 
     void parse(unsigned char* data, int size, bool pusi);
 
-protected:
-
-    int m_length;
-
 };
 
 #endif // ROBOTV_DEMUXER_PES_H

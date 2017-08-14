@@ -26,7 +26,7 @@
 
 #include "parser_pes.h"
 
-ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffersize, 0), m_length(0) {
+ParserPes::ParserPes(TsDemuxer* demuxer, int buffersize) : Parser(demuxer, buffersize, 0) {
     m_startup = true;
 }
 
@@ -37,17 +37,14 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
         int length = 0;
         uint8_t* buffer = get(length);
 
-        if(((length >= m_length && m_length != 0) || (m_length == 0 && pusi)) && buffer != NULL) {
-            // get buffer size for packets with undefined length
-            if(m_length == 0) {
-                m_length = available();
-            }
-
+        if(pusi && buffer != NULL) {
             // parse payload
-            int len = parsePayload(buffer, m_length);
+            if(length > 0) {
+                int len = parsePayload(buffer, length);
 
-            // send payload data
-            sendPayload(buffer, len);
+                // send payload data
+                sendPayload(buffer, len);
+            }
 
             m_curDts = DVD_NOPTS_VALUE;
             m_curPts = DVD_NOPTS_VALUE;
@@ -56,14 +53,6 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
 
     // new packet
     if(pusi) {
-        // get packet payload length
-        if(PesHasLength(data)) {
-            m_length = PesLength(data) - PesPayloadOffset(data);
-        }
-        else {
-            m_length = 0;
-        }
-
         // strip PES header
         int offset = parsePesHeader(data, size);
         data += offset;
