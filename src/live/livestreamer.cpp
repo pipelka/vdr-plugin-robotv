@@ -198,12 +198,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     return ROBOTV_RET_OK;
 }
 
-void LiveStreamer::sendDetach() {
-    isyslog("sending detach message");
-    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
-    m_parent->queueMessage(resp);
-}
-
 MsgPacket *LiveStreamer::createStreamChangePacket(DemuxerBundle &bundle) {
     StreamBundle cache;
 

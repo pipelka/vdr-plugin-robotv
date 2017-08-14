@@ -51,8 +51,6 @@ private:
 
     void sendStatus(int status);
 
-    void sendDetach();
-
     DemuxerBundle m_demuxers = NULL;
 
     LiveQueue* m_queue = NULL;
