@@ -44,6 +44,7 @@
 #include "channelcache.h"
 
 #include <chrono>
+#include <robotv/StreamPacketProcessor.h>
 
 #define MIN_PACKET_SIZE (128 * 1024)
 
@@ -85,10 +86,6 @@ LiveStreamer::~LiveStreamer() {
 
 void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
     m_waitForKeyFrame = waitforiframe;
-}
-
-void LiveStreamer::onStreamChange() {
-    m_requestStreamChange = true;
 }
 
 int LiveStreamer::switchChannel(const cChannel* channel) {
@@ -201,60 +198,13 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     return ROBOTV_RET_OK;
 }
 
-void LiveStreamer::onStreamPacket(TsDemuxer::StreamPacket *pkt) {
-    // skip empty packets
-    if(pkt == nullptr || pkt->size == 0) {
-        return;
-    }
-
-    // send stream change on demand
-    if(m_requestStreamChange && m_demuxers.isReady()) {
-        sendStreamChange();
-    }
-
-    if(!m_demuxers.isReady()) {
-        return;
-    }
-
-    // wait for first I-Frame (if enabled)
-    if(m_waitForKeyFrame && pkt->frameType != StreamInfo::FrameType::IFRAME) {
-        return;
-    }
-
-    m_waitForKeyFrame = false;
-
-    // initialise stream packet
-    MsgPacket* packet = new MsgPacket(ROBOTV_STREAM_MUXPKT, ROBOTV_CHANNEL_STREAM);
-    packet->disablePayloadCheckSum();
-
-    // write stream data
-    packet->put_U16(pkt->pid);
-    packet->put_S64(pkt->pts);
-    packet->put_S64(pkt->dts);
-    packet->put_U32(pkt->duration);
-
-    // write frame type into unused header field clientid
-    packet->setClientID((uint16_t)pkt->frameType);
-
-    // write payload into stream packet
-    packet->put_U32(pkt->size);
-    packet->put_Blob(pkt->data, pkt->size);
-
-    // add timestamp (wallclock time in ms)
-    packet->put_S64(roboTV::currentTimeMillis().count());
-
-    m_queue->queue(packet, pkt->content, pkt->pts);
-}
-
 void LiveStreamer::sendDetach() {
     isyslog("sending detach message");
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_DETACH, ROBOTV_CHANNEL_STREAM);
     m_parent->queueMessage(resp);
 }
 
-void LiveStreamer::sendStreamChange() {
-    isyslog("stream change notification");
-
+MsgPacket *LiveStreamer::createStreamChangePacket(DemuxerBundle &bundle) {
     StreamBundle cache;
 
     for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
@@ -266,10 +216,7 @@ void LiveStreamer::sendStreamChange() {
     // reorder streams as preferred
     m_demuxers.reorderStreams(m_language.c_str(), m_langStreamType);
 
-    MsgPacket* resp = createStreamChangePacket(m_demuxers);
-    m_queue->queue(resp, StreamInfo::Content::STREAMINFO);
-
-    m_requestStreamChange = false;
+    return StreamPacketProcessor::createStreamChangePacket(bundle);
 }
 
 void LiveStreamer::sendStatus(int status) {
@@ -421,12 +368,12 @@ MsgPacket* LiveStreamer::requestPacket() {
 }
 
 #if VDRVERSNUM < 20300
-void LiveStreamer::Receive(uchar* Data, int Length)
+void LiveStreamer::Receive(uchar* packet, int length)
 #else
-void LiveStreamer::Receive(const uchar* Data, int Length)
+void LiveStreamer::Receive(const uchar* packet, int length)
 #endif
 {
-    m_demuxers.processTsPacket(Data);
+    putTsPacket(packet, roboTV::currentTimeMillis().count());
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
@@ -514,79 +461,10 @@ StreamBundle LiveStreamer::createFromChannel(const cChannel* channel) {
     return item;
 }
 
-MsgPacket *LiveStreamer::createStreamChangePacket(const DemuxerBundle &bundle) {
-    MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
+int64_t LiveStreamer::getCurrentTime(TsDemuxer::StreamPacket *p) {
+    return p->streamPosition;
+}
 
-    resp->put_U8(bundle.size());
-
-    for(auto stream: bundle) {
-        int streamId = stream->getPid();
-        resp->put_U32(streamId);
-
-        switch(stream->getContent()) {
-            case StreamInfo::Content::AUDIO:
-                resp->put_String(stream->typeName());
-                resp->put_String(stream->getLanguage());
-                resp->put_U32(stream->getChannels());
-                resp->put_U32(stream->getSampleRate());
-                resp->put_U32(0); // UNUSED - BINARY COMPATIBILITY
-                resp->put_U32(stream->getBitRate());
-                resp->put_U32(0); // UNUSED - BINARY COMPATIBILITY
-
-                break;
-
-            case StreamInfo::Content::VIDEO:
-                resp->put_String(stream->typeName());
-                resp->put_U32(stream->getFpsScale());
-                resp->put_U32(stream->getFpsRate());
-                resp->put_U32(stream->getHeight());
-                resp->put_U32(stream->getWidth());
-                resp->put_S64(stream->getAspect());
-
-                {
-                    int length = 0;
-
-                    // put SPS
-                    uint8_t* sps = stream->getVideoDecoderSps(length);
-                    resp->put_U8(length);
-
-                    if(sps != NULL) {
-                        resp->put_Blob(sps, length);
-                    }
-
-                    // put PPS
-                    uint8_t* pps = stream->getVideoDecoderPps(length);
-                    resp->put_U8(length);
-
-                    if(pps != NULL) {
-                        resp->put_Blob(pps, length);
-                    }
-
-                    // put VPS
-                    uint8_t* vps = stream->getVideoDecoderVps(length);
-                    resp->put_U8(length);
-
-                    if(pps != NULL) {
-                        resp->put_Blob(vps, length);
-                    }
-                }
-                break;
-
-            case StreamInfo::Content::SUBTITLE:
-                resp->put_String(stream->typeName());
-                resp->put_String(stream->getLanguage());
-                resp->put_U32(stream->compositionPageId());
-                resp->put_U32(stream->ancillaryPageId());
-                break;
-
-            case StreamInfo::Content::TELETEXT:
-                resp->put_String(stream->typeName());
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    return resp;
+void LiveStreamer::onPacket(MsgPacket *p, StreamInfo::Content content, int64_t pts) {
+    m_queue->queue(p, content, pts);
 }

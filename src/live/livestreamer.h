@@ -25,6 +25,7 @@
 #ifndef ROBOTV_RECEIVER_H
 #define ROBOTV_RECEIVER_H
 
+#include <stdint.h>
 #include <vdr/channels.h>
 #include <vdr/device.h>
 #include <vdr/receiver.h>
@@ -38,17 +39,15 @@
 
 #include <list>
 #include <mutex>
+#include <robotv/StreamPacketProcessor.h>
 
 class cChannel;
-class TsDemuxer;
 class MsgPacket;
 class LiveQueue;
 class RoboTvClient;
 
-class LiveStreamer : public cReceiver, public TsDemuxer::Listener {
+class LiveStreamer : public cReceiver, protected StreamPacketProcessor {
 private:
-
-    void sendStreamChange();
 
     void sendStatus(int status);
 
@@ -59,8 +58,6 @@ private:
     LiveQueue* m_queue = NULL;
 
     RoboTvClient* m_parent = NULL;
-
-    bool m_requestStreamChange = false;
 
     std::string m_language;
 
@@ -79,10 +76,16 @@ private:
 protected:
 
 #if VDRVERSNUM < 20300
-    void Receive(uchar* Data, int Length);
+    void Receive(uchar* data, int length);
 #else
     void Receive(const uchar* Data, int Length);
 #endif
+
+    int64_t getCurrentTime(TsDemuxer::StreamPacket *p);
+
+    void onPacket(MsgPacket* p, StreamInfo::Content content, int64_t pts);
+
+    MsgPacket* createStreamChangePacket(DemuxerBundle& bundle);
 
 private:
 
@@ -113,14 +116,6 @@ public:
     int switchChannel(const cChannel* channel);
 
     int64_t seek(int64_t wallclockPositionMs);
-
-    static MsgPacket* createStreamChangePacket(const DemuxerBundle& bundle);
-
-    // TsDemuxer::Listener implementation
-
-    void onStreamPacket(TsDemuxer::StreamPacket *pkt);
-
-    void onStreamChange();
 
 };
 
