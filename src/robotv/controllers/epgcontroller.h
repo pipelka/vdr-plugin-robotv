@@ -26,6 +26,7 @@
 #define ROBOTV_EPGCONTROLLER_H
 
 #include <tools/utf8conv.h>
+#include <functional>
 #include "controller.h"
 #include "recordings/artwork.h"
 #include "vdr/tools.h"
