@@ -59,7 +59,7 @@ public:
 
 protected:
 
-    void onPacket(MsgPacket* p);
+    void onPacket(MsgPacket* p, StreamInfo::Content content, int64_t pts);
 
     int64_t getCurrentTime(TsDemuxer::StreamPacket *p);
 

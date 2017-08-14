@@ -157,7 +157,7 @@ void StreamPacketProcessor::onStreamPacket(TsDemuxer::StreamPacket *p) {
 
         // push streamchange into queue
         MsgPacket* packet = createStreamChangePacket(m_demuxers);
-        onPacket(packet);
+        onPacket(packet, StreamInfo::Content::STREAMINFO, 0);
 
         // push pre-queued packets
         dsyslog("processing %lu pre-queued packets", m_preQueue.size());
@@ -165,7 +165,7 @@ void StreamPacketProcessor::onStreamPacket(TsDemuxer::StreamPacket *p) {
         while(!m_preQueue.empty()) {
             packet = m_preQueue.front();
             m_preQueue.pop_front();
-            onPacket(packet);
+            onPacket(packet, p->content, p->pts);
         }
     }
 
@@ -202,7 +202,7 @@ void StreamPacketProcessor::onStreamPacket(TsDemuxer::StreamPacket *p) {
         return;
     }
 
-    onPacket(packet);
+    onPacket(packet, p->content, p->pts);
 }
 
 void StreamPacketProcessor::onStreamChange() {
@@ -213,7 +213,7 @@ void StreamPacketProcessor::onStreamChange() {
     m_requestStreamChange = true;
 }
 
-MsgPacket *StreamPacketProcessor::createStreamChangePacket(const DemuxerBundle &bundle) {
+MsgPacket *StreamPacketProcessor::createStreamChangePacket(DemuxerBundle &bundle) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STREAM_CHANGE, ROBOTV_CHANNEL_STREAM);
 
     resp->put_U8((uint8_t)bundle.size());

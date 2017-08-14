@@ -47,7 +47,7 @@ PacketPlayer::~PacketPlayer() {
     delete m_index;
 }
 
-void PacketPlayer::onPacket(MsgPacket* p) {
+void PacketPlayer::onPacket(MsgPacket* p, StreamInfo::Content content, int64_t pts) {
     m_queue.push_back(p);
 }
 

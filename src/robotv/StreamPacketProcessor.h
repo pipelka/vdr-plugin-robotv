@@ -70,7 +70,7 @@ protected:
      * Is function is called whenever a packet is ready.
      * @param p pointer to MsgPacket
      */
-    virtual void onPacket(MsgPacket* p) = 0;
+    virtual void onPacket(MsgPacket* p, StreamInfo::Content content, int64_t pts) = 0;
 
     void onStreamPacket(TsDemuxer::StreamPacket *p);
 
@@ -78,7 +78,7 @@ protected:
 
     StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
 
-    MsgPacket* createStreamChangePacket(const DemuxerBundle& bundle);
+    virtual MsgPacket* createStreamChangePacket(DemuxerBundle& bundle);
 
 private:
 
