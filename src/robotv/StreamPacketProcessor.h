@@ -80,6 +80,9 @@ protected:
 
     virtual MsgPacket* createStreamChangePacket(DemuxerBundle& bundle);
 
+    inline DemuxerBundle& getDemuxers() {
+        return m_demuxers;
+    }
 private:
 
     void cleanupQueue();
