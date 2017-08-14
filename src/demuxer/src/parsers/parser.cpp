@@ -196,3 +196,15 @@ int Parser::findStartCode(unsigned char* buffer, int buffersize, int offset, uin
 
     return -1;
 }
+
+void Parser::reset() {
+    clear();
+
+    m_curPts = DVD_NOPTS_VALUE;
+    m_curDts = DVD_NOPTS_VALUE;
+
+    m_lastPts = DVD_NOPTS_VALUE;
+    m_lastDts = DVD_NOPTS_VALUE;
+
+    m_startup = true;
+}

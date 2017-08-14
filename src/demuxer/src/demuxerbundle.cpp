@@ -28,6 +28,7 @@
 #include "robotvdmx/pes.h"
 
 DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
+    m_pendingError = false;
 }
 
 DemuxerBundle::~DemuxerBundle() {
@@ -59,9 +60,8 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
     std::map<uint32_t, TsDemuxer*> weight;
 
     // compute weights
-    int i = 0;
 
-    for(auto idx = begin(); idx != end(); idx++, i++) {
+    for(auto idx = begin(); idx != end(); idx++) {
         TsDemuxer* stream = (*idx);
 
         if(stream == NULL) {
@@ -146,33 +146,33 @@ bool DemuxerBundle::isReady() const {
 }
 
 void DemuxerBundle::updateFrom(StreamBundle* bundle) {
-    StreamBundle old;
-
     // remove old demuxers
-    for(auto i = begin(); i != end(); i++) {
-        old.addStream(*(*i));
-        delete *i;
-    }
-
-    std::list<TsDemuxer*>::clear();
+    clear();
 
     // create new stream demuxers
     for(auto i = bundle->begin(); i != bundle->end(); i++) {
-        StreamInfo& infonew = i->second;
-        StreamInfo& infoold = old[i->first];
-
-        // reuse previous stream information
-        if(infonew.getPid() == infoold.getPid() && infonew.getType() == infoold.getType()) {
-            infonew = infoold;
-        }
-
-        TsDemuxer* dmx = new TsDemuxer(m_listener, infonew);
+        StreamInfo& info = i->second;
+        TsDemuxer* dmx = new TsDemuxer(m_listener, info);
 
         push_back(dmx);
     }
 }
 
-bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) const {
+bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) {
+    if(*packet != 0x47) {
+        m_pendingError = true;
+        return false;
+    }
+
+    if(TsError(packet) || TsIsScrambled(packet)) {
+        m_pendingError = true;
+        return false;
+    }
+
+    if(!TsHasPayload(packet)) {
+        return false;
+    }
+
     int pid = TsPid(packet);
     TsDemuxer* demuxer = findDemuxer(pid);
 
@@ -180,6 +180,35 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) con
         return false;
     }
 
+    int offset = TsPayloadOffset(packet);
+
+    if(offset < 0 || offset >= TS_SIZE) {
+        return false;
+    }
+
+    bool pusi = TsPayloadStart(packet);
+
+    // valid packet ?
+    if(pusi && !PesIsHeader(&packet[offset])) {
+        m_pendingError = true;
+        return false;
+    }
+
+    if(m_pendingError && pusi) {
+        reset();
+        m_pendingError = false;
+    }
+
+    if(m_pendingError) {
+        return false;
+    }
+
     demuxer->setStreamPosition(streamPosition);
     return demuxer->processTsPacket(packet);
+}
+
+void DemuxerBundle::reset() {
+    for(auto i: *this) {
+        i->reset();
+    }
 }

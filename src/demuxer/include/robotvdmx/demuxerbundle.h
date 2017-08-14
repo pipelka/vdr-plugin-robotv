@@ -27,7 +27,6 @@
 
 #include "demuxer.h"
 #include "streambundle.h"
-//#include "net/msgpacket.h"
 
 #include <list>
 
@@ -48,13 +47,17 @@ public:
 
     void updateFrom(StreamBundle* bundle);
 
-    bool processTsPacket(uint8_t* packet, int64_t streamPosition = 0) const;
-
-    //MsgPacket* createStreamChangePacket();
+    bool processTsPacket(uint8_t* packet, int64_t streamPosition = 0);
 
 protected:
 
+    void reset();
+
     TsDemuxer::Listener* m_listener = NULL;
+
+private:
+
+    bool m_pendingError;
 
 };
 

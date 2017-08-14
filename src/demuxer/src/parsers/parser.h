@@ -37,6 +37,8 @@ public:
 
     virtual void parse(unsigned char* data, int size, bool pusi);
 
+    virtual void reset();
+
 protected:
 
     int parsePesHeader(uint8_t* buf, int len);

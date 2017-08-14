@@ -78,7 +78,7 @@ public:
 
     virtual ~TsDemuxer();
 
-    bool processTsPacket(unsigned char* data) const;
+    bool processTsPacket(unsigned char* packet) const;
 
     const char* getLanguage() const {
         return m_language;
@@ -150,6 +150,8 @@ public:
     uint8_t* getVideoDecoderPps(int& length);
 
     uint8_t* getVideoDecoderVps(int& length);
+
+    void reset();
 
 protected:
 

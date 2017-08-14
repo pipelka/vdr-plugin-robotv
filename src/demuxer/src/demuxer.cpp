@@ -41,6 +41,7 @@
 
 TsDemuxer::TsDemuxer(TsDemuxer::Listener* streamer, const StreamInfo& info) : StreamInfo(info), m_streamer(streamer) {
     m_pesParser = createParser(m_type);
+
     setContent();
 }
 
@@ -109,44 +110,12 @@ void TsDemuxer::sendPacket(StreamPacket* pkt) {
     m_streamer->onStreamPacket(pkt);
 }
 
-bool TsDemuxer::processTsPacket(unsigned char* data) const {
-    if(data == NULL) {
-        return false;
-    }
+bool TsDemuxer::processTsPacket(unsigned char* packet) const {
+    bool pusi = TsPayloadStart(packet);
+    int offset = TsPayloadOffset(packet);
 
-    bool pusi  = TsPayloadStart(data);
-
-    int bytes = TS_SIZE - TsPayloadOffset(data);
-
-    if(bytes < 0 || bytes >= TS_SIZE) {
-        return false;
-    }
-
-    if(TsIsScrambled(data)) {
-        return false;
-    }
-
-    if(TsError(data)) {
-        return false;
-    }
-
-    if(!TsHasPayload(data)) {
-        return true;
-    }
-
-    // strip ts header
-    data += TS_SIZE - bytes;
-
-    // valid packet ?
-    if(pusi && !PesIsHeader(data)) {
-        return false;
-    }
-
-    /* Parse the data */
-    if(m_pesParser) {
-        m_pesParser->parse(data, bytes, pusi);
-    }
-
+    // Parse the packet
+    m_pesParser->parse(&packet[offset], (TS_SIZE - offset), pusi);
     return true;
 }
 
@@ -172,8 +141,13 @@ void TsDemuxer::setVideoInformation(int fpsScale, int fpsRate, uint16_t height, 
 }
 
 void TsDemuxer::setAudioInformation(uint8_t channels, uint32_t sampleRate, uint32_t bitRate) {
+    // only 2 and 6 channels allowed currently
+    if(channels != 2 && channels != 6) {
+        return;
+    }
+
     // only register changed audio information
-    if(channels == m_channels && sampleRate == m_sampleRate && bitRate == m_bitRate) {
+    if(channels == m_channels && sampleRate == m_sampleRate) {
         return;
     }
 
@@ -215,4 +189,8 @@ uint8_t* TsDemuxer::getVideoDecoderPps(int& length) {
 uint8_t* TsDemuxer::getVideoDecoderVps(int& length) {
     length = m_vpsLength;
     return m_vpsLength == 0 ? NULL : m_vps;
+}
+
+void TsDemuxer::reset() {
+    m_pesParser->reset();
 }
