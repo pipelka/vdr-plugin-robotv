@@ -161,6 +161,16 @@ void Parser::parse(unsigned char* data, int datasize, bool pusi) {
     putData(data, datasize, pusi);
 }
 
+
+void Parser::flush() {
+    int length = 0;
+    uint8_t* buffer = get(length);
+
+    int len = parsePayload(buffer, length);
+    sendPayload(buffer, len);
+    clear();
+}
+
 int Parser::parsePayload(unsigned char* payload, int length) {
     return length;
 }

@@ -39,6 +39,8 @@ public:
 
     virtual void reset();
 
+    void flush();
+
 protected:
 
     int parsePesHeader(uint8_t* buf, int len);

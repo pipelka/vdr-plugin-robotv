@@ -194,3 +194,7 @@ uint8_t* TsDemuxer::getVideoDecoderVps(int& length) {
 void TsDemuxer::reset() {
     m_pesParser->reset();
 }
+
+void TsDemuxer::flush() {
+    m_pesParser->flush();
+}

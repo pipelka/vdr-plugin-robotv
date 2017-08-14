@@ -153,6 +153,8 @@ public:
 
     void reset();
 
+    void flush();
+
 protected:
 
     void sendPacket(StreamPacket* pkt);
