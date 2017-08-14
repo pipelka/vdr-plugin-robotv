@@ -51,8 +51,6 @@ private:
 
     void sendStatus(int status);
 
-    DemuxerBundle m_demuxers = NULL;
-
     LiveQueue* m_queue = NULL;
 
     RoboTvClient* m_parent = NULL;

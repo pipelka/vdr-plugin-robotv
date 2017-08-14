@@ -52,7 +52,6 @@ using namespace std::chrono;
 
 LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool cache)
     : cReceiver(nullptr, priority)
-    , m_demuxers(this)
     , m_parent(parent)
     , m_cacheEnabled(cache) {
     m_uid = createChannelUid(channel);
@@ -75,7 +74,7 @@ LiveStreamer::~LiveStreamer() {
         Detach();
     }
 
-    m_demuxers.clear();
+    reset();
     delete m_queue;
 
     m_uid = 0;
@@ -201,14 +200,14 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 MsgPacket *LiveStreamer::createStreamChangePacket(DemuxerBundle &bundle) {
     StreamBundle cache;
 
-    for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
+    for(auto i = bundle.begin(); i != bundle.end(); i++) {
         cache.addStream(*(*i));
     }
 
     ChannelCache::instance().add(m_uid, cache);
 
     // reorder streams as preferred
-    m_demuxers.reorderStreams(m_language.c_str(), m_langStreamType);
+    bundle.reorderStreams(m_language.c_str(), m_langStreamType);
 
     return StreamPacketProcessor::createStreamChangePacket(bundle);
 }
@@ -382,13 +381,15 @@ void LiveStreamer::processChannelChange(const cChannel* channel) {
 }
 
 void LiveStreamer::createDemuxers(StreamBundle* bundle) {
+    DemuxerBundle& demuxers = getDemuxers();
+
     // update demuxers
-    m_demuxers.updateFrom(bundle);
+    demuxers.updateFrom(bundle);
 
     // update pids
     SetPids(nullptr);
 
-    for(auto i = m_demuxers.begin(); i != m_demuxers.end(); i++) {
+    for(auto i = demuxers.begin(); i != demuxers.end(); i++) {
         TsDemuxer* dmx = *i;
         AddPid(dmx->getPid());
     }
