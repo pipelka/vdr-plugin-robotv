@@ -84,6 +84,10 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
         m_langStreamType = (StreamInfo::Type)request->get_U8();
     }
 
+    if(m_langStreamType == StreamInfo::Type::NONE) {
+        m_langStreamType = StreamInfo::Type::AC3;
+    }
+
     if(!m_language.empty()) {
         isyslog("Preferred language: %s / type: %i", m_language.c_str(), (int)m_langStreamType);
     }
