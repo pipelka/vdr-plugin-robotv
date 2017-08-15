@@ -76,7 +76,7 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
         // SUBTITLE (S):   0x00400000
         // LANGUAGE (L):   0x00200000
         // STREAMTYPE (T): 0x00100000 (only audio)
-        // AUDIOTYPE (X):  0x000F0000 (only audio)
+        // CHANNELS (X):   0x000F0000 (only audio)
         // PID (P):        0x0000FFFF
 
 #define VIDEO_MASK      0x80000000
@@ -84,11 +84,23 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 #define SUBTITLE_MASK   0x00400000
 #define LANGUAGE_MASK   0x00200000
 #define STREAMTYPE_MASK 0x00100000
-#define AUDIOTYPE_MASK  0x000F0000
+#define CHANNEL_MASK    0x000F0000
 #define PID_MASK        0x0000FFFF
 
         // last resort ordering, the PID
         uint32_t w = 0xFFFF - (stream->getPid() & PID_MASK);
+
+        uint8_t channels = 0;
+
+        if(stream->getChannels() > 6) {
+            channels = 3;
+        }
+        else if(stream->getChannels() == 6) {
+            channels = 2;
+        }
+        else if(stream->getChannels() == 2) {
+            channels = 1;
+        }
 
         // stream type weights
         switch(stream->getContent()) {
@@ -102,8 +114,8 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
                 // weight of audio stream type
                 w |= (stream->getType() == type) ? STREAMTYPE_MASK : 0;
 
-                // weight of audio type
-                w |= ((4 - stream->getAudioType()) << 16) & AUDIOTYPE_MASK;
+                // weight of channels
+                w |= (channels << 16) & CHANNEL_MASK;
                 break;
 
             case StreamInfo::Content::SUBTITLE:
