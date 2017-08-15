@@ -136,7 +136,7 @@ void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
             (int)info.m_content,
             (int)info.m_type,
             info.m_language,
-            info.m_audioType,
+            0, // reserved (obsolete audioType)
             info.m_fpsScale,
             info.m_fpsRate,
             info.m_height,
@@ -200,7 +200,7 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
         info.m_content = (StreamInfo::Content)sqlite3_column_int(s, 1);
         info.m_type = (StreamInfo::Type)sqlite3_column_int(s, 2);
         strncpy(info.m_language, (const char*)sqlite3_column_text(s, 3), sizeof(info.m_language));
-        info.m_audioType = sqlite3_column_int(s, 4);
+        // 4 - reserved (was audioType)
         info.m_fpsScale = sqlite3_column_int(s, 5);
         info.m_fpsRate = sqlite3_column_int(s, 6);
         info.m_height = sqlite3_column_int(s, 7);

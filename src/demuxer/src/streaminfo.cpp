@@ -61,7 +61,6 @@ StreamInfo::~StreamInfo() {
 
 void StreamInfo::Initialize() {
     m_language[0]       = 0;
-    m_audioType         = 0;
     m_fpsScale          = 0;
     m_fpsRate           = 0;
     m_height            = 0;
@@ -95,7 +94,6 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
         case Content::AUDIO:
             return
                 (strcmp(m_language, rhs.m_language) == 0) &&
-                (m_audioType == rhs.m_audioType) &&
                 (m_channels == rhs.m_channels) &&
                 (m_sampleRate == rhs.m_sampleRate);
 

@@ -84,10 +84,6 @@ public:
         return m_language;
     }
 
-    uint8_t getAudioType() const {
-        return m_audioType;
-    }
-
     /* Video Stream Information */
     void setVideoInformation(int fpsScale, int fpsRate, uint16_t height, uint16_t width, int aspect);
 
