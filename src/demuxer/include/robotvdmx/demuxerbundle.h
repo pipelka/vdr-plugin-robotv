@@ -30,10 +30,10 @@
 
 #include <list>
 
-class DemuxerBundle : public std::list<TsDemuxer*> {
+class DemuxerBundle {
 public:
 
-    DemuxerBundle(TsDemuxer::Listener* listener);
+    explicit DemuxerBundle(TsDemuxer::Listener* listener);
 
     virtual ~DemuxerBundle();
 
@@ -47,7 +47,19 @@ public:
 
     void updateFrom(StreamBundle* bundle);
 
-    bool processTsPacket(uint8_t* packet, int64_t streamPosition = 0);
+    bool processTsPacket(uint8_t* packet, int64_t streamPosition);
+
+    std::list<TsDemuxer*>::iterator begin() {
+        return m_list.begin();
+    }
+
+    std::list<TsDemuxer*>::iterator end() {
+        return m_list.end();
+    }
+
+    std::size_t size() {
+        return m_list.size();
+    }
 
 protected:
 
@@ -58,6 +70,8 @@ protected:
 private:
 
     bool m_pendingError;
+
+    std::list<TsDemuxer*> m_list;
 
 };
 

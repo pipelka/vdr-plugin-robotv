@@ -22,7 +22,8 @@
  *
  */
 
-#include <string.h>
+#include <cstring>
+#include <unordered_map>
 
 #include "robotvdmx/demuxerbundle.h"
 #include "robotvdmx/pes.h"
@@ -37,23 +38,21 @@ DemuxerBundle::~DemuxerBundle() {
 
 
 void DemuxerBundle::clear() {
-    for(auto i = begin(); i != end(); i++) {
-        if((*i) != NULL) {
-            delete(*i);
-        }
+    for (auto &i : m_list) {
+        delete i;
     }
 
-    std::list<TsDemuxer*>::clear();
+    m_list.clear();
 }
 
 TsDemuxer* DemuxerBundle::findDemuxer(int Pid) const {
-    for(auto i = begin(); i != end(); i++) {
-        if((*i) != NULL && (*i)->getPid() == Pid) {
-            return (*i);
+    for (auto i : m_list) {
+        if(i != nullptr && i->getPid() == Pid) {
+            return i;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
@@ -61,10 +60,8 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 
     // compute weights
 
-    for(auto idx = begin(); idx != end(); idx++) {
-        TsDemuxer* stream = (*idx);
-
-        if(stream == NULL) {
+    for (auto stream : m_list) {
+        if(stream == nullptr) {
             continue;
         }
 
@@ -88,7 +85,7 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 #define PID_MASK        0x0000FFFF
 
         // last resort ordering, the PID
-        uint32_t w = 0xFFFF - (stream->getPid() & PID_MASK);
+        uint32_t w = 0xFFFF - ((uint32_t)stream->getPid() & PID_MASK);
 
         uint8_t channels = 0;
 
@@ -135,21 +132,21 @@ void DemuxerBundle::reorderStreams(const char* lang, StreamInfo::Type type) {
 
     // reorder streams on weight
     int idx = 0;
-    std::list<TsDemuxer*>::clear();
+    m_list.clear();
 
-    for(std::map<uint32_t, TsDemuxer*>::reverse_iterator i = weight.rbegin(); i != weight.rend(); i++, idx++) {
+    for(auto i = weight.rbegin(); i != weight.rend(); i++, idx++) {
         TsDemuxer* stream = i->second;
-        push_back(stream);
+        m_list.push_back(stream);
     }
 }
 
 bool DemuxerBundle::isReady() const {
-    if(empty()) {
+    if(m_list.empty()) {
         return false;
     }
 
-    for(auto i = begin(); i != end(); i++) {
-        if(!(*i)->isParsed()) {
+    for (auto i : m_list) {
+        if(!i->isParsed()) {
             return false;
         }
     }
@@ -162,11 +159,11 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
     clear();
 
     // create new stream demuxers
-    for(auto i = bundle->begin(); i != bundle->end(); i++) {
-        StreamInfo& info = i->second;
-        TsDemuxer* dmx = new TsDemuxer(m_listener, info);
+    for (auto &i : *bundle) {
+        StreamInfo& info = i.second;
+        auto dmx = new TsDemuxer(m_listener, info);
 
-        push_back(dmx);
+        m_list.push_back(dmx);
     }
 }
 
@@ -188,7 +185,7 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) {
     int pid = TsPid(packet);
     TsDemuxer* demuxer = findDemuxer(pid);
 
-    if(demuxer == NULL) {
+    if(demuxer == nullptr) {
         return false;
     }
 
@@ -220,7 +217,7 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) {
 }
 
 void DemuxerBundle::reset() {
-    for(auto i: *this) {
+    for(auto i: m_list) {
         i->reset();
     }
 }
