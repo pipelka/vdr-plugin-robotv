@@ -148,15 +148,15 @@ void StreamPacketProcessor::onStreamPacket(TsDemuxer::StreamPacket *p) {
 
         isyslog("demuxers ready");
 
-        for(auto i : m_demuxers) {
-            isyslog("%s", i->info().c_str());
-        }
-
-        isyslog("create streamchange packet");
         m_requestStreamChange = false;
 
         // push streamchange into queue
         MsgPacket* packet = createStreamChangePacket(m_demuxers);
+
+        for(auto i : m_demuxers) {
+            isyslog("%s", i->info().c_str());
+        }
+
         onPacket(packet, StreamInfo::Content::STREAMINFO, 0);
 
         // push pre-queued packets
