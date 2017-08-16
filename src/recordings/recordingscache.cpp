@@ -38,7 +38,9 @@ RecordingsCache::RecordingsCache() {
 }
 
 void RecordingsCache::update() {
-    for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
+    LOCK_RECORDINGS_READ;
+
+    for(const cRecording* recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
         add(recording);
     }
 }
@@ -51,7 +53,7 @@ RecordingsCache& RecordingsCache::instance() {
     return singleton;
 }
 
-uint32_t RecordingsCache::update(uint32_t uid, cRecording* recording) {
+uint32_t RecordingsCache::update(uint32_t uid, const cRecording* recording) {
     cString filename = recording->FileName();
     uint32_t newUid = createStringHash(filename);
 
@@ -65,7 +67,7 @@ uint32_t RecordingsCache::update(uint32_t uid, cRecording* recording) {
     return newUid;
 }
 
-uint32_t RecordingsCache::add(cRecording* recording) {
+uint32_t RecordingsCache::add(const cRecording* recording) {
     cString filename = recording->FileName();
     uint32_t uid = createStringHash(filename);
 
@@ -86,11 +88,15 @@ uint32_t RecordingsCache::add(cRecording* recording) {
     return uid;
 }
 
-cRecording* RecordingsCache::lookup(const std::string& fileName) {
-    return Recordings.GetByName(fileName.c_str());
+const cRecording* RecordingsCache::lookup(const cRecordings* recordings, const std::string& fileName) {
+    return recordings->GetByName(fileName.c_str());
 }
 
-cRecording* RecordingsCache::lookup(uint32_t uid) {
+const cRecording* RecordingsCache::lookup(const cRecordings* recordings, uint32_t uid) {
+    return const_cast<cRecording*>(lookup((cRecordings*)recordings, uid));
+}
+
+cRecording* RecordingsCache::lookup(cRecordings* recordings, uint32_t uid) {
     dsyslog("%s - lookup uid: %08x", __FUNCTION__, uid);
 
     sqlite3_stmt* s = query("SELECT filename FROM recordings WHERE recid=%u;", uid);
@@ -115,7 +121,7 @@ cRecording* RecordingsCache::lookup(uint32_t uid) {
 
     dsyslog("%s - filename: %s", __FUNCTION__, (const char*)filename);
 
-    cRecording* r = Recordings.GetByName(filename);
+    cRecording* r = recordings->GetByName(filename);
     dsyslog("%s - recording %s", __FUNCTION__, (r == NULL) ? "not found !" : "found");
 
     return r;
@@ -254,12 +260,14 @@ void RecordingsCache::gc() {
 
     // check all recordings in the cache
 
+    LOCK_RECORDINGS_READ;
+
     while(sqlite3_step(s) == SQLITE_ROW) {
         uint32_t recid = (uint32_t)sqlite3_column_int(s, 0);
         const char* filename = (const char*)sqlite3_column_text(s, 1);
 
         // remove orphaned entry
-        if(Recordings.GetByName(filename) == nullptr) {
+        if(Recordings->GetByName(filename) == nullptr) {
             isyslog("removing outdated recording '%s' from cache", filename);
             storage.exec("DELETE FROM recordings WHERE recid=%u;", recid);
         }

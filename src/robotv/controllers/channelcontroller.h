@@ -59,7 +59,7 @@ private:
 
     int channelCount();
 
-    bool isChannelWanted(cChannel* channel, int type = 0);
+    bool isChannelWanted(const cChannel* channel, int type = 0);
 
     ChannelController(const ChannelController& orig);
 

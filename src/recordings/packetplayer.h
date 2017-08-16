@@ -39,7 +39,7 @@
 class PacketPlayer : public RecPlayer, protected StreamPacketProcessor {
 public:
 
-    PacketPlayer(cRecording* rec);
+    PacketPlayer(const cRecording* rec);
 
     virtual ~PacketPlayer();
 
@@ -75,7 +75,7 @@ private:
 
     cIndexFile* m_index;
 
-    cRecording* m_recording;
+    const cRecording* m_recording;
 
     int64_t m_position;
 

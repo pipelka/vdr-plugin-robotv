@@ -96,7 +96,8 @@ MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
 
     std::string groupName;
 
-    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
+    LOCK_CHANNELS_READ;
+    for(const cChannel* channel = Channels->First(); channel; channel = Channels->Next(channel)) {
 
         if(channel->GroupSep()) {
             groupName = m_toUtf8.convert(channel->Name());
@@ -122,7 +123,8 @@ MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
 int ChannelController::channelCount() {
     int count = 0;
 
-    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
+    LOCK_CHANNELS_READ;
+    for(const cChannel* channel = Channels->First(); channel; channel = Channels->Next(channel)) {
         if(isChannelWanted(channel, false)) {
             count++;
         }
@@ -135,7 +137,7 @@ int ChannelController::channelCount() {
     return count;
 }
 
-bool ChannelController::isChannelWanted(cChannel* channel, int type) {
+bool ChannelController::isChannelWanted(const cChannel* channel, int type) {
     // dismiss invalid channels
     if(channel == NULL) {
         return false;

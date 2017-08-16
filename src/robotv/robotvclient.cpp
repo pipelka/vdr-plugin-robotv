@@ -120,8 +120,10 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
         return;
     }
 
-    Recordings.Update(true);
-    cRecording* r = RecordingsCache::instance().lookup(FileName);
+    LOCK_RECORDINGS_WRITE;
+    Recordings->Update(true);
+
+    auto r = RecordingsCache::instance().lookup(Recordings, FileName);
 
     if(r == NULL) {
         esyslog("Unknown recording: '%s'", FileName);

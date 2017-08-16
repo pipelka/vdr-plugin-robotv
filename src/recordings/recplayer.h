@@ -38,7 +38,7 @@ public:
 class RecPlayer {
 public:
 
-    RecPlayer(cRecording* rec);
+    RecPlayer(const cRecording* rec);
 
     ~RecPlayer();
 

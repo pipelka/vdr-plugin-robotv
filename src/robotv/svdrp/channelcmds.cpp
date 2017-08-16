@@ -54,7 +54,9 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
     json list = json::array();
     std::string groupName;
 
-    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
+    LOCK_CHANNELS_READ;
+
+    for(auto channel = Channels->First(); channel; channel = Channels->Next(channel)) {
         if(channel->GroupSep()) {
             groupName = m_toUtf8.convert(channel->Name());
             continue;

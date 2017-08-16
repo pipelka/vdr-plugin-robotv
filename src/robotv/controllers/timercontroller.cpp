@@ -180,12 +180,14 @@ MsgPacket* TimerController::processGet(MsgPacket* request) { /* OPCODE 81 */
     uint32_t number = request->get_U32();
     MsgPacket* response = createResponse(request);
 
-    if(Timers.Count() == 0) {
+    LOCK_TIMERS_READ;
+
+    if(Timers->Count() == 0) {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return response;
     }
 
-    cTimer* timer = Timers.Get(number - 1);
+    const cTimer* timer = Timers->Get(number - 1);
 
     if(timer == NULL) {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
@@ -201,19 +203,14 @@ MsgPacket* TimerController::processGet(MsgPacket* request) { /* OPCODE 81 */
 MsgPacket* TimerController::processGetTimers(MsgPacket* request) {
     MsgPacket* response = createResponse(request);
 
-    if(Timers.BeingEdited()) {
-        esyslog("Unable to delete timer - timers being edited at VDR");
-        response->put_U32(ROBOTV_RET_DATALOCKED);
-        return response;
-    }
+    LOCK_TIMERS_READ;
 
-    cTimer* timer;
-    int numTimers = Timers.Count();
+    int numTimers = Timers->Count();
 
     response->put_U32((uint32_t)numTimers);
 
     for(int i = 0; i < numTimers; i++) {
-        timer = Timers.Get(i);
+        auto timer = Timers->Get(i);
 
         if(!timer) {
             continue;
@@ -242,6 +239,8 @@ MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
     std::list<std::string> list = service->handler->SearchTimerList();
 
     std::regex r(":");
+
+    LOCK_CHANNELS_READ;
 
     for(auto t: list) {
         // split the timer line into chunks delimited by ":"
@@ -278,7 +277,7 @@ MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
         }
 
         // get channel / logo
-        cChannel* channel = Channels.GetByChannelID(tChannelID::FromString(timer[6].c_str()));
+        const cChannel* channel = Channels->GetByChannelID(tChannelID::FromString(timer[6].c_str()));
         std::string logoUrl = ChannelController::createLogoUrl(channel);
 
         // replace '|' with ':'
@@ -304,11 +303,8 @@ MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
 MsgPacket* TimerController::processAdd(MsgPacket* request) {
     MsgPacket* response = createResponse(request);
 
-    if(Timers.BeingEdited()) {
-        esyslog("Unable to add timer - timers being edited at VDR");
-        response->put_U32(ROBOTV_RET_DATALOCKED);
-        return response;
-    }
+    LOCK_TIMERS_WRITE;
+    LOCK_CHANNELS_READ;
 
     request->get_U32(); // index unused
     uint32_t flags      = request->get_U32();
@@ -341,7 +337,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
     cString buffer;
 
-    const cChannel* channel = findChannelByUid(channelid);
+    const cChannel* channel = findChannelByUid(Channels, channelid);
 
     if(channel == NULL) {
         esyslog("channel with id '%i' not found - unable to add timer !", channelid);
@@ -365,7 +361,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
     cTimer* timer = new cTimer;
 
     if(timer->Parse(buffer)) {
-        cTimer* t = Timers.GetTimer(timer);
+        const cTimer* t = Timers->GetTimer(timer);
 
         if(t == nullptr) {
 
@@ -378,12 +374,11 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
                 return response;
             }
 
-            cSchedulesLock MutexLock;
-            const cSchedules* schedules = cSchedules::Schedules(MutexLock);
-            timer->SetEventFromSchedule(schedules);
+            LOCK_SCHEDULES_READ;
+            timer->SetEventFromSchedule(Schedules);
 
-            Timers.Add(timer);
-            Timers.SetModified();
+            Timers->Add(timer);
+            Timers->SetModified();
 
             isyslog("Timer %s added", *timer->ToDescr());
             response->put_U32(ROBOTV_RET_OK);
@@ -408,18 +403,14 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     bool force = (request->get_U32() == 1);
 
-    cTimer* timer = findTimerByUid(uid);
+    LOCK_TIMERS_WRITE;
+
+    cTimer* timer = findTimerByUid(Timers, uid);
     MsgPacket* response = createResponse(request);
 
     if(timer == NULL) {
         esyslog("Unable to delete timer - invalid timer identifier");
         response->put_U32(ROBOTV_RET_DATAINVALID);
-        return response;
-    }
-
-    if(Timers.BeingEdited()) {
-        esyslog("Unable to delete timer - timers being edited at VDR");
-        response->put_U32(ROBOTV_RET_DATALOCKED);
         return response;
     }
 
@@ -429,12 +420,14 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
         return response;
     }
 
+
     timer->Skip();
-    cRecordControls::Process(time(NULL));
+
+    cRecordControls::Process(Timers, time(NULL));
 
     isyslog("Deleting timer %s", *timer->ToDescr());
-    Timers.Del(timer);
-    Timers.SetModified();
+    Timers->Del(timer);
+    Timers->SetModified();
     response->put_U32(ROBOTV_RET_OK);
 
     return response;
@@ -444,7 +437,10 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     bool active = (request->get_U32() == 1);
 
-    cTimer* timer = findTimerByUid(uid);
+    LOCK_TIMERS_WRITE;
+    LOCK_CHANNELS_READ;
+
+    cTimer* timer = findTimerByUid(Timers, uid);
     MsgPacket* response = createResponse(request);
 
     if(timer == NULL) {
@@ -485,7 +481,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
 
     cString buffer;
 
-    const cChannel* channel = findChannelByUid(channelid);
+    const cChannel* channel = findChannelByUid(Channels, channelid);
 
     if(channel == NULL) {
         esyslog("channel with id '%i' not found - unable to update timer !", channelid);
@@ -510,7 +506,8 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     }
 
     *timer = t;
-    Timers.SetModified();
+
+    Timers->SetModified();
 
     response->put_U32(ROBOTV_RET_OK);
 
@@ -521,12 +518,14 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     // check for timer conflicts
     dsyslog("Checking conflicts for: %s", (const char*)timer->ToText(true));
 
+    LOCK_TIMERS_READ;
+
     // order active timers by starttime
-    std::map<time_t, cTimer*> timeline;
-    int numTimers = Timers.Count();
+    std::map<time_t, const cTimer*> timeline;
+    int numTimers = Timers->Count();
 
     for(int i = 0; i < numTimers; i++) {
-        cTimer* t = Timers.Get(i);
+        auto t = Timers->Get(i);
 
         // same timer -> skip
         if(!t || timer->Index() == i) {
@@ -556,7 +555,7 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     const cTimer* to_check = timer;
 
     for(auto i = timeline.begin(); i != timeline.end(); i++) {
-        cTimer* t = i->second;
+        auto t = i->second;
 
         // this one is earlier -> no match
         if(t->StopTime() <= to_check->StartTime()) {
@@ -613,15 +612,13 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
 }
 
 const cEvent *TimerController::findEvent(const cTimer *timer) {
-    cSchedulesLock MutexLock;
+    LOCK_SCHEDULES_READ;
 
-    const cSchedules* schedules = cSchedules::Schedules(MutexLock);
-
-    if(schedules == nullptr) {
+    if(Schedules == nullptr) {
         return nullptr;
     }
 
-    const cSchedule* schedule = schedules->GetSchedule(timer->Channel()->GetChannelID());
+    const cSchedule* schedule = Schedules->GetSchedule(timer->Channel()->GetChannelID());
 
     for(const cEvent* event = schedule->Events()->First(); event; event = schedule->Events()->Next(event)) {
         time_t eventStopTime = event->StartTime() + event->Duration();

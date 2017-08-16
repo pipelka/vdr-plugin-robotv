@@ -55,7 +55,8 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
     uint32_t startTime = request->get_U32();
     uint32_t duration = request->get_U32();
 
-    const cChannel* channel = findChannelByUid(channelUid);
+    LOCK_CHANNELS_READ;
+    const cChannel* channel = findChannelByUid(Channels, channelUid);
 
     if(channel != NULL) {
         dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
@@ -70,8 +71,7 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
         return response;
     }
 
-    cSchedulesLock MutexLock;
-    const cSchedules* Schedules = cSchedules::Schedules(MutexLock);
+    LOCK_SCHEDULES_READ;
 
     if(!Schedules) {
         response->put_U32(0);
@@ -186,12 +186,12 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
 
     std::string searchTerm = request->get_String();
     time_t now = time(NULL);
-
-    const cSchedules* schedules = cSchedules::Schedules(MutexLock);
-
     MsgPacket* response = createResponse(request);
 
-    if(schedules == nullptr) {
+    LOCK_SCHEDULES_READ;
+    LOCK_CHANNELS_READ;
+
+    if(Schedules == nullptr) {
         return response;
     }
 
@@ -200,7 +200,7 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
             return;
         }
 
-        const cSchedule* schedule = schedules->GetSchedule(channelId);
+        const cSchedule* schedule = Schedules->GetSchedule(channelId);
 
         if(schedule == nullptr) {
             return;
@@ -214,7 +214,7 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
 
         TimerController::event2Packet(event, response);
 
-        cChannel* channel = Channels.GetByChannelID(channelId);
+        auto channel = Channels->GetByChannelID(channelId);
         response->put_String(channel ? channel->Name() : "");
         response->put_U32(createChannelUid(channel));
     });

@@ -97,20 +97,17 @@ uint32_t createChannelUid(const cChannel* channel) {
     return createStringHash(channelid);
 }
 
-const cChannel* findChannelByUid(uint32_t channelUID) {
-    cChannel* result = NULL;
-
+const cChannel* findChannelByUid(const cChannels* channels, uint32_t channelUID) {
     // maybe we need to use a lookup table
-    for(cChannel* channel = Channels.First(); channel; channel = Channels.Next(channel)) {
+    for(const cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         cString channelid = channel->GetChannelID().ToString();
 
         if(channelUID == createStringHash(channelid)) {
-            result = channel;
-            break;
+            return channel;
         }
     }
 
-    return result;
+    return nullptr;
 }
 
 uint32_t createTimerUid(const cTimer* timer) {
@@ -124,11 +121,15 @@ uint32_t createTimerUid(const cTimer* timer) {
     return createStringHash(timerid);
 }
 
-cTimer* findTimerByUid(uint32_t timerUID) {
-    int numTimers = Timers.Count();
+const cTimer* findTimerByUid(const cTimers* timers, uint32_t timerUID) {
+    return const_cast<cTimer*>(findTimerByUid((cTimers*)timers, timerUID));
+}
+
+cTimer* findTimerByUid(cTimers* timers, uint32_t timerUID) {
+    int numTimers = timers->Count();
 
     for(int i = 0; i < numTimers; i++) {
-        cTimer* timer = Timers.Get(i);
+        cTimer* timer = timers->Get(i);
 
         if(!timer) {
             continue;
@@ -139,5 +140,5 @@ cTimer* findTimerByUid(uint32_t timerUID) {
         }
     }
 
-    return NULL;
+    return nullptr;
 }

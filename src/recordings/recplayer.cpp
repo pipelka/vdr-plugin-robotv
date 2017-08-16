@@ -29,7 +29,7 @@
 #define O_NOATIME 0
 #endif
 
-RecPlayer::RecPlayer(cRecording* rec) {
+RecPlayer::RecPlayer(const cRecording* rec) {
     m_file = -1;
     m_fileOpen = -1;
     m_rescanInterval = 0;

@@ -32,11 +32,13 @@
 
 uint32_t createChannelUid(const cChannel* channel);
 
-const cChannel* findChannelByUid(uint32_t channelUID);
+const cChannel* findChannelByUid(const cChannels* channels, uint32_t channelUID);
 
 uint32_t createTimerUid(const cTimer* channel);
 
-cTimer* findTimerByUid(uint32_t timerUID);
+const cTimer* findTimerByUid(const cTimers* timers, uint32_t timerUID);
+
+cTimer* findTimerByUid(cTimers* timers, uint32_t timerUID);
 
 uint32_t createStringHash(const cString& string);
 

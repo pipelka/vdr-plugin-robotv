@@ -216,9 +216,6 @@ void RoboTVServer::clientConnected(int fd) {
 void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
-    cTimeMs recordingReloadTimer;
-
-    bool recordingReloadTrigger = false;
 
     // artwork
     Artwork artwork;
@@ -229,14 +226,13 @@ void RoboTVServer::Action(void) {
 
     m_epgHandler.cleanup();
 
-    // get initial state of the recordings
-    int recState = -1;
-    int recStateOld = -1;
-
     RecordingsCache& cache = RecordingsCache::instance();
-    Recordings.StateChanged(recState);
 
-    recStateOld = recState;
+    isyslog("Requesting clients to reload recordings list");
+
+    for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
+        (*i)->sendMoviesChange();
+    }
 
     // listen for connections
     listen(m_serverFd, 10);
@@ -286,31 +282,6 @@ void RoboTVServer::Action(void) {
             // reset inactivity timeout as long as there are clients connected
             if(m_clients.size() > 0) {
                 ShutdownHandler.SetUserInactiveTimeout();
-            }
-
-            // check for recording changes
-            Recordings.StateChanged(recState);
-
-            if(recState != recStateOld) {
-                recordingReloadTrigger = true;
-                recordingReloadTimer.Set(1000);
-                isyslog("Recordings state changed (%i)", recState);
-                recStateOld = recState;
-            }
-
-            // update recordings
-            if((recordingReloadTrigger && recordingReloadTimer.TimedOut())) {
-
-                // request clients to reload recordings
-                if(!m_clients.empty()) {
-                    isyslog("Requesting clients to reload recordings list");
-
-                    for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
-                        (*i)->sendMoviesChange();
-                    }
-                }
-
-                recordingReloadTrigger = false;
             }
 
             // no connect request -> continue waiting

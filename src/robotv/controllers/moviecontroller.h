@@ -71,7 +71,7 @@ private:
 
     MovieController(const MovieController& orig);
 
-    void recordingToPacket(cRecording* recording, MsgPacket* response);
+    void recordingToPacket(const cRecording* recording, MsgPacket* response);
 
     Utf8Conv m_toUtf8;
 

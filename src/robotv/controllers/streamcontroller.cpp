@@ -94,12 +94,8 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
     stopStreaming();
 
     // try to find channel by uid first
-    const cChannel* channel = findChannelByUid(uid);
-
-    // try channelnumber
-    if(channel == NULL) {
-        channel = Channels.GetByNumber(uid);
-    }
+    LOCK_CHANNELS_READ;
+    const cChannel* channel = findChannelByUid(Channels, uid);
 
     MsgPacket* response = createResponse(request);
 

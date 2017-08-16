@@ -60,13 +60,14 @@ MsgPacket* RecordingController::process(MsgPacket* request) {
 }
 
 MsgPacket* RecordingController::processOpen(MsgPacket* request) {
-    cRecording* recording = NULL;
-
     const char* recid = request->get_String();
     unsigned int uid = recid2uid(recid);
     dsyslog("lookup recid: %s (uid: %u)", recid, uid);
-    recording = RecordingsCache::instance().lookup(uid);
-    MsgPacket* response = createResponse(request);
+
+    LOCK_RECORDINGS_READ;
+
+    auto recording = RecordingsCache::instance().lookup(Recordings, uid);
+    auto response = createResponse(request);
 
     if(recording && m_recPlayer == NULL) {
         m_recPlayer = new PacketPlayer(recording);

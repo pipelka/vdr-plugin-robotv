@@ -44,13 +44,15 @@ public:
 
     static RecordingsCache& instance();
 
-    uint32_t update(uint32_t uid, cRecording* recording);
+    uint32_t update(uint32_t uid, const cRecording* recording);
 
-    uint32_t add(cRecording* recording);
+    uint32_t add(const cRecording* recording);
 
-    cRecording* lookup(uint32_t uid);
+    const cRecording* lookup(const cRecordings* recordings, uint32_t uid);
 
-    cRecording* lookup(const std::string& fileName);
+    const cRecording* lookup(const cRecordings* recordings, const std::string& fileName);
+
+    cRecording* lookup(cRecordings* recordings, uint32_t uid);
 
     int getPlayCount(uint32_t uid);
 

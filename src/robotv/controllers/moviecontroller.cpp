@@ -104,7 +104,9 @@ MsgPacket* MovieController::processGetFolders(MsgPacket* request) {
         folders.insert(config.seriesFolder);
     }
 
-    for(cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
+    LOCK_RECORDINGS_READ;
+
+    for(auto recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
         std::string folder = folderFromName(recording->Name());
 
         if(folder.empty() || (size > 0 && folder.substr(0, size + 1) == config.seriesFolder + "/")) {
@@ -127,7 +129,9 @@ MsgPacket* MovieController::processGetFolders(MsgPacket* request) {
 MsgPacket* MovieController::processGetList(MsgPacket* request) {
     MsgPacket* response = createResponse(request);
 
-    for(cRecording* recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
+    LOCK_RECORDINGS_READ;
+
+    for(auto recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
         recordingToPacket(recording, response);
     }
 
@@ -153,7 +157,9 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
     }
 
     MsgPacket* response = createResponse(request);
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
+
+    LOCK_RECORDINGS_WRITE;
+    auto recording = RecordingsCache::instance().lookup(Recordings, uid);
 
     if(recording == nullptr) {
         esyslog("recording with id '%s' not found!", recid);
@@ -169,8 +175,8 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
         RecordingsCache::instance().update(uid, recording);
     }
 
-    Recordings.Update();
-    Recordings.TouchUpdate();
+    Recordings->Update();
+    Recordings->TouchUpdate();
 
     response->put_U32(success ? 0 : -1);
     return response;
@@ -179,7 +185,10 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
 MsgPacket* MovieController::processDelete(MsgPacket* request) {
     const char* recid = request->get_String();
     uint32_t uid = recid2uid(recid);
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
+
+    LOCK_RECORDINGS_WRITE;
+
+    auto recording = RecordingsCache::instance().lookup(Recordings, uid);
     MsgPacket* response = createResponse(request);
 
     if(recording == nullptr) {
@@ -204,7 +213,7 @@ MsgPacket* MovieController::processDelete(MsgPacket* request) {
         return response;
     }
 
-    Recordings.DelByName(recording->FileName());
+    Recordings->DelByName(recording->FileName());
     isyslog("Recording \"%s\" deleted", recording->FileName());
     response->put_U32(ROBOTV_RET_OK);
 
@@ -246,7 +255,9 @@ MsgPacket* MovieController::processGetMarks(MsgPacket* request) {
     const char* recid = request->get_String();
     uint32_t uid = recid2uid(recid);
 
-    cRecording* recording = RecordingsCache::instance().lookup(uid);
+    LOCK_RECORDINGS_READ;
+    auto recording = RecordingsCache::instance().lookup(Recordings, uid);
+
     MsgPacket* response = createResponse(request);
 
     if(recording == NULL) {
@@ -305,8 +316,10 @@ MsgPacket* MovieController::processSearch(MsgPacket* request) {
     const char* searchTerm = request->get_String();
     MsgPacket* response = createResponse(request);
 
+    LOCK_RECORDINGS_READ;
+
     cache.search(searchTerm, [&](uint32_t recid) {
-        cRecording* recording = cache.lookup(recid);
+        auto recording = cache.lookup(Recordings, recid);
 
         if(recording == NULL) {
             return;
@@ -332,7 +345,7 @@ std::string MovieController::folderFromName(const std::string& name) {
     return folder;
 }
 
-void MovieController::recordingToPacket(cRecording* recording, MsgPacket* response) {
+void MovieController::recordingToPacket(const cRecording* recording, MsgPacket* response) {
     RecordingsCache& cache = RecordingsCache::instance();
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 

@@ -28,7 +28,7 @@
 
 #define MIN_PACKET_SIZE (128 * 1024)
 
-PacketPlayer::PacketPlayer(cRecording* rec) : RecPlayer(rec) {
+PacketPlayer::PacketPlayer(const cRecording* rec) : RecPlayer(rec) {
     m_index = new cIndexFile(rec->FileName(), false);
     m_recording = rec;
     m_position = 0;

@@ -99,7 +99,8 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         // return status "recording running" if there is an active timer
         time_t now = time(nullptr);
 
-        for(cTimer* ti = Timers.First(); ti; ti = Timers.Next(ti)) {
+        LOCK_TIMERS_READ;
+        for(const cTimer* ti = Timers->First(); ti; ti = Timers->Next(ti)) {
             if(ti->Recording() && ti->Matches(now)) {
                 esyslog("Recording running !");
                 return ROBOTV_RET_RECRUNNING;
@@ -253,7 +254,8 @@ void LiveStreamer::requestSignalInfo() {
     resp->put_U32(0);
 
     // get provider & service information
-    const cChannel* channel = findChannelByUid(m_uid);
+    LOCK_CHANNELS_READ;
+    const cChannel* channel = findChannelByUid(Channels, m_uid);
 
     if(channel != nullptr) {
         // put in provider name
@@ -341,13 +343,8 @@ MsgPacket* LiveStreamer::requestPacket() {
     return nullptr;
 }
 
-#if VDRVERSNUM < 20300
-void LiveStreamer::Receive(uchar* packet, int length)
-#else
-void LiveStreamer::Receive(const uchar* packet, int length)
-#endif
-{
-    putTsPacket(packet, roboTV::currentTimeMillis().count());
+void LiveStreamer::Receive(const uchar* packet, int length) {
+    putTsPacket((uint8_t*)packet, roboTV::currentTimeMillis().count());
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
