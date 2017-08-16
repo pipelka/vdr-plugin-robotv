@@ -182,8 +182,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 }
 
 MsgPacket* EpgController::processSearch(MsgPacket* request) {
-    cSchedulesLock MutexLock;
-
     std::string searchTerm = request->get_String();
     time_t now = time(NULL);
     MsgPacket* response = createResponse(request);

@@ -94,27 +94,45 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
     stopStreaming();
 
     // try to find channel by uid first
-    LOCK_CHANNELS_READ;
-    const cChannel* channel = findChannelByUid(Channels, uid);
 
-    MsgPacket* response = createResponse(request);
+    int status;
+    MsgPacket *response = nullptr;
+    std::string channelName;
+    const cChannel *channel = nullptr;
 
-    if(channel == NULL) {
-        esyslog("Can't find channel %08x", uid);
-        response->put_U32(ROBOTV_RET_DATAINVALID);
-        return response;
+    {
+        LOCK_CHANNELS_READ;
+        channel = findChannelByUid(Channels, uid);
+
+        response = createResponse(request);
+
+        if (channel == nullptr) {
+            esyslog("Can't find channel %08x", uid);
+            response->put_U32(ROBOTV_RET_DATAINVALID);
+            return response;
+        }
+
+        channelName = channel->Name();
+        status = startStreaming(
+                channel,
+                priority);
     }
-
-    int status = startStreaming(
-                     channel,
-                     priority);
 
     if(status == ROBOTV_RET_OK) {
         isyslog("--------------------------------------");
-        isyslog("Started streaming of channel %s (priority %i)", channel->Name(), priority);
+        isyslog("Started streaming of channel %s (priority %i)", channelName.c_str(), priority);
     }
     else {
-        esyslog("Can't stream channel %s (status: %i)", channel->Name(), status);
+        LOCK_TIMERS_READ;
+        time_t now = time(nullptr);
+
+        for (const cTimer *ti = Timers->First(); ti; ti = Timers->Next(ti)) {
+            if (ti->Recording() && ti->Matches(now)) {
+                esyslog("Recording running !");
+                status = ROBOTV_RET_RECRUNNING;
+            }
+        }
+        esyslog("Can't stream channel %s (status: %i)", channelName.c_str(), status);
     }
 
     response->put_U32(status);

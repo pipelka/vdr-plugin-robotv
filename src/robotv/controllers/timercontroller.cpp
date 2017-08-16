@@ -303,9 +303,6 @@ MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
 MsgPacket* TimerController::processAdd(MsgPacket* request) {
     MsgPacket* response = createResponse(request);
 
-    LOCK_TIMERS_WRITE;
-    LOCK_CHANNELS_READ;
-
     request->get_U32(); // index unused
     uint32_t flags      = request->get_U32();
     uint32_t priority   = request->get_U32();
@@ -337,16 +334,20 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
     cString buffer;
 
-    const cChannel* channel = findChannelByUid(Channels, channelid);
+    {
+        LOCK_CHANNELS_READ;
+        const cChannel *channel = findChannelByUid(Channels, channelid);
 
-    if(channel == NULL) {
-        esyslog("channel with id '%i' not found - unable to add timer !", channelid);
-        response->put_U32(ROBOTV_RET_DATAINVALID);
-        return response;
+        if (channel == NULL) {
+            esyslog("channel with id '%i' not found - unable to add timer !", channelid);
+            response->put_U32(ROBOTV_RET_DATAINVALID);
+            return response;
+        }
+
+        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags,
+                                  (const char *) channel->GetChannelID().ToString(),
+                                  *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
     }
-
-    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
-
     // replace invalid characters in file
     char* p = (char*)file;
 
@@ -357,6 +358,8 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
         p++;
     }
+
+    LOCK_TIMERS_WRITE;
 
     cTimer* timer = new cTimer;
 
@@ -437,25 +440,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     bool active = (request->get_U32() == 1);
 
-    LOCK_TIMERS_WRITE;
-    LOCK_CHANNELS_READ;
-
-    cTimer* timer = findTimerByUid(Timers, uid);
     MsgPacket* response = createResponse(request);
-
-    if(timer == NULL) {
-        esyslog("Timer not defined");
-        response->put_U32(ROBOTV_RET_DATAUNKNOWN);
-        return response;
-    }
-
-    if(timer->Recording()) {
-        isyslog("Will not update timer - currently recording");
-        response->put_U32(ROBOTV_RET_OK);
-        return response;
-    }
-
-    cTimer t = *timer;
 
     uint32_t flags      = active ? tfActive : tfNone;
     uint32_t priority   = request->get_U32();
@@ -480,16 +465,37 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
+    std::string channelId;
 
-    const cChannel* channel = findChannelByUid(Channels, channelid);
+    {
+        LOCK_CHANNELS_READ;
+        const cChannel *channel = findChannelByUid(Channels, channelid);
+        channelId = (const char*)channel->GetChannelID().ToString();
+        if (channel == NULL) {
+            esyslog("channel with id '%i' not found - unable to update timer !", channelid);
+            response->put_U32(ROBOTV_RET_DATAINVALID);
+            return response;
+        }
+    }
 
-    if(channel == NULL) {
-        esyslog("channel with id '%i' not found - unable to update timer !", channelid);
-        response->put_U32(ROBOTV_RET_DATAINVALID);
+    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, channelId.c_str() , *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+
+    LOCK_TIMERS_WRITE;
+
+    cTimer* timer = findTimerByUid(Timers, uid);
+    if(timer == NULL) {
+        esyslog("Timer not defined");
+        response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return response;
     }
 
-    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, (const char*)channel->GetChannelID().ToString(), *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+    if(timer->Recording()) {
+        isyslog("Will not update timer - currently recording");
+        response->put_U32(ROBOTV_RET_OK);
+        return response;
+    }
+
+    cTimer t = *timer;
 
     if(!t.Parse(buffer)) {
         esyslog("Error in timer settings");

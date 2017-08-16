@@ -96,17 +96,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     // maybe all devices busy
     if(device == nullptr) {
-        // return status "recording running" if there is an active timer
-        time_t now = time(nullptr);
-
-        LOCK_TIMERS_READ;
-        for(const cTimer* ti = Timers->First(); ti; ti = Timers->Next(ti)) {
-            if(ti->Recording() && ti->Matches(now)) {
-                esyslog("Recording running !");
-                return ROBOTV_RET_RECRUNNING;
-            }
-        }
-
         esyslog("No device available !");
         return ROBOTV_RET_DATALOCKED;
     }
