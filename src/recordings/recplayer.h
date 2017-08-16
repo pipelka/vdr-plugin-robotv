@@ -26,6 +26,7 @@
 #define ROBOTV_RECPLAYER_H
 
 #include <stdio.h>
+#include <string>
 #include <vdr/tools.h>
 #include <vdr/recording.h>
 
@@ -38,7 +39,7 @@ public:
 class RecPlayer {
 public:
 
-    RecPlayer(const cRecording* rec);
+    RecPlayer(const char* filename);
 
     ~RecPlayer();
 
@@ -66,15 +67,13 @@ private:
 
     char* fileNameFromIndex(int index);
 
-    bool m_pesrecording;
-
     char m_fileName[512];
 
     int m_file;
 
     int m_fileOpen;
 
-    char* m_recordingFilename;
+    std::string m_recordingFilename;
 
     cTimeMs m_rescanTime;
 

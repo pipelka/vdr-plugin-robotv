@@ -29,13 +29,11 @@
 #define O_NOATIME 0
 #endif
 
-RecPlayer::RecPlayer(const cRecording* rec) {
+RecPlayer::RecPlayer(const char* filename) : m_recordingFilename(filename) {
     m_file = -1;
     m_fileOpen = -1;
     m_rescanInterval = 0;
-    m_recordingFilename = strdup(rec->FileName());
     m_totalLength = 0;
-    m_pesrecording = rec->IsPesRecording();
 
     scan();
     m_rescanTime.Set(0);
@@ -44,7 +42,6 @@ RecPlayer::RecPlayer(const cRecording* rec) {
 RecPlayer::~RecPlayer() {
     cleanup();
     closeFile();
-    free(m_recordingFilename);
 }
 
 void RecPlayer::cleanup() {
@@ -92,13 +89,7 @@ bool RecPlayer::update() {
 }
 
 char* RecPlayer::fileNameFromIndex(int index) {
-    if(m_pesrecording) {
-        snprintf(m_fileName, sizeof(m_fileName), "%s/%03i.vdr", m_recordingFilename, index + 1);
-    }
-    else {
-        snprintf(m_fileName, sizeof(m_fileName), "%s/%05i.ts", m_recordingFilename, index + 1);
-    }
-
+    snprintf(m_fileName, sizeof(m_fileName), "%s/%05i.ts", m_recordingFilename.c_str(), index + 1);
     return m_fileName;
 }
 
