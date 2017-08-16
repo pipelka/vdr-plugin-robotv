@@ -50,11 +50,11 @@
 
 using namespace std::chrono;
 
-LiveStreamer::LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool cache)
+LiveStreamer::LiveStreamer(RoboTvClient* parent, int priority, bool cache)
     : cReceiver(nullptr, priority)
     , m_parent(parent)
     , m_cacheEnabled(cache) {
-    m_uid = createChannelUid(channel);
+    m_uid = 0;
 
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
@@ -76,8 +76,6 @@ LiveStreamer::~LiveStreamer() {
 
     reset();
     delete m_queue;
-
-    m_uid = 0;
     delete m_streamPacket;
 
     isyslog("live streamer terminated");

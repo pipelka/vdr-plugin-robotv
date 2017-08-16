@@ -91,7 +91,7 @@ private:
 
 public:
 
-    LiveStreamer(RoboTvClient* parent, const cChannel* channel, int priority, bool cache);
+    LiveStreamer(RoboTvClient* parent, int priority, bool cache);
 
     virtual ~LiveStreamer();
 
