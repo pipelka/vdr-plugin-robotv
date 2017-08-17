@@ -74,10 +74,6 @@ bool RoboTVServerConfig::Parse(const char* Name, const char* Value) {
     else if(!strcasecmp(Name, "FilterChannels")) {
         filterChannels = (strcmp(Value, "true") == 0);
     }
-    else if(!strcasecmp(Name, "ChannelCache")) {
-        channelCache = (strcmp(Value, "true") == 0);
-        isyslog("Channel cache enabled: %s", (channelCache ? "yes" : "no"));
-    }
     else {
         return false;
     }

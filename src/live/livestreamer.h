@@ -67,8 +67,6 @@ private:
 
     MsgPacket* m_streamPacket = NULL;
 
-    bool m_cacheEnabled;
-
 protected:
 
 #if VDRVERSNUM < 20300
@@ -91,7 +89,7 @@ private:
 
 public:
 
-    LiveStreamer(RoboTvClient* parent, int priority, bool cache);
+    LiveStreamer(RoboTvClient* parent, int priority);
 
     virtual ~LiveStreamer();
 

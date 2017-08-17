@@ -50,12 +50,10 @@
 
 using namespace std::chrono;
 
-LiveStreamer::LiveStreamer(RoboTvClient* parent, int priority, bool cache)
+LiveStreamer::LiveStreamer(RoboTvClient* parent, int priority)
     : cReceiver(nullptr, priority)
     , m_parent(parent)
-    , m_cacheEnabled(cache) {
-    m_uid = 0;
-
+    , m_uid(0) {
     // create send queue
     m_queue = new LiveQueue(m_parent->getSocket());
 }
@@ -125,44 +123,37 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
 
     m_uid = createChannelUid(channel);
 
-    StreamBundle currentitem = createFromChannel(channel);
-    StreamBundle bundle;
+    StreamBundle currentItem = createFromChannel(channel);
 
-    // get cached demuxer data (if available & enabled)
-    if(m_cacheEnabled) {
-        ChannelCache &cache = ChannelCache::instance();
-        bundle = cache.lookup(m_uid);
+    // get cached demuxer data
+    ChannelCache &cache = ChannelCache::instance();
+    StreamBundle cacheItem = cache.lookup(m_uid);
 
-        // channel already in cache
-        if (bundle.size() != 0) {
-            isyslog("Channel information found in cache");
-        }
-        // channel not found in cache -> add it from vdr
-        else {
-            isyslog("adding channel to cache");
-            bundle = createFromChannel(channel);
-            cache.add(m_uid, bundle);
-        }
-
-        // recheck cache item
-        if (!currentitem.isMetaOf(bundle)) {
-            isyslog("current channel differs from cache item - updating");
-            bundle = createFromChannel(channel);
-            cache.add(m_uid, bundle);
-        }
+    // channel already in cache
+    if (!cacheItem.empty()) {
+        isyslog("Channel information found in cache");
     }
-    // use current channel data
+    // channel not found in cache -> add it from vdr
     else {
-        bundle = currentitem;
+        isyslog("adding channel to cache");
+        cacheItem = currentItem;
+        cache.add(m_uid, cacheItem);
     }
 
-    if(bundle.size() == 0) {
+    // recheck cache item
+    if (!currentItem.isMetaOf(cacheItem)) {
+        isyslog("current channel differs from cache item - updating");
+        cacheItem = currentItem;
+        cache.add(m_uid, cacheItem);
+    }
+
+    if(cacheItem.empty()) {
         esyslog("channel %i - %s doesn't have any stream information", channel->Number(), channel->Name());
         return false;
     }
 
     isyslog("Creating demuxers");
-    createDemuxers(&bundle);
+    createDemuxers(&cacheItem);
 
     onStreamChange();
 
