@@ -61,8 +61,6 @@ private:
 
     uint32_t m_uid;
 
-    bool m_waitForKeyFrame = false;
-
     std::mutex m_mutex;
 
     MsgPacket* m_streamPacket = NULL;
@@ -98,8 +96,6 @@ public:
     bool isPaused();
 
     void setLanguage(const char* lang, StreamInfo::Type streamtype = StreamInfo::Type::AC3);
-
-    void setWaitForKeyFrame(bool waitForKeyFrame);
 
     void pause(bool on);
 

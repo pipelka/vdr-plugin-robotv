@@ -79,10 +79,6 @@ LiveStreamer::~LiveStreamer() {
     isyslog("live streamer terminated");
 }
 
-void LiveStreamer::setWaitForKeyFrame(bool waitforiframe) {
-    m_waitForKeyFrame = waitforiframe;
-}
-
 int LiveStreamer::switchChannel(const cChannel* channel) {
     if(channel == nullptr) {
         esyslog("unknown channel !");
@@ -158,10 +154,6 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
     onStreamChange();
 
     isyslog("Successfully switched to channel %i - %s", channel->Number(), channel->Name());
-
-    if(m_waitForKeyFrame) {
-        isyslog("Will wait for first key frame ...");
-    }
 
     // fool device to not start the decryption timer
     int priority = Priority();

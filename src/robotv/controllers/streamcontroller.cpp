@@ -68,14 +68,13 @@ MsgPacket* StreamController::process(MsgPacket* request) {
 MsgPacket* StreamController::processOpen(MsgPacket* request) {
     uint32_t uid = request->get_U32();
     int32_t priority = 50;
-    bool waitForKeyFrame = false;
 
     if(!request->eop()) {
         priority = request->get_S32();
     }
 
     if(!request->eop()) {
-        waitForKeyFrame = request->get_U8();
+        request->get_U8(); // BINARY COMPATIBILITY (was waitForKeyFrame)
     }
 
     // get preferred language
@@ -112,8 +111,7 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
 
     int status = startStreaming(
                      channel,
-                     priority,
-                     waitForKeyFrame);
+                     priority);
 
     if(status == ROBOTV_RET_OK) {
         isyslog("--------------------------------------");
@@ -174,13 +172,12 @@ void StreamController::processChannelChange(const cChannel* Channel) {
     }
 }
 
-int StreamController::startStreaming(const cChannel* channel, int32_t priority, bool waitForKeyFrame) {
+int StreamController::startStreaming(const cChannel* channel, int32_t priority) {
     std::lock_guard<std::mutex> lock(m_lock);
     const RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
     m_streamer = new LiveStreamer(m_parent, priority);
     m_streamer->setLanguage(m_language.c_str(), m_langStreamType);
-    m_streamer->setWaitForKeyFrame(waitForKeyFrame);
 
     return m_streamer->switchChannel(channel);
 }
