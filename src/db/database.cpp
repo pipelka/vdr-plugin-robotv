@@ -192,15 +192,20 @@ sqlite3_blob* Database::openBlob(const std::string& table, const std::string& co
 }
 
 bool Database::begin() {
+    m_transactionLock.lock();
     return (exec("BEGIN;") == SQLITE_OK);
 }
 
 bool Database::commit() {
-    return (exec("COMMIT;") == SQLITE_OK);
+    bool status = (exec("COMMIT;") == SQLITE_OK);
+    m_transactionLock.unlock();
+    return status;
 }
 
 bool Database::rollback() {
-    return (exec("ROLLBACK;") == SQLITE_OK);
+    bool status = (exec("ROLLBACK;") == SQLITE_OK);
+    m_transactionLock.unlock();
+    return status;
 }
 
 bool Database::tableHasColumn(const std::string& table, const std::string& column) {

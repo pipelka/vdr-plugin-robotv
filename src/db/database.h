@@ -122,6 +122,7 @@ private:
     sqlite3* m_db;
 
     std::mutex m_lock;
+    std::mutex m_transactionLock;
 };
 
 } // namespace RoboTV
