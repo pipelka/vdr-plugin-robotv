@@ -71,23 +71,6 @@ public:
      */
     int exec(const std::string& query, ...);
 
-    /** @short Begin transaction.
-     * Starts a new transaction block. Writing many configuration values can
-     * be accelerated by using Begin() and Commit()
-     */
-    bool begin();
-
-    /** @short Commit transaction.
-     * Commits a previously started transaction block. Writing many configuration values can
-     * be accelerated by using Begin() and Commit()
-     */
-    bool commit();
-
-    /** @short Rollback transaction.
-     * Discards the current transaction block.
-     */
-    bool rollback();
-
     /** @short Execute a SQL query.
      * Executes the statement and returns a SQLite resultset.
      * @param query The SQL statement to execute. Accepts "printf" style formatting.
@@ -112,6 +95,25 @@ public:
      * return true if table contains column, otherwise false
      */
     bool tableHasColumn(const std::string& table, const std::string& column);
+
+protected:
+
+    /** @short Begin transaction.
+     * Starts a new transaction block. Writing many configuration values can
+     * be accelerated by using Begin() and Commit()
+     */
+    bool begin();
+
+    /** @short Commit transaction.
+     * Commits a previously started transaction block. Writing many configuration values can
+     * be accelerated by using Begin() and Commit()
+     */
+    bool commit();
+
+    /** @short Rollback transaction.
+     * Discards the current transaction block.
+     */
+    bool rollback();
 
 private:
 

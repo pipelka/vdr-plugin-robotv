@@ -97,7 +97,6 @@ bool Artwork::set(int contentType, const std::string& title, const std::string& 
 }
 
 void Artwork::cleanup(int afterDays) {
-    m_storage.begin();
 
     // remove empty artwork
 
@@ -110,8 +109,6 @@ void Artwork::cleanup(int afterDays) {
     m_storage.exec(
             "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > 31"
     );
-
-    m_storage.commit();
 }
 
 void Artwork::triggerCleanup(int afterDays) {
