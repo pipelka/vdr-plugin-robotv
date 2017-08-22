@@ -239,13 +239,16 @@ void RecordingsCache::triggerCleanup() {
 }
 
 void RecordingsCache::gc() {
-    exec("DELETE FROM fts_recordings;");
+    RecordingsCache storage;
 
-    update();
+    storage.begin();
+    storage.exec("DELETE FROM fts_recordings;");
+    storage.update();
 
-    sqlite3_stmt* s = query("SELECT recid, filename FROM recordings;");
+    sqlite3_stmt* s = storage.query("SELECT recid, filename FROM recordings;");
 
-    if(s == NULL) {
+    if(s == nullptr) {
+        storage.rollback();
         return;
     }
 
@@ -256,12 +259,13 @@ void RecordingsCache::gc() {
         const char* filename = (const char*)sqlite3_column_text(s, 1);
 
         // remove orphaned entry
-        if(Recordings.GetByName(filename) == NULL) {
+        if(Recordings.GetByName(filename) == nullptr) {
             isyslog("removing outdated recording '%s' from cache", filename);
-            exec("DELETE FROM recordings WHERE recid=%u;", recid);
+            storage.exec("DELETE FROM recordings WHERE recid=%u;", recid);
         }
     }
 
+    storage.commit();
     sqlite3_finalize(s);
 }
 
