@@ -45,7 +45,7 @@ StreamInfo::StreamInfo(int pid, Type type, const char* lang) {
     m_type = type;
     m_parsed = false;
 
-    if(lang != NULL) {
+    if(lang != nullptr) {
         strncpy(m_language, lang, 4);
     }
 
@@ -54,9 +54,6 @@ StreamInfo::StreamInfo(int pid, Type type, const char* lang) {
     memset(m_vps, 0, sizeof(m_vps));
 
     setContent();
-}
-
-StreamInfo::~StreamInfo() {
 }
 
 void StreamInfo::Initialize() {
@@ -118,6 +115,8 @@ bool StreamInfo::operator ==(const StreamInfo& rhs) const {
         case Content::STREAMINFO:
             return false;
     }
+
+    return false;
 }
 
 bool StreamInfo::isMetaOf(const StreamInfo& rhs) const {
@@ -144,13 +143,13 @@ const StreamInfo::Content StreamInfo::getContent(Type type) {
     if(type == Type::MPEG2AUDIO || type == Type::AC3 || type == Type::EAC3  || type == Type::AAC || type == Type::LATM) {
         return Content::AUDIO;
     }
-    else if(type == Type::MPEG2VIDEO || type == Type::H264 || type == Type::H265) {
+    if(type == Type::MPEG2VIDEO || type == Type::H264 || type == Type::H265) {
         return Content::VIDEO;
     }
-    else if(type == Type::DVBSUB) {
+    if(type == Type::DVBSUB) {
         return Content::SUBTITLE;
     }
-    else if(type == Type::TELETEXT) {
+    if(type == Type::TELETEXT) {
         return Content::TELETEXT;
     }
 

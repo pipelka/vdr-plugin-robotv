@@ -67,9 +67,9 @@ public:
 
     StreamInfo();
 
-    StreamInfo(int pid, Type type, const char* lang = NULL);
+    StreamInfo(int pid, Type type, const char* lang = nullptr);
 
-    virtual ~StreamInfo();
+    virtual ~StreamInfo() = default;
 
     bool operator ==(const StreamInfo& rhs) const;
 
@@ -121,9 +121,9 @@ protected:
 
     char m_language[4]; // ISO 639 3-letter language code (empty string if undefined)
 
-    uint32_t m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
+    int m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
 
-    uint32_t m_fpsRate;
+    int m_fpsRate;
 
     uint16_t m_height; // height of the stream reported by the demuxer
 
