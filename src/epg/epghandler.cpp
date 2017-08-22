@@ -30,7 +30,7 @@ EpgHandler::EpgHandler() {
     createDb();
 }
 
-bool EpgHandler::processEvent(roboTV::Storage& storage, cEvent *Event) {
+bool EpgHandler::processEvent(roboTV::Storage& storage, const cEvent *Event) {
     // skip entries from the past
     if(Event->EndTime() <= time(nullptr)) {
         return false;

@@ -42,7 +42,7 @@ public:
 
 private:
 
-    bool processEvent(roboTV::Storage& storage, cEvent *Event);
+    bool processEvent(roboTV::Storage& storage, const cEvent *Event);
 
     void createDb();
 
