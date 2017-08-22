@@ -96,8 +96,6 @@ public:
      */
     bool tableHasColumn(const std::string& table, const std::string& column);
 
-protected:
-
     /** @short Begin transaction.
      * Starts a new transaction block. Writing many configuration values can
      * be accelerated by using Begin() and Commit()
