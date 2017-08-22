@@ -47,8 +47,19 @@ bool PluginRoboTVServer::Initialize(void) {
     // Initialize any background activities the plugin shall perform.
     RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
-    config.configDirectory = ConfigDirectory(PLUGIN_NAME_I18N);
-    config.cacheDirectory = CacheDirectory(PLUGIN_NAME_I18N);
+    const char* directory = ConfigDirectory(PLUGIN_NAME_I18N);
+    if(directory == nullptr) {
+        return false;
+    }
+
+    config.configDirectory = directory;
+
+    directory = CacheDirectory(PLUGIN_NAME_I18N);
+    if(directory == nullptr) {
+        return false;
+    }
+
+    config.cacheDirectory = directory;
     config.Load();
 
     return true;
