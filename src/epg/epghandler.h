@@ -27,17 +27,14 @@
 
 #include <vdr/epg.h>
 #include <db/storage.h>
+#include <thread>
 
-class EpgHandler : public cEpgHandler, protected roboTV::Storage {
+class EpgHandler : public cEpgHandler {
 public:
 
     EpgHandler();
 
-    bool BeginSegmentTransfer(const cChannel *Channel, bool OnlyRunningStatus);
-
-    bool EndSegmentTransfer(bool Modified, bool OnlyRunningStatus);
-
-    bool HandleEvent(cEvent* Event);
+    bool SortSchedule(cSchedule *Schedule) override;
 
     void cleanup();
 
@@ -45,9 +42,10 @@ public:
 
 private:
 
+    bool processEvent(roboTV::Storage& storage, cEvent *Event);
+
     void createDb();
 
 };
-
 
 #endif //ROBOTV_EPGHANDLER_H

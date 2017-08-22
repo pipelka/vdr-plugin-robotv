@@ -30,22 +30,11 @@ EpgHandler::EpgHandler() {
     createDb();
 }
 
-bool EpgHandler::HandleEvent(cEvent* Event) {
-
+bool EpgHandler::processEvent(roboTV::Storage& storage, cEvent *Event) {
     // skip entries from the past
-    if(Event->EndTime() <= time(NULL)) {
+    if(Event->EndTime() <= time(nullptr)) {
         return false;
     }
-
-    std::string channelName;
-
-    cChannel* channel = Channels.GetByChannelID(Event->ChannelID());
-
-    if(channel == nullptr) {
-        return false;
-    }
-
-    channelName = channel->Name();
 
     std::string docIdString = (const char*)Event->ChannelID().ToString();
     docIdString += "-" + std::to_string(Event->EventID());
@@ -53,7 +42,7 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
     int docId = createStringHash(docIdString.c_str());
 
     // insert new epg entry
-    exec(
+    storage.exec(
         "INSERT OR IGNORE INTO epgindex("
         "  docid,"
         "  eventid,"
@@ -71,34 +60,20 @@ bool EpgHandler::HandleEvent(cEvent* Event) {
         Event->EventID(),
         (uint64_t)Event->StartTime(),
         (const char*)Event->ChannelID().ToString(),
-        channelName.c_str(),
+        "",
         Event->Title() ? Event->Title() : "",
         Event->ShortText() ? Event->ShortText() : "",
         Event->Description() ? Event->Description() : "",
         (uint64_t)Event->EndTime(),
-        createChannelUid(channel)
+        createStringHash(Event->ChannelID().ToString())
     );
 
     return false;
 }
 
-bool EpgHandler::BeginSegmentTransfer(const cChannel *Channel, bool OnlyRunningStatus) {
-    if(!OnlyRunningStatus) {
-        begin();
-    }
-
-    return false;
-}
-
-bool EpgHandler::EndSegmentTransfer(bool Modified, bool OnlyRunningStatus) {
-    if(!OnlyRunningStatus) {
-        commit();
-    }
-
-    return false;
-}
-
 void EpgHandler::createDb() {
+    roboTV::Storage storage;
+
     std::string schema =
         "CREATE TABLE IF NOT EXISTS epgindex (\n"
         "  docid INTEGER PRIMARY KEY,\n"
@@ -120,37 +95,37 @@ void EpgHandler::createDb() {
         ");\n"
         "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
 
-    if(exec(schema) != SQLITE_OK) {
+    if(storage.exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for epg search");
     }
 
     // update older versions of epgindex
-    if(!tableHasColumn("epgindex", "eventid")) {
-        exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
+    if(!storage.tableHasColumn("epgindex", "eventid")) {
+        storage.exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
     }
-    if(!tableHasColumn("epgindex", "endtime")) {
-        exec("DELETE FROM epgindex");
-        exec("ALTER TABLE epgindex ADD COLUMN title TEXT NOT NULL DEFAULT ''");
-        exec("ALTER TABLE epgindex ADD COLUMN subject TEXT NOT NULL DEFAULT ''");
-        exec("ALTER TABLE epgindex ADD COLUMN description TEXT NOT NULL DEFAULT ''");
-        exec("ALTER TABLE epgindex ADD COLUMN endtime INTEGER NOT NULL DEFAULT 0");
-        exec("DROP TABLE epgsearch");
-        exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
+    if(!storage.tableHasColumn("epgindex", "endtime")) {
+        storage.exec("DELETE FROM epgindex");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN title TEXT NOT NULL DEFAULT ''");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN subject TEXT NOT NULL DEFAULT ''");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN endtime INTEGER NOT NULL DEFAULT 0");
+        storage.exec("DROP TABLE epgsearch");
+        storage.exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
     }
 
-    if(!tableHasColumn("epgindex", "url")) {
-        exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
+    if(!storage.tableHasColumn("epgindex", "url")) {
+        storage.exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
     }
 
     // version step (0.10.1)
-    if(!tableHasColumn("epgindex", "channeluid")) {
-        exec("DELETE FROM epgindex");
-        exec("ALTER TABLE epgindex ADD COLUMN channeluid INTEGER");
-        exec("ALTER TABLE epgindex ADD COLUMN contentid INTEGER");
-        exec("ALTER TABLE epgindex ADD COLUMN season INTEGER");
-        exec("ALTER TABLE epgindex ADD COLUMN episode INTEGER");
-        exec("ALTER TABLE epgindex ADD COLUMN posterurl TEXT");
-        exec("ALTER TABLE epgindex ADD COLUMN tvshow INTEGER");
+    if(!storage.tableHasColumn("epgindex", "channeluid")) {
+        storage.exec("DELETE FROM epgindex");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN channeluid INTEGER");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN contentid INTEGER");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN season INTEGER");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN episode INTEGER");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN posterurl TEXT");
+        storage.exec("ALTER TABLE epgindex ADD COLUMN tvshow INTEGER");
     }
 
     // new epgsearch table
@@ -172,16 +147,20 @@ void EpgHandler::createDb() {
         "  INSERT INTO epgsearch(docid, title, subject) VALUES(new.docid, new.title, new.subject);\n"
         "END;\n";
 
-    if(exec(schema) != SQLITE_OK) {
+    if(storage.exec(schema) != SQLITE_OK) {
         esyslog("Unable to create new epgsearch fts table !");
     }
 }
 
 void EpgHandler::cleanup() {
+    roboTV::Storage storage;
+
     isyslog("removing outdated epg entries");
 
-    time_t now = time(NULL);
-    exec("DELETE FROM epgindex WHERE endtime < %llu", (uint64_t)now);
+    time_t now = time(nullptr);
+    storage.begin();
+    storage.exec("DELETE FROM epgindex WHERE endtime < %llu", (uint64_t)now);
+    storage.commit();
 }
 
 void EpgHandler::triggerCleanup() {
@@ -190,4 +169,23 @@ void EpgHandler::triggerCleanup() {
     });
 
     t.detach();
+}
+
+bool EpgHandler::SortSchedule(cSchedule *Schedule) {
+    roboTV::Storage storage;
+
+    auto events = Schedule->Events();
+
+    if(events == nullptr) {
+        return false;
+    }
+
+    storage.begin();
+
+    for(auto event = events->First(); event != nullptr; event = events->Next(event)) {
+        processEvent(storage, event);
+    }
+
+    storage.commit();
+    return false;
 }
