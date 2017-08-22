@@ -98,12 +98,16 @@ void ChannelCache::add(uint32_t channeluid, const StreamBundle& channel) {
 }
 
 void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
-    exec("DELETE FROM channelcache WHERE channeluid=%i", channeluid);
+    roboTV::Storage storage;
+
+    storage.begin();
+
+    storage.exec("DELETE FROM channelcache WHERE channeluid=%i", channeluid);
 
     for(auto i : channel) {
         StreamInfo& info = i.second;
 
-        exec(
+        storage.exec(
             "INSERT INTO channelcache("
             "channeluid,"
             "pid,"
@@ -152,6 +156,8 @@ void ChannelCache::addDb(uint32_t channeluid, const StreamBundle& channel) {
             createStringLiteral(info.m_vps, info.m_vpsLength).c_str()
         );
     }
+
+    storage.commit();
 }
 
 StreamBundle ChannelCache::lookup(uint32_t channeluid) {
