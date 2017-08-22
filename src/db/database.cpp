@@ -42,7 +42,6 @@ bool Database::open(const std::string& db) {
             return false;
         }
 
-        isyslog("Opening database: %s", db.c_str());
         int rc = sqlite3_open_v2(db.c_str(), &m_db,
                                  SQLITE_OPEN_SHAREDCACHE |
                                  SQLITE_OPEN_FULLMUTEX |
@@ -70,8 +69,6 @@ bool Database::close() {
     if(m_db == NULL) {
         return false;
     }
-
-    isyslog("Closing database.");
 
     sqlite3_close_v2(m_db);
     m_db = NULL;
