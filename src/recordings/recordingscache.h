@@ -33,7 +33,7 @@
 #include <vdr/recording.h>
 #include "db/storage.h"
 
-class RecordingsCache {
+class RecordingsCache : protected roboTV::Storage {
 protected:
 
     RecordingsCache();
@@ -82,9 +82,6 @@ protected:
 
     void createDb();
 
-private:
-
-    roboTV::Storage& m_storage;
 };
 
 

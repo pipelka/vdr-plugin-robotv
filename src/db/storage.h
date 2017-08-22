@@ -31,17 +31,16 @@
 namespace roboTV {
 
 class Storage : public Database {
-protected:
+public:
 
     Storage();
 
-    RoboTVServerConfig& m_config;
-
-public:
-
     virtual ~Storage();
 
-    static Storage& getInstance();
+protected:
+
+    RoboTVServerConfig& m_config;
+
 };
 
 } // namespace RoboTV

@@ -37,8 +37,3 @@ Storage::Storage() : m_config(RoboTVServerConfig::instance()) {
 Storage::~Storage() {
     close();
 }
-
-Storage& Storage::getInstance() {
-    static Storage instance;
-    return instance;
-}

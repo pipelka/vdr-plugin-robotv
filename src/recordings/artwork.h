@@ -28,7 +28,7 @@
 #include "db/storage.h"
 #include <string>
 
-class Artwork {
+class Artwork : protected roboTV::Storage {
 public:
 
     Artwork();
@@ -48,8 +48,6 @@ public:
 private:
 
     void createDb();
-
-    roboTV::Storage& m_storage;
 
 };
 

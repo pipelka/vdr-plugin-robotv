@@ -224,7 +224,7 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
 }
 
 bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback) {
-    roboTV::Storage& storage = roboTV::Storage::getInstance();
+    roboTV::Storage storage;
 
     sqlite3_stmt* s = storage.query(
                           "SELECT epgindex.eventid,epgindex.timestamp,epgindex.channelid "

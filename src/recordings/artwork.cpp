@@ -27,7 +27,7 @@
 #include <tools/hash.h>
 #include "recordings/artwork.h"
 
-Artwork::Artwork() : m_storage(roboTV::Storage::getInstance()) {
+Artwork::Artwork() {
     createDb();
 }
 
@@ -48,13 +48,13 @@ void Artwork::createDb() {
         "CREATE INDEX IF NOT EXISTS artwork_externalid on artwork(externalid);\n"
         "CREATE UNIQUE INDEX IF NOT EXISTS artwork_content on artwork(contenttype, title);\n";
 
-    if(m_storage.exec(schema) != SQLITE_OK) {
+    if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for artwork");
     }
 }
 
 bool Artwork::get(int contentType, const std::string& title, std::string& posterUrl, std::string& backdropUrl) {
-    sqlite3_stmt* s = m_storage.query(
+    sqlite3_stmt* s = query(
                           "SELECT posterurl, backgroundurl FROM artwork WHERE contenttype=%i AND title=%Q;",
                           contentType,
                           title.c_str());
@@ -77,7 +77,7 @@ bool Artwork::get(int contentType, const std::string& title, std::string& poster
 
 bool Artwork::set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId = 0) {
     // try to insert new record
-    if(m_storage.exec(
+    if(exec(
                 "INSERT OR IGNORE INTO artwork(contenttype, title, posterurl, backgroundurl, externalId) VALUES(%i, %Q, %Q, %Q, %i);",
                 contentType,
                 title.c_str(),
@@ -87,7 +87,7 @@ bool Artwork::set(int contentType, const std::string& title, const std::string& 
         return true;
     }
 
-    return m_storage.exec(
+    return exec(
                "UPDATE artwork SET posterurl=%Q, backgroundurl=%Q, externalId=%i WHERE contenttype=%i AND title=%Q",
                posterUrl.c_str(),
                backdropUrl.c_str(),
@@ -100,13 +100,13 @@ void Artwork::cleanup(int afterDays) {
 
     // remove empty artwork
 
-    m_storage.exec(
+    exec(
         "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > %i AND backgroundurl=''",
         afterDays
     );
 
     // remove old entries
-    m_storage.exec(
+    exec(
             "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > 31"
     );
 }
@@ -126,7 +126,7 @@ bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::stri
 
     dsyslog("set epg image (channelUid: %i, eventid: %i) '%s' (contentid: %i)", channelUid, eventId, background.c_str(), content);
 
-    m_storage.exec(
+    exec(
             "UPDATE OR IGNORE epgindex SET url=%Q, posterurl=%Q, contentid=%i WHERE channeluid=%i AND eventid=%i",
             background.c_str(),
             poster.c_str(),

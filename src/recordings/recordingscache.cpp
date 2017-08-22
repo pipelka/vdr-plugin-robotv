@@ -29,7 +29,7 @@
 #include "recordingscache.h"
 #include "tools/hash.h"
 
-RecordingsCache::RecordingsCache() : m_storage(roboTV::Storage::getInstance()) {
+RecordingsCache::RecordingsCache() {
     // create db schema
     createDb();
 
@@ -56,7 +56,7 @@ uint32_t RecordingsCache::update(uint32_t uid, cRecording* recording) {
     uint32_t newUid = createStringHash(filename);
 
     // update existing record
-    m_storage.exec(
+    exec(
             "UPDATE recordings set recid=%u, filename=%Q WHERE recid=%u;",
             newUid,
             (const char*)filename,
@@ -70,13 +70,13 @@ uint32_t RecordingsCache::add(cRecording* recording) {
     uint32_t uid = createStringHash(filename);
 
     // try to update existing record
-    m_storage.exec(
+    exec(
         "INSERT OR IGNORE INTO recordings(recid, filename) VALUES(%u, %Q);",
         uid,
         (const char*)filename);
 
     // insert full text search entry
-    m_storage.exec(
+    exec(
         "INSERT OR IGNORE INTO fts_recordings(docid, title, subject, description) VALUES(%u, %Q, %Q, %Q);",
         uid,
         !isempty(recording->Info()->Title()) ? recording->Info()->Title() : "",
@@ -93,7 +93,7 @@ cRecording* RecordingsCache::lookup(const std::string& fileName) {
 cRecording* RecordingsCache::lookup(uint32_t uid) {
     dsyslog("%s - lookup uid: %08x", __FUNCTION__, uid);
 
-    sqlite3_stmt* s = m_storage.query("SELECT filename FROM recordings WHERE recid=%u;", uid);
+    sqlite3_stmt* s = query("SELECT filename FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
         dsyslog("%s - not found !", __FUNCTION__);
@@ -122,42 +122,42 @@ cRecording* RecordingsCache::lookup(uint32_t uid) {
 }
 
 void RecordingsCache::setPlayCount(uint32_t uid, int count) {
-    m_storage.exec(
+    exec(
         "UPDATE recordings SET playcount=%i WHERE recid=%u;",
         count,
         uid);
 }
 
 void RecordingsCache::setLastPlayedPosition(uint32_t uid, uint64_t position) {
-    m_storage.exec(
+    exec(
         "UPDATE recordings SET position=%llu WHERE recid=%u;",
         position,
         uid);
 }
 
 void RecordingsCache::setPosterUrl(uint32_t uid, const char* url) {
-    m_storage.exec(
+    exec(
         "UPDATE recordings SET posterurl=%Q WHERE recid=%u;",
         url,
         uid);
 }
 
 void RecordingsCache::setBackgroundUrl(uint32_t uid, const char* url) {
-    m_storage.exec(
+    exec(
         "UPDATE recordings SET backgroundurl=%Q WHERE recid=%u;",
         url,
         uid);
 }
 
 void RecordingsCache::setMovieID(uint32_t uid, uint32_t id) {
-    m_storage.exec(
+    exec(
         "UPDATE recordings SET externalid=%u WHERE recid=%u;",
         id,
         uid);
 }
 
 int RecordingsCache::getPlayCount(uint32_t uid) {
-    sqlite3_stmt* s = m_storage.query("SELECT playcount FROM recordings WHERE recid=%u;", uid);
+    sqlite3_stmt* s = query("SELECT playcount FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
         return 0;
@@ -175,7 +175,7 @@ int RecordingsCache::getPlayCount(uint32_t uid) {
 
 cString RecordingsCache::getPosterUrl(uint32_t uid) {
     cString url = "";
-    sqlite3_stmt* s = m_storage.query("SELECT posterurl FROM recordings WHERE recid=%u;", uid);
+    sqlite3_stmt* s = query("SELECT posterurl FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
         return url;
@@ -195,7 +195,7 @@ cString RecordingsCache::getPosterUrl(uint32_t uid) {
 
 cString RecordingsCache::getBackgroundUrl(uint32_t uid) {
     cString url = "";
-    sqlite3_stmt* s = m_storage.query("SELECT backgroundurl FROM recordings WHERE recid=%u;", uid);
+    sqlite3_stmt* s = query("SELECT backgroundurl FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
         return url;
@@ -214,7 +214,7 @@ cString RecordingsCache::getBackgroundUrl(uint32_t uid) {
 }
 
 uint64_t RecordingsCache::getLastPlayedPosition(uint32_t uid) {
-    sqlite3_stmt* s = m_storage.query("SELECT position FROM recordings WHERE recid=%u;", uid);
+    sqlite3_stmt* s = query("SELECT position FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
         return 0;
@@ -239,11 +239,11 @@ void RecordingsCache::triggerCleanup() {
 }
 
 void RecordingsCache::gc() {
-    m_storage.exec("DELETE FROM fts_recordings;");
+    exec("DELETE FROM fts_recordings;");
 
     update();
 
-    sqlite3_stmt* s = m_storage.query("SELECT recid, filename FROM recordings;");
+    sqlite3_stmt* s = query("SELECT recid, filename FROM recordings;");
 
     if(s == NULL) {
         return;
@@ -258,7 +258,7 @@ void RecordingsCache::gc() {
         // remove orphaned entry
         if(Recordings.GetByName(filename) == NULL) {
             isyslog("removing outdated recording '%s' from cache", filename);
-            m_storage.exec("DELETE FROM recordings WHERE recid=%u;", recid);
+            exec("DELETE FROM recordings WHERE recid=%u;", recid);
         }
     }
 
@@ -280,7 +280,7 @@ void RecordingsCache::createDb() {
         "CREATE UNIQUE INDEX IF NOT EXISTS recordings_filename on recordings(filename);\n"
         "CREATE VIRTUAL TABLE IF NOT EXISTS fts_recordings USING fts4(title, subject, description);\n";
 
-    if(m_storage.exec(schema) != SQLITE_OK) {
+    if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for recordings");
     }
 }
@@ -290,7 +290,7 @@ void RecordingsCache::search(const char* searchTerm, std::function<void(uint32_t
         return;
     }
 
-    auto stmt = m_storage.query(
+    auto stmt = query(
                     "SELECT docid "
                     "FROM fts_recordings "
                     "WHERE fts_recordings MATCH %Q "
