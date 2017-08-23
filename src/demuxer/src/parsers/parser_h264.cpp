@@ -71,7 +71,7 @@ int32_t ParserH264::readGolombSe(BitStream* bs) {
 }
 
 
-ParserH264::ParserH264(TsDemuxer* demuxer) : ParserPes(demuxer, 512 * 1024) {
+ParserH264::ParserH264(TsDemuxer* demuxer) : ParserPes(demuxer, 1024 * 1024) {
     m_scale = 0;
     m_rate = 0;
 }
