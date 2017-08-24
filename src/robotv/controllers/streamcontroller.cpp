@@ -22,8 +22,9 @@
  *
  */
 
+#include <chrono>
+#include <tools/time.h>
 #include "streamcontroller.h"
-#include "config/config.h"
 #include "robotv/robotvclient.h"
 #include "tools/hash.h"
 
@@ -135,7 +136,17 @@ MsgPacket* StreamController::processRequest(MsgPacket* request) {
         return nullptr;
     }
 
-    MsgPacket* p = m_streamer->requestPacket();
+    MsgPacket* p = nullptr;
+
+    int64_t start = roboTV::currentTimeMillis().count();
+
+    while(p == nullptr && (roboTV::currentTimeMillis().count() - start) < 500) {
+        p = m_streamer->requestPacket();
+
+        if(p == nullptr) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+    }
 
     if(p == nullptr) {
         return createResponse(request);
