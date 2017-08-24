@@ -30,7 +30,7 @@ EpgHandler::EpgHandler() {
     createDb();
 }
 
-bool EpgHandler::processEvent(roboTV::Storage& storage, cEvent *Event) {
+bool EpgHandler::processEvent(const cEvent *Event) {
     // skip entries from the past
     if(Event->EndTime() <= time(nullptr)) {
         return false;
@@ -42,7 +42,7 @@ bool EpgHandler::processEvent(roboTV::Storage& storage, cEvent *Event) {
     int docId = createStringHash(docIdString.c_str());
 
     // insert new epg entry
-    storage.exec(
+    exec(
         "INSERT OR IGNORE INTO epgindex("
         "  docid,"
         "  eventid,"
@@ -72,8 +72,6 @@ bool EpgHandler::processEvent(roboTV::Storage& storage, cEvent *Event) {
 }
 
 void EpgHandler::createDb() {
-    roboTV::Storage storage;
-
     std::string schema =
         "CREATE TABLE IF NOT EXISTS epgindex (\n"
         "  docid INTEGER PRIMARY KEY,\n"
@@ -95,37 +93,37 @@ void EpgHandler::createDb() {
         ");\n"
         "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
 
-    if(storage.exec(schema) != SQLITE_OK) {
+    if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for epg search");
     }
 
     // update older versions of epgindex
-    if(!storage.tableHasColumn("epgindex", "eventid")) {
-        storage.exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
+    if(!tableHasColumn("epgindex", "eventid")) {
+        exec("ALTER TABLE epgindex ADD COLUMN eventid INTEGER NOT NULL");
     }
-    if(!storage.tableHasColumn("epgindex", "endtime")) {
-        storage.exec("DELETE FROM epgindex");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN title TEXT NOT NULL DEFAULT ''");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN subject TEXT NOT NULL DEFAULT ''");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN description TEXT NOT NULL DEFAULT ''");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN endtime INTEGER NOT NULL DEFAULT 0");
-        storage.exec("DROP TABLE epgsearch");
-        storage.exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
+    if(!tableHasColumn("epgindex", "endtime")) {
+        exec("DELETE FROM epgindex");
+        exec("ALTER TABLE epgindex ADD COLUMN title TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN subject TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+        exec("ALTER TABLE epgindex ADD COLUMN endtime INTEGER NOT NULL DEFAULT 0");
+        exec("DROP TABLE epgsearch");
+        exec("CREATE INDEX IF NOT EXISTS epgindex_channelid on epgindex(channelid)");
     }
 
-    if(!storage.tableHasColumn("epgindex", "url")) {
-        storage.exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
+    if(!tableHasColumn("epgindex", "url")) {
+        exec("ALTER TABLE epgindex ADD COLUMN url TEXT NOT NULL DEFAULT ''");
     }
 
     // version step (0.10.1)
-    if(!storage.tableHasColumn("epgindex", "channeluid")) {
-        storage.exec("DELETE FROM epgindex");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN channeluid INTEGER");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN contentid INTEGER");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN season INTEGER");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN episode INTEGER");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN posterurl TEXT");
-        storage.exec("ALTER TABLE epgindex ADD COLUMN tvshow INTEGER");
+    if(!tableHasColumn("epgindex", "channeluid")) {
+        exec("DELETE FROM epgindex");
+        exec("ALTER TABLE epgindex ADD COLUMN channeluid INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN contentid INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN season INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN episode INTEGER");
+        exec("ALTER TABLE epgindex ADD COLUMN posterurl TEXT");
+        exec("ALTER TABLE epgindex ADD COLUMN tvshow INTEGER");
     }
 
     // new epgsearch table
@@ -147,7 +145,7 @@ void EpgHandler::createDb() {
         "  INSERT INTO epgsearch(docid, title, subject) VALUES(new.docid, new.title, new.subject);\n"
         "END;\n";
 
-    if(storage.exec(schema) != SQLITE_OK) {
+    if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create new epgsearch fts table !");
     }
 }
@@ -172,7 +170,7 @@ void EpgHandler::triggerCleanup() {
 }
 
 bool EpgHandler::SortSchedule(cSchedule *Schedule) {
-    roboTV::Storage storage;
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     auto events = Schedule->Events();
 
@@ -180,12 +178,12 @@ bool EpgHandler::SortSchedule(cSchedule *Schedule) {
         return false;
     }
 
-    storage.begin();
+    begin();
 
     for(auto event = events->First(); event != nullptr; event = events->Next(event)) {
-        processEvent(storage, event);
+        processEvent(event);
     }
 
-    storage.commit();
+    commit();
     return false;
 }

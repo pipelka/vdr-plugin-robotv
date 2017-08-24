@@ -29,7 +29,7 @@
 #include <db/storage.h>
 #include <thread>
 
-class EpgHandler : public cEpgHandler {
+class EpgHandler : public cEpgHandler, roboTV::Storage {
 public:
 
     EpgHandler();
@@ -42,10 +42,11 @@ public:
 
 private:
 
-    bool processEvent(roboTV::Storage& storage, cEvent *Event);
+    bool processEvent(const cEvent *Event);
 
     void createDb();
 
+    std::mutex m_mutex;
 };
 
 #endif //ROBOTV_EPGHANDLER_H
