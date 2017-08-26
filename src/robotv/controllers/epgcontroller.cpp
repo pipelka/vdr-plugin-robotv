@@ -56,6 +56,8 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
     uint32_t duration = request->get_U32();
 
     LOCK_CHANNELS_READ;
+    LOCK_SCHEDULES_READ;
+
     const cChannel* channel = findChannelByUid(Channels, channelUid);
 
     if(channel != NULL) {
@@ -70,8 +72,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
         esyslog("written 0 because channel = NULL");
         return response;
     }
-
-    LOCK_SCHEDULES_READ;
 
     if(!Schedules) {
         response->put_U32(0);
@@ -186,8 +186,8 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
     time_t now = time(NULL);
     MsgPacket* response = createResponse(request);
 
-    LOCK_SCHEDULES_READ;
     LOCK_CHANNELS_READ;
+    LOCK_SCHEDULES_READ;
 
     if(Schedules == nullptr) {
         return response;
