@@ -120,27 +120,29 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
         return;
     }
 
-    LOCK_RECORDINGS_WRITE;
-    Recordings->Update(true);
+    // execute in thread to prevent invalid locking
+    std::thread t([=]() {
+        LOCK_RECORDINGS_READ;
+        auto r = RecordingsCache::instance().lookup(Recordings, FileName);
 
-    auto r = RecordingsCache::instance().lookup(Recordings, FileName);
+        if(r == NULL) {
+            esyslog("Unknown recording: '%s'", FileName);
+            return;
+        }
 
-    if(r == NULL) {
-        esyslog("Unknown recording: '%s'", FileName);
-        return;
-    }
+        isyslog("----------------------------------");
+        isyslog("RECORDINGEVENT:");
+        isyslog("Client ID: %i", getId());
+        isyslog("Filename:  %s", FileName);
+        isyslog("Name:      %s", Name);
+        isyslog("Recording: %s", On ? "Yes" : "No");
+        isyslog("----------------------------------");
 
-    isyslog("----------------------------------");
-    isyslog("RECORDINGEVENT:");
-    isyslog("Client ID: %i", getId());
-    isyslog("Filename:  %s", FileName);
-    isyslog("Name:      %s", Name);
-    isyslog("Recording: %s", On ? "Yes" : "No");
-    isyslog("----------------------------------");
+        const cEvent* e = r->Info()->GetEvent();
 
-    const cEvent* e = r->Info()->GetEvent();
-
-    onRecording(e, On);
+        onRecording(e, On);
+    });
+    t.join();
 }
 
 void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
