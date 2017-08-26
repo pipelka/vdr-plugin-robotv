@@ -5,5 +5,11 @@ This is the VDR server part.
 
 ## Build requirements
 
-* VDR 2.2.0
-* GCC 4.9 (some 4.8 versions may also work)
+* VDR 2.3.x (or 2.4.x when released)
+* GCC 4.9 (or higher)
+
+## Repository Branches
+
+* master -> Sources for VDR 2.3.x (or 2.4)
+* vdr-2.2.x -> VDR 2.2 version of the plugin changes will be backported
+* dev -> Development Branch based on "master"
