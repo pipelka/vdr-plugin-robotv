@@ -334,20 +334,22 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
     cString buffer;
 
-    {
-        LOCK_CHANNELS_READ;
-        const cChannel *channel = findChannelByUid(Channels, channelid);
+    LOCK_TIMERS_WRITE;
+    LOCK_CHANNELS_READ;
+    LOCK_SCHEDULES_READ;
 
-        if (channel == NULL) {
-            esyslog("channel with id '%i' not found - unable to add timer !", channelid);
-            response->put_U32(ROBOTV_RET_DATAINVALID);
-            return response;
-        }
+    const cChannel *channel = findChannelByUid(Channels, channelid);
 
-        buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags,
-                                  (const char *) channel->GetChannelID().ToString(),
-                                  *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+    if (channel == NULL) {
+        esyslog("channel with id '%i' not found - unable to add timer !", channelid);
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return response;
     }
+
+    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags,
+                              (const char *) channel->GetChannelID().ToString(),
+                              *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
+
     // replace invalid characters in file
     char* p = (char*)file;
 
@@ -358,8 +360,6 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
         p++;
     }
-
-    LOCK_TIMERS_WRITE;
 
     cTimer* timer = new cTimer;
 
@@ -377,7 +377,6 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
                 return response;
             }
 
-            LOCK_SCHEDULES_READ;
             timer->SetEventFromSchedule(Schedules);
 
             Timers->Add(timer);
@@ -465,22 +464,29 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     int stop = time->tm_hour * 100 + time->tm_min;
 
     cString buffer;
-    std::string channelId;
-
-    {
-        LOCK_CHANNELS_READ;
-        const cChannel *channel = findChannelByUid(Channels, channelid);
-        channelId = (const char*)channel->GetChannelID().ToString();
-        if (channel == NULL) {
-            esyslog("channel with id '%i' not found - unable to update timer !", channelid);
-            response->put_U32(ROBOTV_RET_DATAINVALID);
-            return response;
-        }
-    }
-
-    buffer = cString::sprintf("%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n", flags, channelId.c_str() , *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
 
     LOCK_TIMERS_WRITE;
+    LOCK_CHANNELS_READ;
+
+    const cChannel *channel = findChannelByUid(Channels, channelid);
+
+    if (channel == NULL) {
+        esyslog("channel with id '%i' not found - unable to update timer !", channelid);
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return response;
+    }
+
+    buffer = cString::sprintf(
+            "%u:%s:%s:%04d:%04d:%d:%d:%s:%s\n",
+            flags,
+            (const char*)channel->GetChannelID().ToString(),
+            *cTimer::PrintDay(day, weekdays, true),
+            start,
+            stop,
+            priority,
+            lifetime,
+            file,
+            aux);
 
     cTimer* timer = findTimerByUid(Timers, uid);
     if(timer == NULL) {
