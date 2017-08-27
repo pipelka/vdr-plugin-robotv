@@ -11,7 +11,7 @@ PLUGIN = robotv
 
 ### The version number of this plugin:
 
-VERSION = 0.11.0
+VERSION = 0.11.1
 
 ### The directory environment:
 
