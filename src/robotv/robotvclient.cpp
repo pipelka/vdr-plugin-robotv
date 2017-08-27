@@ -179,7 +179,7 @@ void RoboTvClient::ChannelChange(const cChannel* Channel) {
     queueMessage(resp);
 }
 
-void RoboTvClient::sendMoviesChange() {
+void RoboTvClient::UpdateRecordings() {
     if(!m_loginController.statusEnabled()) {
         return;
     }

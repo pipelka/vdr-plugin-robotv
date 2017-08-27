@@ -228,12 +228,6 @@ void RoboTVServer::Action(void) {
 
     RecordingsCache& cache = RecordingsCache::instance();
 
-    isyslog("Requesting clients to reload recordings list");
-
-    for(ClientList::iterator i = m_clients.begin(); i != m_clients.end(); i++) {
-        (*i)->sendMoviesChange();
-    }
-
     // listen for connections
     listen(m_serverFd, 10);
 
