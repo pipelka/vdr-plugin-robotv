@@ -74,13 +74,13 @@ public:
 
     void triggerCleanup();
 
-    void gc();
+    void gc(const cRecordings* recordings);
 
     void search(const char* searchTerm, std::function<void(uint32_t)> resultCallback);
 
-protected:
+    void update(const cRecordings* recordings);
 
-    void update();
+protected:
 
     void createDb();
 

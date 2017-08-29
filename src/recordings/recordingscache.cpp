@@ -32,15 +32,10 @@
 RecordingsCache::RecordingsCache() {
     // create db schema
     createDb();
-
-    // initialize cache
-    update();
 }
 
-void RecordingsCache::update() {
-    LOCK_RECORDINGS_READ;
-
-    for(const cRecording* recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
+void RecordingsCache::update(const cRecordings* recordings) {
+    for(const cRecording* recording = recordings->First(); recording; recording = recordings->Next(recording)) {
         add(recording);
     }
 }
@@ -238,18 +233,19 @@ uint64_t RecordingsCache::getLastPlayedPosition(uint32_t uid) {
 
 void RecordingsCache::triggerCleanup() {
     std::thread t([=]() {
-        gc();
+        LOCK_RECORDINGS_READ;
+        gc(Recordings);
     });
 
     t.detach();
 }
 
-void RecordingsCache::gc() {
+void RecordingsCache::gc(const cRecordings* recordings) {
     RecordingsCache storage;
 
     storage.begin();
     storage.exec("DELETE FROM fts_recordings;");
-    storage.update();
+    storage.update(recordings);
 
     sqlite3_stmt* s = storage.query("SELECT recid, filename FROM recordings;");
 
@@ -260,14 +256,12 @@ void RecordingsCache::gc() {
 
     // check all recordings in the cache
 
-    LOCK_RECORDINGS_READ;
-
     while(sqlite3_step(s) == SQLITE_ROW) {
         uint32_t recid = (uint32_t)sqlite3_column_int(s, 0);
         const char* filename = (const char*)sqlite3_column_text(s, 1);
 
         // remove orphaned entry
-        if(Recordings->GetByName(filename) == nullptr) {
+        if(recordings->GetByName(filename) == nullptr) {
             isyslog("removing outdated recording '%s' from cache", filename);
             storage.exec("DELETE FROM recordings WHERE recid=%u;", recid);
         }
