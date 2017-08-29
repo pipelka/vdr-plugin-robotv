@@ -227,6 +227,11 @@ void RoboTVServer::Action(void) {
     m_epgHandler.cleanup();
 
     RecordingsCache& cache = RecordingsCache::instance();
+    {
+        LOCK_RECORDINGS_READ;
+        dsyslog("populating recordings cache");
+        cache.update(Recordings);
+    }
 
     // listen for connections
     listen(m_serverFd, 10);
