@@ -123,7 +123,11 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
     // execute in thread to prevent invalid locking
     std::thread t([=]() {
         LOCK_RECORDINGS_READ;
-        auto r = RecordingsCache::instance().lookup(Recordings, FileName);
+
+        auto& cache = RecordingsCache::instance();
+        cache.update(Recordings);
+
+        auto r = cache.lookup(Recordings, FileName);
 
         if(r == NULL) {
             esyslog("Unknown recording: '%s'", FileName);
