@@ -345,6 +345,7 @@ void LiveStreamer::processChannelChange(const cChannel* channel) {
 
     Detach();
     flush();
+    reset();
     switchChannel(channel);
 }
 
