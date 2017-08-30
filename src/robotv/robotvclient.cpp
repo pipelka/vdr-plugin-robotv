@@ -120,33 +120,33 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
         return;
     }
 
+    std::string fileName = (FileName == nullptr) ? "": FileName;
+    std::string name = (Name == nullptr) ? "" : Name;
+
+    isyslog("----------------------------------");
+    isyslog("RECORDINGEVENT:");
+    isyslog("Client ID: %i", getId());
+    isyslog("Filename:  %s", fileName.c_str());
+    isyslog("Name:      %s", name.c_str());
+    isyslog("Recording: %s", On ? "Yes" : "No");
+    isyslog("----------------------------------");
+
     // execute in thread to prevent invalid locking
     std::thread t([=]() {
         LOCK_RECORDINGS_READ;
 
-        auto& cache = RecordingsCache::instance();
-        cache.update(Recordings);
+        auto r = Recordings->GetByName(fileName.c_str());
 
-        auto r = cache.lookup(Recordings, FileName);
-
-        if(r == NULL) {
-            esyslog("Unknown recording: '%s'", FileName);
+        if(r == nullptr) {
+            esyslog("Unknown recording: '%s'", fileName.c_str());
             return;
         }
-
-        isyslog("----------------------------------");
-        isyslog("RECORDINGEVENT:");
-        isyslog("Client ID: %i", getId());
-        isyslog("Filename:  %s", FileName);
-        isyslog("Name:      %s", Name);
-        isyslog("Recording: %s", On ? "Yes" : "No");
-        isyslog("----------------------------------");
 
         const cEvent* e = r->Info()->GetEvent();
 
         onRecording(e, On);
     });
-    t.join();
+    t.detach();
 }
 
 void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {

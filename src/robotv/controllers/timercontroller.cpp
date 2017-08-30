@@ -403,7 +403,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
 MsgPacket* TimerController::processDelete(MsgPacket* request) {
     uint32_t uid = request->get_U32();
-    bool force = (request->get_U32() == 1);
+    bool force = true; //(request->get_U32() == 1);
 
     LOCK_TIMERS_WRITE;
 
@@ -421,7 +421,6 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
         response->put_U32(ROBOTV_RET_RECRUNNING);
         return response;
     }
-
 
     timer->Skip();
 
