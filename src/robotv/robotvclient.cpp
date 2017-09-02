@@ -145,6 +145,14 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
         const cEvent* e = r->Info()->GetEvent();
 
         onRecording(e, On);
+
+        // also request timers update on recording change (the status of the
+        // timer changes)
+
+        MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
+        resp->setProtocolVersion(m_loginController.protocolVersion());
+
+        queueMessage(resp);
     });
     t.detach();
 }
