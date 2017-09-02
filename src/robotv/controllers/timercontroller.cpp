@@ -435,12 +435,10 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
 }
 
 MsgPacket* TimerController::processUpdate(MsgPacket* request) {
-    uint32_t uid = request->get_U32();
-    bool active = (request->get_U32() == 1);
-
     MsgPacket* response = createResponse(request);
 
-    uint32_t flags      = active ? tfActive : tfNone;
+    uint32_t uid        = request->get_U32();
+    uint32_t flags      = request->get_U32();
     uint32_t priority   = request->get_U32();
     uint32_t lifetime   = request->get_U32();
     uint32_t channelid  = request->get_U32();
