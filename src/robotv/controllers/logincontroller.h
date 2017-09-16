@@ -43,7 +43,7 @@ public:
         return m_statusInterfaceEnabled;
     }
 
-    int protocolVersion() const {
+    uint16_t protocolVersion() const {
         return m_protocolVersion;
     }
 
@@ -65,7 +65,7 @@ private:
 
     LoginController(const LoginController& orig);
 
-    uint32_t m_protocolVersion = 0;
+    uint16_t m_protocolVersion = 0;
 
     int m_compressionLevel = 0;
 
