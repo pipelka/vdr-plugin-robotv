@@ -58,6 +58,14 @@ MsgPacket* ArtworkController::processGet(MsgPacket* request) {
         poster = "x";
         background = "x";
     }
+    else if(!request->eop()) {
+        uint32_t channelUid = request->get_U32();
+        uint32_t eventId = request->get_U32();
+
+        if(channelUid != 0 && eventId != 0) {
+            m_artwork.setEpgImage(channelUid, eventId, background, poster, content);
+        }
+    }
 
     MsgPacket* response = createResponse(request);
 
