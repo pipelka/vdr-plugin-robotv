@@ -132,19 +132,15 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
     isyslog("----------------------------------");
 
     // execute in thread to prevent invalid locking
-    std::thread t([=]() {
+    std::thread t([this, fileName, On]() {
         LOCK_RECORDINGS_READ;
 
         auto r = Recordings->GetByName(fileName.c_str());
 
-        if(r == nullptr) {
-            esyslog("Unknown recording: '%s'", fileName.c_str());
-            return;
+        if(r != nullptr) {
+            const cEvent* e = r->Info()->GetEvent();
+            onRecording(e, On);
         }
-
-        const cEvent* e = r->Info()->GetEvent();
-
-        onRecording(e, On);
 
         // also request timers update on recording change (the status of the
         // timer changes)
@@ -201,18 +197,19 @@ void RoboTvClient::UpdateRecordings() {
 }
 
 void RoboTvClient::onRecording(const cEvent* event, bool on) {
+    if(event == nullptr) {
+        return;
+    }
+
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
     resp->setProtocolVersion(m_loginController.protocolVersion());
 
-    resp->put_U32(event ? event->Index() : -1);
-    resp->put_U32(on);
-    resp->put_String(m_toUtf8.convert(event ? event->Title() : ""));
-    resp->put_String(m_toUtf8.convert(event ? event->Description() : ""));
+    resp->put_U32((uint32_t)event->Index());
+    resp->put_U32(on ? 1 : 0);
+    resp->put_String(m_toUtf8.convert(event->Title()));
+    resp->put_String(m_toUtf8.convert(event->Description()));
 
-    if(event != NULL) {
-        TimerController::event2Packet(event, resp);
-    }
-
+    TimerController::event2Packet(event, resp);
     queueMessage(resp);
 }
 
