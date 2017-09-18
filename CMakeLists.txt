@@ -4,6 +4,9 @@ project(robotv)
 set(PLUGIN "robotv")
 set(ROBOTV_VERSION "0.11.2")
 
+# enable avahi (default)
+set(AVAHI_ENABLED TRUE CACHE BOOL "Enable mDNS/DNS-SD support")
+
 # check for pkg-config
 find_package(PkgConfig REQUIRED)
 
@@ -46,6 +49,20 @@ add_library(sqlite STATIC ${SQLITE_FILES})
 target_compile_definitions(sqlite PRIVATE HAVE_USLEEP SQLITE_THREADSAFE=1 SQLITE_ENABLE_FTS4)
 target_compile_options(sqlite PRIVATE -fPIC)
 target_link_libraries(sqlite dl pthread)
+
+if(AVAHI_ENABLED)
+    set(SDP_SOURCES
+            src/net/sdp.h
+            src/net/sdp.cpp
+            src/net/sdp-avahi.h
+            src/net/sdp-avahi.cpp
+            src/net/sdp-dummy.h)
+else()
+    set(SDP_SOURCES
+            src/net/sdp.h
+            src/net/sdp.cpp
+            src/net/sdp-dummy.h)
+endif()
 
 # robotv plugin
 set(SOURCE_FILES
@@ -119,7 +136,10 @@ set(SOURCE_FILES
     src/tools/urlencode.h
     src/tools/utf8.h
     src/tools/utf8conv.h
-    src/tools/utf8conv.cpp src/robotv/StreamPacketProcessor.cpp src/robotv/StreamPacketProcessor.h)
+    src/tools/utf8conv.cpp
+    src/robotv/StreamPacketProcessor.cpp
+    src/robotv/StreamPacketProcessor.h
+    ${SDP_SOURCES})
 
 add_subdirectory(src/demuxer)
 
@@ -128,5 +148,10 @@ target_link_libraries(vdr-robotv robotvdmx sqlite z)
 target_include_directories(vdr-robotv PRIVATE src ${VDR_INCLUDE_DIRS} ../../../include)
 target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1)
 set_target_properties(vdr-robotv PROPERTIES VERSION "${VDR_APIVERSION}")
+
+if(AVAHI_ENABLED)
+    target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1 AVAHI_ENABLED)
+    target_link_libraries(vdr-robotv robotvdmx sqlite z avahi-client)
+endif()
 
 install(TARGETS vdr-robotv LIBRARY DESTINATION ${VDR_LIBDIR} NAMELINK_SKIP)

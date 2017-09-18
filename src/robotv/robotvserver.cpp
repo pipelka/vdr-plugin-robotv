@@ -38,6 +38,7 @@
 
 #include <vdr/plugin.h>
 #include <vdr/shutdown.h>
+#include <net/sdp.h>
 
 #include "robotvserver.h"
 #include "robotvclient.h"
@@ -221,6 +222,9 @@ void RoboTVServer::Action(void) {
     Artwork artwork;
     cTimeMs cleanupTimer;
 
+    isyslog("creating SDP client");
+    roboTV::Sdp& sdp = roboTV::Sdp::createInstance();
+
     isyslog("removing outdated artwork");
     artwork.cleanup();
 
@@ -239,6 +243,10 @@ void RoboTVServer::Action(void) {
     isyslog("roboTV Server started");
 
     while(Running()) {
+        // poll sdp
+        sdp.poll();
+
+        // poll network socket
         FD_ZERO(&fds);
         FD_SET(m_serverFd, &fds);
 

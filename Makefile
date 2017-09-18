@@ -9,6 +9,9 @@
 #
 PLUGIN = robotv
 
+### Should the mDNS/DNS-SD part be enabled
+AVAHI_ENABLED = 1
+
 ### The version number of this plugin:
 
 VERSION = 0.11.2
@@ -62,6 +65,15 @@ DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -DROBOTV_VERSION='"$(VERSION)"' -DHA
 
 ### The object files (add further files here):
 
+SDP_OBJS = src/net/sdp.o
+SDP_LIBS =
+
+ifeq ($(AVAHI_ENABLED),1)
+    SDP_OBJS += src/net/sdp-avahi.o
+    SDP_LIBS=-lavahi-client
+    DEFINES += -DAVAHI_ENABLED
+endif
+
 OBJS = \
 	src/config/config.o \
 	src/db/database.o \
@@ -88,6 +100,7 @@ OBJS = \
 	src/live/livestreamer.o \
 	src/net/msgpacket.o \
 	src/net/os-config.o \
+	$(SDP_OBJS) \
 	src/recordings/artwork.o \
 	src/recordings/recordingscache.o \
 	src/recordings/packetplayer.o \
@@ -115,7 +128,7 @@ OBJS = \
 SQLITE_OBJS = \
 	src/db/sqlite3.o
 
-LIBS = -lz
+LIBS = -lz $(SDP_LIBS)
 
 ### The main target:
 
