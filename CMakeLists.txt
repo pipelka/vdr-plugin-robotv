@@ -4,15 +4,12 @@ project(robotv)
 set(PLUGIN "robotv")
 set(ROBOTV_VERSION "0.11.2")
 
-# enable avahi (default)
-set(AVAHI_ENABLED TRUE CACHE BOOL "Enable mDNS/DNS-SD support")
-
 # check for pkg-config
 find_package(PkgConfig REQUIRED)
 
 # check for vdr
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_CURRENT_SOURCE_DIR}/../../..")
-pkg_check_modules(VDR vdr=2.2.0)
+pkg_check_modules(VDR vdr>=2.3.8)
 
 macro(vdr_find_variable _variable)
     execute_process(
@@ -36,6 +33,9 @@ message(STATUS "Libraries: '${VDR_LIBDIR}'")
 message(STATUS "Configuration: '${VDR_CONFIGDIR}'")
 message(STATUS "Cache: '${VDR_CACHEDIR}'")
 
+# check for avahi-client
+pkg_check_modules(AVAHI avahi-client)
+
 # set C++11 for robotv
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -50,18 +50,10 @@ target_compile_definitions(sqlite PRIVATE HAVE_USLEEP SQLITE_THREADSAFE=1 SQLITE
 target_compile_options(sqlite PRIVATE -fPIC)
 target_link_libraries(sqlite dl pthread)
 
-if(AVAHI_ENABLED)
+if(${AVAHI_FOUND})
     set(SDP_SOURCES
-            src/net/sdp.h
-            src/net/sdp.cpp
-            src/net/sdp-avahi.h
-            src/net/sdp-avahi.cpp
-            src/net/sdp-dummy.h)
-else()
-    set(SDP_SOURCES
-            src/net/sdp.h
-            src/net/sdp.cpp
-            src/net/sdp-dummy.h)
+        src/net/sdp-avahi.h
+        src/net/sdp-avahi.cpp)
 endif()
 
 # robotv plugin
@@ -139,19 +131,21 @@ set(SOURCE_FILES
     src/tools/utf8conv.cpp
     src/robotv/StreamPacketProcessor.cpp
     src/robotv/StreamPacketProcessor.h
+    src/net/sdp.h
+    src/net/sdp.cpp
+    src/net/sdp-dummy.h
     ${SDP_SOURCES})
 
 add_subdirectory(src/demuxer)
 
 add_library(vdr-robotv SHARED ${SOURCE_FILES})
-target_link_libraries(vdr-robotv robotvdmx sqlite z)
-target_include_directories(vdr-robotv PRIVATE src ${VDR_INCLUDE_DIRS} ../../../include)
+target_link_libraries(vdr-robotv robotvdmx sqlite z ${AVAHI_LIBRARIES})
+target_include_directories(vdr-robotv PRIVATE src ${VDR_INCLUDE_DIRS} ../../../include ${AVAHI_CFLAGS})
 target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1)
 set_target_properties(vdr-robotv PROPERTIES VERSION "${VDR_APIVERSION}")
 
-if(AVAHI_ENABLED)
+if(${AVAHI_FOUND})
     target_compile_definitions(vdr-robotv PRIVATE ROBOTV_VERSION="${ROBOTV_VERSION}" PLUGIN_NAME_I18N="${PLUGIN}" HAVE_ZLIB=1 AVAHI_ENABLED)
-    target_link_libraries(vdr-robotv robotvdmx sqlite z avahi-client)
 endif()
 
 install(TARGETS vdr-robotv LIBRARY DESTINATION ${VDR_LIBDIR} NAMELINK_SKIP)

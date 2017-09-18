@@ -10,11 +10,14 @@
 PLUGIN = robotv
 
 ### Should the mDNS/DNS-SD part be enabled
-AVAHI_ENABLED = 1
+AVAHI_CFLAGS := $(shell pkg-config --silence-errors --cflags avahi-client)
+AVAHI_LIBS := $(shell pkg-config --silence-errors --libs avahi-client)
+AVAHI_ENABLED := $(shell pkg-config --exists avahi-client && echo 1)
 
 ### The version number of this plugin:
 
 VERSION = 0.11.2
+
 
 ### The directory environment:
 
@@ -55,7 +58,7 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-INCLUDES += -I./src -I./src/demuxer/include -I./src/demuxer/src -I./src/vdr -I./src/sqlite3 -I../../../include
+INCLUDES += -I./src -I./src/demuxer/include -I./src/demuxer/src -I./src/vdr -I./src/sqlite3 -I../../../include $(AVAHI_CFLAGS)
 
 ifdef DEBUG
 INCLUDES += -DDEBUG
@@ -70,7 +73,6 @@ SDP_LIBS =
 
 ifeq ($(AVAHI_ENABLED),1)
     SDP_OBJS += src/net/sdp-avahi.o
-    SDP_LIBS=-lavahi-client
     DEFINES += -DAVAHI_ENABLED
 endif
 
@@ -128,7 +130,7 @@ OBJS = \
 SQLITE_OBJS = \
 	src/db/sqlite3.o
 
-LIBS = -lz $(SDP_LIBS)
+LIBS = -lz $(AVAHI_LIBS)
 
 ### The main target:
 
