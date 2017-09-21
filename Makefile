@@ -16,7 +16,7 @@ AVAHI_ENABLED := $(shell pkg-config --exists avahi-client && echo 1)
 
 ### The version number of this plugin:
 
-VERSION = 0.11.2
+VERSION = 0.12.0
 
 
 ### The directory environment:
