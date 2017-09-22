@@ -99,6 +99,7 @@ int Database::exec(const std::string& query, ...) {
     va_list ap;
     va_start(ap, &query);
     char* querybuffer = prepareQueryBuffer(query, ap);
+    va_end(ap);
 
     char* errmsg = NULL;
     std::chrono::milliseconds duration(10);
@@ -141,6 +142,7 @@ sqlite3_stmt* Database::query(const std::string& query, ...) {
     va_list ap;
     va_start(ap, &query);
     char* querybuffer = prepareQueryBuffer(query, ap);
+    va_end(ap);
 
     sqlite3_stmt* stmt = NULL;
     int rc = SQLITE_OK;
