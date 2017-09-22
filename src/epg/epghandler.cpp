@@ -39,7 +39,7 @@ bool EpgHandler::processEvent(const cEvent *Event) {
     std::string docIdString = (const char*)Event->ChannelID().ToString();
     docIdString += "-" + std::to_string(Event->EventID());
 
-    int docId = createStringHash(docIdString.c_str());
+    int docId = roboTV::Hash::createStringHash(docIdString.c_str());
 
     // insert new epg entry
     exec(
@@ -65,7 +65,7 @@ bool EpgHandler::processEvent(const cEvent *Event) {
         Event->ShortText() ? Event->ShortText() : "",
         Event->Description() ? Event->Description() : "",
         (uint64_t)Event->EndTime(),
-        createStringHash(Event->ChannelID().ToString())
+        roboTV::Hash::createStringHash((const char*)Event->ChannelID().ToString())
     );
 
     return false;

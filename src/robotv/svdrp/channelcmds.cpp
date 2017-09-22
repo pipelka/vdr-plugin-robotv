@@ -73,7 +73,7 @@ json ChannelCmds::jsonFromChannel(const cChannel* channel, const char* groupName
         {"number", channel->Number()},
         {"name", m_toUtf8.convert(channel->Name())},
         {"shortName", m_toUtf8.convert(channel->ShortName())},
-        {"uid", createChannelUid(channel)},
+        {"uid", roboTV::Hash::createChannelUid(channel)},
         {"logoUrl", ChannelController::createLogoUrl(channel, RoboTVServerConfig::instance().piconsUrl).c_str()},
         {"serviceRef", ChannelController::createServiceReference(channel).c_str()},
         {"provider", channel->Provider()},

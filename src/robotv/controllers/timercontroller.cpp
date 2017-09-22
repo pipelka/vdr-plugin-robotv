@@ -114,15 +114,15 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
         fileName = rc->FileName();
     }
 
-    p->put_U32(createTimerUid(timer));
+    p->put_U32(roboTV::Hash::createTimerUid(timer));
     p->put_U32(timer->Flags() | flags);
     p->put_U32((uint32_t)timer->Priority());
     p->put_U32((uint32_t)timer->Lifetime());
-    p->put_U32(createChannelUid(channel));
+    p->put_U32(roboTV::Hash::createChannelUid(channel));
     p->put_U32((uint32_t)timer->StartTime());
     p->put_U32((uint32_t)timer->StopTime());
     p->put_U32(searchTimerId); // !! day changed to searchTimerId
-    p->put_U32(createStringHash(fileName)); // !!! weekdays changed to recording id
+    p->put_U32(roboTV::Hash::createStringHash(fileName)); // !!! weekdays changed to recording id
     p->put_String(toUtf8.convert(logoUrl)); // !!! filename changed to logo url
 
     if(p->getProtocolVersion() >= 8) {
@@ -286,7 +286,7 @@ MsgPacket* TimerController::processGetSearchTimers(MsgPacket* request) {
 
         response->put_U32((uint32_t)toInt(timer[0]));   // timer id
         response->put_String(name.c_str());             // search term (tv show name)
-        response->put_U32(createChannelUid(channel));   // channel uid
+        response->put_U32(roboTV::Hash::createChannelUid(channel));   // channel uid
         response->put_String(channel->Name());          // channel name
         response->put_U32((uint32_t)toInt(timer[18]));  // series recording
         response->put_String(timer[19].c_str());        // folder
@@ -338,7 +338,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
     LOCK_CHANNELS_READ;
     LOCK_SCHEDULES_READ;
 
-    const cChannel *channel = findChannelByUid(Channels, channelid);
+    const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, channelid);
 
     if (channel == NULL) {
         esyslog("channel with id '%i' not found - unable to add timer !", channelid);
@@ -407,7 +407,7 @@ MsgPacket* TimerController::processDelete(MsgPacket* request) {
 
     LOCK_TIMERS_WRITE;
 
-    cTimer* timer = findTimerByUid(Timers, uid);
+    cTimer* timer = roboTV::Hash::findTimerByUid(Timers, uid);
     MsgPacket* response = createResponse(request);
 
     if(timer == NULL) {
@@ -465,7 +465,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     LOCK_TIMERS_WRITE;
     LOCK_CHANNELS_READ;
 
-    const cChannel *channel = findChannelByUid(Channels, channelid);
+    const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, channelid);
 
     if (channel == NULL) {
         esyslog("channel with id '%i' not found - unable to update timer !", channelid);
@@ -485,7 +485,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
             file,
             aux);
 
-    cTimer* timer = findTimerByUid(Timers, uid);
+    cTimer* timer = roboTV::Hash::findTimerByUid(Timers, uid);
     if(timer == NULL) {
         esyslog("Timer not defined");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);

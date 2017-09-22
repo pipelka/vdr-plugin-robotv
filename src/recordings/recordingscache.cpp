@@ -50,7 +50,7 @@ RecordingsCache& RecordingsCache::instance() {
 
 uint32_t RecordingsCache::update(uint32_t uid, const cRecording* recording) {
     cString filename = recording->FileName();
-    uint32_t newUid = createStringHash(filename);
+    uint32_t newUid = roboTV::Hash::createStringHash((const char*)filename);
 
     // update existing record
     exec(
@@ -64,7 +64,7 @@ uint32_t RecordingsCache::update(uint32_t uid, const cRecording* recording) {
 
 uint32_t RecordingsCache::add(const cRecording* recording) {
     cString filename = recording->FileName();
-    uint32_t uid = createStringHash(filename);
+    uint32_t uid = roboTV::Hash::createStringHash((const char*)filename);
 
     // try to update existing record
     exec(

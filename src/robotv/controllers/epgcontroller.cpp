@@ -58,7 +58,7 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
     LOCK_CHANNELS_READ;
     LOCK_SCHEDULES_READ;
 
-    const cChannel* channel = findChannelByUid(Channels, channelUid);
+    const cChannel* channel = roboTV::Hash::findChannelByUid(Channels, channelUid);
 
     if(channel != NULL) {
         dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
@@ -214,7 +214,7 @@ MsgPacket* EpgController::processSearch(MsgPacket* request) {
 
         auto channel = Channels->GetByChannelID(channelId);
         response->put_String(channel ? channel->Name() : "");
-        response->put_U32(createChannelUid(channel));
+        response->put_U32(roboTV::Hash::createChannelUid(channel));
     });
 
     response->compress(9);

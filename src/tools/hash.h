@@ -26,20 +26,40 @@
 #ifndef ROBOTV_HASH_H
 #define ROBOTV_HASH_H
 
+#include <string>
+#include <mutex>
+#include <map>
+
 #include <stdint.h>
 #include <vdr/channels.h>
 #include <vdr/timers.h>
 
-uint32_t createChannelUid(const cChannel* channel);
+namespace roboTV {
 
-const cChannel* findChannelByUid(const cChannels* channels, uint32_t channelUID);
+class Hash {
+public:
 
-uint32_t createTimerUid(const cTimer* channel);
+    static uint32_t createChannelUid(const cChannel *channel);
 
-const cTimer* findTimerByUid(const cTimers* timers, uint32_t timerUID);
+    static const cChannel *findChannelByUid(const cChannels *channels, uint32_t channelUID);
 
-cTimer* findTimerByUid(cTimers* timers, uint32_t timerUID);
+    static uint32_t createTimerUid(const cTimer *channel);
 
-uint32_t createStringHash(const cString& string);
+    static const cTimer *findTimerByUid(const cTimers *timers, uint32_t timerUID);
+
+    static cTimer *findTimerByUid(cTimers *timers, uint32_t timerUID);
+
+    static uint32_t createStringHash(const std::string &string);
+
+private:
+
+    static uint32_t crc32(const char* buf, size_t size);
+
+    static std::map<const std::string, uint32_t> m_map;
+
+    static std::mutex m_mutex;
+};
+
+} // namespace roboTV
 
 #endif // ROBOTV_HASH_H

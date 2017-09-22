@@ -107,7 +107,7 @@ int LiveStreamer::switchChannel(const cChannel* channel) {
         return ROBOTV_RET_ERROR;
     }
 
-    m_uid = createChannelUid(channel);
+    m_uid = roboTV::Hash::createChannelUid(channel);
 
     StreamBundle currentItem = createFromChannel(channel);
 
@@ -244,7 +244,7 @@ void LiveStreamer::requestSignalInfo() {
 
     // get provider & service information
     LOCK_CHANNELS_READ;
-    const cChannel* channel = findChannelByUid(Channels, m_uid);
+    const cChannel* channel = roboTV::Hash::findChannelByUid(Channels, m_uid);
 
     if(channel != nullptr) {
         // put in provider name
@@ -337,7 +337,7 @@ void LiveStreamer::Receive(const uchar* packet, int length) {
 }
 
 void LiveStreamer::processChannelChange(const cChannel* channel) {
-    if(createChannelUid(channel) != m_uid) {
+    if(roboTV::Hash::createChannelUid(channel) != m_uid) {
         return;
     }
 

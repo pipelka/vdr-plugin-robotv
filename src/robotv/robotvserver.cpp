@@ -42,12 +42,9 @@
 
 #include "robotvserver.h"
 #include "robotvclient.h"
-#include "live/channelcache.h"
 #include "recordings/recordingscache.h"
-#include "recordings/artwork.h"
 #include "net/os-config.h"
-
-//#define ENABLE_CHANNELTRIGGER 1
+#include "tools/hash.h"
 
 unsigned int RoboTVServer::m_idCnt = 0;
 

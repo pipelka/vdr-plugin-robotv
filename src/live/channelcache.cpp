@@ -233,7 +233,7 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
 }
 
 void ChannelCache::enable(const cChannel* channel, bool enabled) {
-    enable(createChannelUid(channel), enabled);
+    enable(roboTV::Hash::createChannelUid(channel), enabled);
 }
 
 void ChannelCache::enable(uint32_t channeluid, bool enabled) {
@@ -245,7 +245,7 @@ void ChannelCache::enable(uint32_t channeluid, bool enabled) {
 }
 
 bool ChannelCache::isEnabled(const cChannel* channel) {
-    return isEnabled(createChannelUid(channel));
+    return isEnabled(roboTV::Hash::createChannelUid(channel));
 }
 
 bool ChannelCache::isEnabled(uint32_t channeluid) {

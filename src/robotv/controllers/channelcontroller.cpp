@@ -292,7 +292,7 @@ std::string ChannelController::createLogoUrl(const cChannel* channel, const std:
 void ChannelController::addChannelToPacket(const cChannel* channel, MsgPacket* p, const char* group) {
     p->put_U32(channel->Number());
     p->put_String(m_toUtf8.convert(channel->Name()));
-    p->put_U32(createChannelUid(channel));
+    p->put_U32(roboTV::Hash::createChannelUid(channel));
     p->put_U32(channel->Ca());
 
     // logo url

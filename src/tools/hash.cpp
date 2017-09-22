@@ -23,10 +23,16 @@
  *
  */
 
+#include <map>
 #include <vdr/tools.h>
 #include <vdr/channels.h>
 
 #include "hash.h"
+
+using namespace roboTV;
+
+std::map<const std::string, uint32_t> Hash::m_map;
+std::mutex Hash::m_mutex;
 
 static uint32_t crc32_tab[] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
@@ -74,7 +80,7 @@ static uint32_t crc32_tab[] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-uint32_t crc32(const unsigned char* buf, size_t size) {
+uint32_t Hash::crc32(const char* buf, size_t size) {
     uint32_t crc = 0xFFFFFFFF;
     const uint8_t* p = (uint8_t*)buf;
 
@@ -85,24 +91,34 @@ uint32_t crc32(const unsigned char* buf, size_t size) {
     return (crc ^ ~0U) & 0x7FFFFFFF; // channeluid is signed
 }
 
-uint32_t createStringHash(const cString& string) {
-    const char* p = string;
-    int len = strlen(p);
+uint32_t Hash::createStringHash(const std::string& string) {
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-    return crc32((const unsigned char*)p, len);
+    auto i = m_map.find(string);
+
+    if(i == m_map.end()) {
+        if(m_map.size() >= 1000) {
+            m_map.clear();
+        }
+        uint32_t hash = crc32(string.c_str(), string.length());
+        m_map.emplace(string, hash);
+        return hash;
+    }
+
+    return i->second;
 }
 
-uint32_t createChannelUid(const cChannel* channel) {
+uint32_t Hash::createChannelUid(const cChannel* channel) {
     cString channelid = channel->GetChannelID().ToString();
-    return createStringHash(channelid);
+    return createStringHash((const char*)channelid);
 }
 
-const cChannel* findChannelByUid(const cChannels* channels, uint32_t channelUID) {
+const cChannel* Hash::findChannelByUid(const cChannels* channels, uint32_t channelUID) {
     // maybe we need to use a lookup table
     for(const cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
         cString channelid = channel->GetChannelID().ToString();
 
-        if(channelUID == createStringHash(channelid)) {
+        if(channelUID == createStringHash((const char*)channelid)) {
             return channel;
         }
     }
@@ -110,21 +126,21 @@ const cChannel* findChannelByUid(const cChannels* channels, uint32_t channelUID)
     return nullptr;
 }
 
-uint32_t createTimerUid(const cTimer* timer) {
+uint32_t Hash::createTimerUid(const cTimer* timer) {
     cString timerid = cString::sprintf("%s:%s:%04d:%04d",
                                        *timer->Channel()->GetChannelID().ToString(),
                                        *timer->PrintDay(timer->Day(), timer->WeekDays(), true),
                                        timer->Start(),
                                        timer->Stop());
 
-    return createStringHash(timerid);
+    return createStringHash((const char*)timerid);
 }
 
-const cTimer* findTimerByUid(const cTimers* timers, uint32_t timerUID) {
+const cTimer* Hash::findTimerByUid(const cTimers* timers, uint32_t timerUID) {
     return findTimerByUid((cTimers*)timers, timerUID);
 }
 
-cTimer* findTimerByUid(cTimers* timers, uint32_t timerUID) {
+cTimer* Hash::findTimerByUid(cTimers* timers, uint32_t timerUID) {
     int numTimers = timers->Count();
 
     for(int i = 0; i < numTimers; i++) {

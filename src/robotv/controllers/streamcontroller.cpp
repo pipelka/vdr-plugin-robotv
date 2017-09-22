@@ -101,7 +101,7 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
 
     int status;
     MsgPacket *response = nullptr;
-    const cChannel *channel = findChannelByUid(Channels, uid);
+    const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, uid);
 
     response = createResponse(request);
 
