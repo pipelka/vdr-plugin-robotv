@@ -43,7 +43,7 @@ bool EpgHandler::processEvent(const cEvent *Event) {
 
     // insert new epg entry
     exec(
-        "INSERT OR IGNORE INTO epgindex("
+        "INSERT OR IGNORE INTO epgcache.epgindex("
         "  docid,"
         "  eventid,"
         "  timestamp,"
@@ -148,6 +148,31 @@ void EpgHandler::createDb() {
     if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create new epgsearch fts table !");
     }
+
+    // "ATTACH DATABASE 'file::memory:?cache=shared' AS epgcache;\n"
+    std::string cache =
+        "ATTACH DATABASE ':memory:' AS epgcache;\n"
+        "CREATE TABLE IF NOT EXISTS epgcache.epgindex (\n"
+        "  docid INTEGER PRIMARY KEY,\n"
+        "  eventid INTEGER NOT NULL,\n"
+        "  timestamp INTEGER NOT NULL,\n"
+        "  channelname TEXT NOT NULL,\n"
+        "  channelid TEXT NOT NULL,\n"
+        "  title TEXT NOT NULL,\n"
+        "  subject TEXT NOT NULL,\n"
+        "  description TEXT NOT NULL,\n"
+        "  endtime INTEGER NOT NULL,\n"
+        "  url TEXT NOT NULL DEFAULT '',\n"
+        "  channeluid INTEGER,\n"
+        "  contentid INTEGER,\n"
+        "  season INTEGER,\n"
+        "  episode INTEGER,\n"
+        "  posterurl TEXT,\n"
+        "  tvshow INTEGER"
+        ");\n"
+        "CREATE INDEX IF NOT EXISTS epgindex_timestamp on epgindex(timestamp);\n";
+
+    exec(cache);
 }
 
 void EpgHandler::cleanup() {
@@ -178,12 +203,15 @@ bool EpgHandler::SortSchedule(cSchedule *Schedule) {
         return false;
     }
 
-    begin();
-
     for(auto event = events->First(); event != nullptr; event = events->Next(event)) {
         processEvent(event);
     }
 
-    commit();
+    flushCache();
     return false;
+}
+
+void EpgHandler::flushCache() {
+    exec("INSERT OR IGNORE INTO epgindex SELECT * from epgcache.epgindex");
+    exec("DELETE FROM epgcache.epgindex");
 }

@@ -44,6 +44,8 @@ private:
 
     bool processEvent(const cEvent *Event);
 
+    void flushCache();
+
     void createDb();
 
     std::mutex m_mutex;
