@@ -28,6 +28,7 @@
 #include <vdr/epg.h>
 #include <db/storage.h>
 #include <thread>
+#include <atomic>
 
 class EpgHandler : public cEpgHandler, roboTV::Storage {
 public:
@@ -49,6 +50,8 @@ private:
     void createDb();
 
     std::mutex m_mutex;
+
+    int m_counter;
 };
 
 #endif //ROBOTV_EPGHANDLER_H

@@ -26,7 +26,7 @@
 #include <tools/hash.h>
 #include "epghandler.h"
 
-EpgHandler::EpgHandler() {
+EpgHandler::EpgHandler() : m_counter(0) {
     createDb();
 }
 
@@ -43,7 +43,7 @@ bool EpgHandler::processEvent(const cEvent *Event) {
 
     // insert new epg entry
     exec(
-        "INSERT OR IGNORE INTO epgcache.epgindex("
+        "INSERT OR REPLACE INTO epgcache.epgindex("
         "  docid,"
         "  eventid,"
         "  timestamp,"
@@ -199,15 +199,21 @@ bool EpgHandler::SortSchedule(cSchedule *Schedule) {
 
     auto events = Schedule->Events();
 
-    if(events == nullptr) {
+    if (events == nullptr) {
         return false;
     }
 
-    for(auto event = events->First(); event != nullptr; event = events->Next(event)) {
+    for (auto event = events->First(); event != nullptr; event = events->Next(event)) {
         processEvent(event);
+        m_counter++;
     }
 
-    flushCache();
+    if (m_counter >= 500) {
+        dsyslog("EpgHandler - flushCache()");
+        m_counter = 0;
+        flushCache();
+    }
+
     return false;
 }
 
