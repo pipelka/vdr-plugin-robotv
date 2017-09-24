@@ -44,6 +44,7 @@ LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket)
     m_queueStartTime = roboTV::currentTimeMillis();
     m_lastSyncTime = roboTV::currentTimeMillis();
     m_writeThread = nullptr;
+    m_pause = false;
 }
 
 LiveQueue::~LiveQueue() {
