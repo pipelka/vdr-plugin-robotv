@@ -40,7 +40,7 @@ ChannelCmds::~ChannelCmds() {
 }
 
 cString ChannelCmds::SVDRPCommand(const char* Command, const char* Option, int& ReplyCode) {
-    if(strcmp(Command, "LSCJ") == 0) {
+    if(strcasecmp(Command, "LSCJ") == 0) {
         return processListChannelsJson(Option, ReplyCode);
     }
 
