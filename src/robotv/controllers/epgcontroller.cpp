@@ -22,11 +22,11 @@
  *
  */
 
+#include <service/epgsearch/services.h>
+#include <vdr/plugin.h>
 #include "epgcontroller.h"
 #include "net/msgpacket.h"
-#include "robotv/robotvcommand.h"
 #include "tools/hash.h"
-#include "db/storage.h"
 #include "timercontroller.h"
 
 EpgController::EpgController() {
@@ -61,22 +61,21 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
     const cChannel* channel = roboTV::Hash::findChannelByUid(Channels, channelUid);
 
     if(channel != NULL) {
-        dsyslog("get schedule called for channel '%s'", (const char*)channel->GetChannelID().ToString());
+        dsyslog("get schedule called for channel %i '%s' - %s",
+                channel->Number(),
+                (const char*)channel->GetChannelID().ToString(),
+                m_toUtf8.convert(channel->Name()));
     }
 
     MsgPacket* response = createResponse(request);
 
     if(!channel) {
         response->put_U32(0);
-
-        esyslog("written 0 because channel = NULL");
         return response;
     }
 
     if(!Schedules) {
         response->put_U32(0);
-
-        dsyslog("written 0 because Schedule!s! = NULL");
         return response;
     }
 
@@ -84,8 +83,6 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 
     if(!Schedule) {
         response->put_U32(0);
-
-        dsyslog("written 0 because Schedule = NULL");
         return response;
     }
 
@@ -183,66 +180,82 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
 
 MsgPacket* EpgController::processSearch(MsgPacket* request) {
     std::string searchTerm = request->get_String();
-    time_t now = time(NULL);
     MsgPacket* response = createResponse(request);
 
     LOCK_CHANNELS_READ;
-    LOCK_SCHEDULES_READ;
 
-    if(Schedules == nullptr) {
-        return response;
-    }
+    searchEpg(searchTerm, [&](const cEvent* event) {
+        auto channelId = event->ChannelID();
+        auto channel = Channels->GetByChannelID(channelId);
 
-    searchEpg(searchTerm, [&](tEventID eventId, time_t timeStamp, tChannelID channelId) {
-        if(timeStamp < now) {
-            return;
-        }
-
-        const cSchedule* schedule = Schedules->GetSchedule(channelId);
-
-        if(schedule == nullptr) {
-            return;
-        }
-
-        const cEvent* event = schedule->GetEvent(eventId, timeStamp);
-
-        if(event == nullptr) {
+        if(channel == nullptr) {
             return;
         }
 
         TimerController::event2Packet(event, response);
 
-        auto channel = Channels->GetByChannelID(channelId);
-        response->put_String(channel ? channel->Name() : "");
+        response->put_String(m_toUtf8.convert(channel->Name()));
         response->put_U32(roboTV::Hash::createChannelUid(channel));
+        if(request->getProtocolVersion() >= 8) {
+            response->put_U32((uint32_t) channel->Number());
+        }
     });
 
     response->compress(9);
     return response;
 }
 
-bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback) {
-    roboTV::Storage storage;
-
-    sqlite3_stmt* s = storage.query(
-                          "SELECT epgindex.eventid,epgindex.timestamp,epgindex.channelid "
-                          "FROM epgindex JOIN epgsearch ON epgindex.docid=epgsearch.docid "
-                          "WHERE epgsearch MATCH %Q",
-                          searchTerm.c_str()
-                      );
-
-    if(s == nullptr) {
+bool EpgController::searchEpg(const std::string& searchTerm, std::function<void(const cEvent* event)> callback) {
+    if(searchTerm.size() < 3) {
         return false;
     }
 
-    while(sqlite3_step(s) == SQLITE_ROW) {
-        tEventID eventId = sqlite3_column_int(s, 0);
-        time_t timeStamp = (time_t)sqlite3_column_int64(s, 1);
-        tChannelID channelId = tChannelID::FromString((const char*)sqlite3_column_text(s, 2));
+    cPlugin* plugin = cPluginManager::GetPlugin("epgsearch");
 
-        callback(eventId, timeStamp, channelId);
+    if(plugin == nullptr) {
+        esyslog("unable to connect to 'epgsearch' plugin !");
+        return false;
     }
 
-    sqlite3_finalize(s);
+    auto serviceData = new Epgsearch_searchresults_v1_0;
+    serviceData->query = (char*)searchTerm.c_str();
+    serviceData->mode = 1;
+    serviceData->channelNr = 0;
+    serviceData->useTitle = true;
+    serviceData->useSubTitle = true;
+    serviceData->useDescription = false;
+
+    if(!plugin->Service("Epgsearch-searchresults-v1.0", serviceData)) {
+        esyslog("unable to get 'Epgsearch-searchresults-v1.0' from plugin.");
+        return false;
+    }
+
+    auto list = serviceData->pResultList;
+
+    if(list == nullptr) {
+        return false;
+    }
+
+    int count = 0;
+    time_t now = time(nullptr);
+
+    for(auto row = list->First(); row; row = list->Next(row)) {
+        auto event = row->event;
+
+        if(event->StartTime() < now) {
+            continue;
+        }
+
+        if(count == 100) {
+            break;
+        }
+
+        callback(event);
+        count++;
+    }
+
+    delete serviceData->pResultList;
+    delete serviceData;
+
     return true;
 }

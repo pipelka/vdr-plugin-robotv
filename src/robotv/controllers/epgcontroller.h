@@ -49,7 +49,7 @@ protected:
 
 private:
 
-    bool searchEpg(const std::string& searchTerm, std::function<void(tEventID, time_t, tChannelID)> callback);
+    bool searchEpg(const std::string& searchTerm, std::function<void(const cEvent* event)> callback);
 
     EpgController(const EpgController& orig);
 
