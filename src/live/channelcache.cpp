@@ -250,7 +250,7 @@ bool ChannelCache::isEnabled(const cChannel* channel) {
 
 bool ChannelCache::isEnabled(uint32_t channeluid) {
     sqlite3_stmt* s = query(
-                          "SELECT enabled WHERE channeluid=%i",
+                          "SELECT enabled FROM enabledchannels WHERE channeluid=%i",
                           channeluid
                       );
 
