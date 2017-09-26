@@ -27,7 +27,6 @@
 
 #include <list>
 #include <vdr/thread.h>
-#include <epg/epghandler.h>
 
 #include "config/config.h"
 
@@ -53,8 +52,6 @@ protected:
     ClientList m_clients;
 
     RoboTVServerConfig& m_config;
-
-    EpgHandler m_epgHandler;
 
     static unsigned int m_idCnt;
 

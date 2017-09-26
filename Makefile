@@ -96,7 +96,6 @@ OBJS = \
     src/demuxer/src/parsers/parser.o \
     src/demuxer/src/upstream/ringbuffer.o \
     src/demuxer/src/upstream/bitstream.o \
-    src/epg/epghandler.o \
 	src/live/channelcache.o \
 	src/live/livequeue.o \
 	src/live/livestreamer.o \

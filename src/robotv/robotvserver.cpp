@@ -225,8 +225,6 @@ void RoboTVServer::Action(void) {
     isyslog("removing outdated artwork");
     artwork.cleanup();
 
-    m_epgHandler.cleanup();
-
     RecordingsCache& cache = RecordingsCache::instance();
     {
         LOCK_RECORDINGS_READ;
@@ -275,7 +273,6 @@ void RoboTVServer::Action(void) {
             if(cleanupTimer.Elapsed() >= 60 * 60 * 1000) {
                 isyslog("removing outdated artwork");
                 artwork.triggerCleanup();
-                m_epgHandler.triggerCleanup();
                 // start gc
                 isyslog("Starting garbage collection in recordings cache");
                 cache.triggerCleanup();

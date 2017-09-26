@@ -64,8 +64,6 @@ set(SOURCE_FILES
     src/db/database.h
     src/db/storage.cpp
     src/db/storage.h
-    src/epg/epghandler.cpp
-    src/epg/epghandler.h
     src/live/channelcache.cpp
     src/live/channelcache.h
     src/live/livequeue.cpp
