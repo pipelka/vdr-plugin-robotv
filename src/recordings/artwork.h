@@ -31,6 +31,18 @@
 class Artwork : protected roboTV::Storage {
 public:
 
+    typedef struct _Holder {
+        _Holder() : eventId(0), channelUid(0), contentId(0), timestamp(time(nullptr)) {
+        }
+
+        uint32_t eventId;
+        uint32_t channelUid;
+        uint32_t contentId;
+        int64_t timestamp;
+        std::string posterUrl;
+        std::string backdropUrl;
+    } Holder;
+
     Artwork();
 
     virtual ~Artwork();
@@ -39,7 +51,9 @@ public:
 
     bool set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId);
 
-    bool setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string& background, const std::string& poster, int content = 0);
+    bool getEpgImage(uint32_t channelUid, uint32_t eventId, Holder& holder);
+
+    bool setEpgImage(const Holder& holder);
 
     void cleanup(int afterDays = 4);
 

@@ -45,8 +45,22 @@ void Artwork::createDb() {
         "  backgroundurl TEXT\n,"
         "  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n"
         ");\n"
+
         "CREATE INDEX IF NOT EXISTS artwork_externalid on artwork(externalid);\n"
-        "CREATE UNIQUE INDEX IF NOT EXISTS artwork_content on artwork(contenttype, title);\n";
+        "CREATE UNIQUE INDEX IF NOT EXISTS artwork_content on artwork(contenttype, title);\n"
+
+        "DROP TABLE IF EXISTS epgsearch;\n"
+        "DROP TABLE IF EXISTS epgindex;\n"
+
+        "CREATE TABLE IF NOT EXISTS epgartwork (\n"
+        "  eventid INTEGER NOT NULL,\n"
+        "  channeluid INTEGER NOT NULL,\n"
+        "  contentid INTEGER NOT NULL,\n"
+        "  timestamp INTEGER NOT NULL,\n"
+        "  url TEXT,\n"
+        "  posterurl TEXT,\n"
+        "  PRIMARY KEY(channeluid, eventid)\n"
+        ");\n";
 
     if(exec(schema) != SQLITE_OK) {
         esyslog("Unable to create database schema for artwork");
@@ -100,16 +114,17 @@ bool Artwork::set(int contentType, const std::string& title, const std::string& 
 void Artwork::cleanup(int afterDays) {
 
     // remove empty artwork
-
     exec(
         "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > %i AND backgroundurl=''",
         afterDays
     );
 
     // remove old entries
-    exec(
-            "DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > 31"
-    );
+    exec("DELETE FROM artwork WHERE julianday('now') - julianday(timestamp) > 31");
+
+    // remove outdated epg artwork (older than 3 days"
+    uint64_t timestamp = (uint64_t)time(nullptr) - (60 * 60 * 24 * 3);
+    exec("DELETE FROM epgartwork WHERE timestamp < %llu", timestamp);
 }
 
 void Artwork::triggerCleanup(int afterDays) {
@@ -120,21 +135,55 @@ void Artwork::triggerCleanup(int afterDays) {
     t.detach();
 }
 
-bool Artwork::setEpgImage(uint32_t channelUid, uint32_t eventId, const std::string &background, const std::string& poster, int content) {
-    if(background.empty() && poster.empty()) {
+bool Artwork::setEpgImage(const Artwork::Holder& holder) {
+    if(holder.posterUrl.empty() && holder.backdropUrl.empty()) {
         return false;
     }
 
-    dsyslog("set epg image (channelUid: %i, eventid: %i) '%s' (contentid: %i)", channelUid, eventId, background.c_str(), content);
+    dsyslog(
+        "set epg image (channelUid: %i, eventid: %i) '%s' (contentid: %i)",
+        holder.channelUid,
+        holder.eventId,
+        holder.backdropUrl.c_str(),
+        holder.contentId);
 
-    exec(
-            "UPDATE OR IGNORE epgindex SET url=%Q, posterurl=%Q, contentid=%i WHERE channeluid=%i AND eventid=%i",
-            background.c_str(),
-            poster.c_str(),
-            content,
-            channelUid,
-            eventId
-    );
+    return exec(
+            "INSERT OR REPLACE INTO epgartwork(eventid,channeluid,contentid,timestamp,url,posterurl) "
+            "VALUES(%i,%i,%i,%i,%Q,%Q)",
+            holder.eventId,
+            holder.channelUid,
+            holder.contentId,
+            holder.timestamp,
+            holder.backdropUrl.c_str(),
+            holder.posterUrl.c_str()
+    ) == SQLITE_OK;
+}
+
+bool Artwork::getEpgImage(uint32_t channelUid, uint32_t eventId, Artwork::Holder& holder) {
+    holder.backdropUrl = "x";
+    holder.posterUrl = "x";
+
+    sqlite3_stmt* s = query(
+        "SELECT url, posterurl, contentid FROM epgartwork WHERE eventid=%i AND channeluid=%i;",
+        eventId,
+        channelUid);
+
+    if(s == NULL) {
+        return false;
+    }
+
+    if(sqlite3_step(s) != SQLITE_ROW) {
+        sqlite3_finalize(s);
+        return false;
+    }
+
+    holder.backdropUrl = (const char*)sqlite3_column_text(s, 0);
+    holder.posterUrl = (const char*)sqlite3_column_text(s, 1);
+    holder.contentId = (uint32_t)sqlite3_column_int(s, 2);
+    holder.eventId = eventId;
+    holder.channelUid = channelUid;
+
+    sqlite3_finalize(s);
 
     return true;
 }

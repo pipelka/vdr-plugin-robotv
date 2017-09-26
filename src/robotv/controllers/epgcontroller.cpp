@@ -64,7 +64,7 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
         dsyslog("get schedule called for channel %i '%s' - %s",
                 channel->Number(),
                 (const char*)channel->GetChannelID().ToString(),
-                m_toUtf8.convert(channel->Name()));
+                m_toUtf8.convert(channel->Name()).c_str());
     }
 
     MsgPacket* response = createResponse(request);
@@ -125,28 +125,22 @@ MsgPacket* EpgController::processGet(MsgPacket* request) {
             eventDescription = "";
         }
 
+        // fetch epg artwork
+        Artwork::Holder holder;
+        m_artwork.getEpgImage(channelUid, eventId, holder);
+
         response->put_U32(eventId);
         response->put_U32(eventTime);
         response->put_U32(eventDuration);
-        response->put_U32(eventContent);
+        response->put_U32((eventContent == 0) ? holder.contentId : eventContent);
         response->put_U32(eventRating);
 
         response->put_String(m_toUtf8.convert(eventTitle));
         response->put_String(m_toUtf8.convert(eventSubTitle));
         response->put_String(m_toUtf8.convert(eventDescription));
 
-        // add epg artwork
-        std::string posterUrl;
-        std::string backgroundUrl;
-
-        if(eventContent != 0 && m_artwork.get(eventContent, m_toUtf8.convert(eventTitle), posterUrl, backgroundUrl)) {
-            response->put_String(posterUrl.c_str());
-            response->put_String(backgroundUrl.c_str());
-        }
-        else {
-            response->put_String("x");
-            response->put_String("x");
-        }
+        response->put_String(m_toUtf8.convert(holder.posterUrl));
+        response->put_String(m_toUtf8.convert(holder.backdropUrl));
 
         // add more epg information (PROTOCOL VERSION 8)
         if(request->getProtocolVersion() >= 8) {

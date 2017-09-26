@@ -63,7 +63,14 @@ MsgPacket* ArtworkController::processGet(MsgPacket* request) {
         uint32_t eventId = request->get_U32();
 
         if(channelUid != 0 && eventId != 0) {
-            m_artwork.setEpgImage(channelUid, eventId, background, poster, content);
+            Artwork::Holder holder;
+            holder.eventId = eventId;
+            holder.channelUid = channelUid;
+            holder.contentId = content;
+            holder.posterUrl = poster;
+            holder.backdropUrl = background;
+
+            m_artwork.setEpgImage(holder);
         }
     }
 
@@ -90,7 +97,14 @@ MsgPacket* ArtworkController::processSet(MsgPacket* request) {
         uint32_t eventId = request->get_U32();
 
         if(channelUid != 0 && eventId != 0) {
-            m_artwork.setEpgImage(channelUid, eventId, background, poster, content);
+            Artwork::Holder holder;
+            holder.eventId = eventId;
+            holder.channelUid = channelUid;
+            holder.contentId = content;
+            holder.posterUrl = poster;
+            holder.backdropUrl = background;
+
+            m_artwork.setEpgImage(holder);
         }
     }
 
