@@ -87,7 +87,7 @@ bool Artwork::get(int contentType, const std::string& title, std::string& poster
 
     sqlite3_finalize(s);
 
-    return !(posterUrl == "x" && backdropUrl == "x");
+    return true;
 }
 
 bool Artwork::set(int contentType, const std::string& title, const std::string& posterUrl, const std::string& backdropUrl, int externalId = 0) {
