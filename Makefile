@@ -37,7 +37,7 @@ export SQLITE_CFLAGS = -DHAVE_USLEEP -DSQLITE_THREADSAFE=1 -DSQLITE_ENABLE_FTS4
 ### The compiler options:
 
 export CFLAGS   = $(call PKGCFG,cflags) $(SQLITE_CFLAGS)
-export CXXFLAGS = $(call PKGCFG,cxxflags) -std=gnu++11
+export CXXFLAGS = $(call PKGCFG,cxxflags) -std=gnu++11 -Wno-deprecated-declarations
 
 ### The version number of VDR's plugin API:
 

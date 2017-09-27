@@ -37,7 +37,7 @@ message(STATUS "Cache: '${VDR_CACHEDIR}'")
 pkg_check_modules(AVAHI avahi-client)
 
 # set C++11 for robotv
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-declarations")
 
 # sqlite
 set(SQLITE_FILES
