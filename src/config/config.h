@@ -66,7 +66,6 @@ public:
     std::string reorderCmd;
     std::string epgImageUrl;
     std::string seriesFolder;
-    bool filterChannels = false;
 };
 
 #endif // ROBOTV_CONFIG_H

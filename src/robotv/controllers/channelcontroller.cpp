@@ -48,7 +48,6 @@ MsgPacket* ChannelController::process(MsgPacket* request) {
 
 MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
     ChannelCache& channelCache = ChannelCache::instance();
-    RoboTVServerConfig& config = RoboTVServerConfig::instance();
 
     isyslog("Fetching channels ...");
 
@@ -105,7 +104,7 @@ MsgPacket* ChannelController::processGetChannels(MsgPacket* request) {
         }
 
         // skip disabled channels if filtering is enabled
-        if(config.filterChannels && !channelCache.isEnabled(channel)) {
+        if(!channelCache.isEnabled(channel)) {
             continue;
         }
 
