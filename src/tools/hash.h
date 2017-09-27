@@ -43,6 +43,8 @@ public:
 
     static const cChannel *findChannelByUid(const cChannels *channels, uint32_t channelUID);
 
+    static const cChannel *findChannelByNumber(const cChannels *channels, int number);
+
     static uint32_t createTimerUid(const cTimer *channel);
 
     static const cTimer *findTimerByUid(const cTimers *timers, uint32_t timerUID);

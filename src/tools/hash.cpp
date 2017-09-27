@@ -126,6 +126,16 @@ const cChannel* Hash::findChannelByUid(const cChannels* channels, uint32_t chann
     return nullptr;
 }
 
+const cChannel* Hash::findChannelByNumber(const cChannels *channels, int number) {
+    for(const cChannel* channel = channels->First(); channel; channel = channels->Next(channel)) {
+        if(number == channel->Number()) {
+            return channel;
+        }
+    }
+
+    return nullptr;
+}
+
 uint32_t Hash::createTimerUid(const cTimer* timer) {
     cString timerid = cString::sprintf("%s:%s:%04d:%04d",
                                        *timer->Channel()->GetChannelID().ToString(),
