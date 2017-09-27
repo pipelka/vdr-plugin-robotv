@@ -25,9 +25,11 @@
 #ifndef ROBOTV_CHANNELCMDS_H
 #define ROBOTV_CHANNELCMDS_H
 
-#include <tools/utf8conv.h>
+#include "recordings/artwork.h"
+#include "tools/utf8conv.h"
 #include "tools/json.hpp"
 #include "vdr/channels.h"
+#include "vdr/epg.h"
 #include "vdr/tools.h"
 
 class ChannelCmds {
@@ -42,6 +44,10 @@ public:
 private:
 
     cString processListChannelsJson(const char* Option, int& ReplyCode);
+
+    cString processListEpgJson(const char* Option, int& ReplyCode);
+
+    nlohmann::json jsonFromEvent(uint32_t channelUid, const cEvent* event, Artwork& artwork);
 
     nlohmann::json jsonFromChannel(const cChannel* channel, const char* groupName = NULL, bool enabled = true);
 

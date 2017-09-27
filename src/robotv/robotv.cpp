@@ -114,6 +114,8 @@ const char** PluginRoboTVServer::SVDRPHelpPages(void) {
     static const char* HelpPages[] = {
         "LSCJ\n"
         "    List all channels activated for roboTV in JSON format.",
+        "LSEJ channelUid | channelNumber\n"
+        "    List upcoming EPG entries of the channel.",
         NULL
     };
 

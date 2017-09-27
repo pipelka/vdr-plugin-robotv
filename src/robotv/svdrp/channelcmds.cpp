@@ -44,6 +44,10 @@ cString ChannelCmds::SVDRPCommand(const char* Command, const char* Option, int& 
         return processListChannelsJson(Option, ReplyCode);
     }
 
+    if(strcasecmp(Command, "LSEJ") == 0) {
+        return processListEpgJson(Option, ReplyCode);
+    }
+
     ReplyCode = 500;
     return NULL;
 }
@@ -63,6 +67,50 @@ cString ChannelCmds::processListChannelsJson(const char* Option, int& ReplyCode)
         }
 
         list.push_back(jsonFromChannel(channel, groupName.c_str(), channelCache.isEnabled(channel)));
+    }
+
+    return cString(list.dump().c_str());
+}
+
+cString ChannelCmds::processListEpgJson(const char* Option, int& ReplyCode) {
+    if(Option == nullptr) {
+        ReplyCode = 501;
+        return "Invalid channel UID";
+    }
+
+    uint32_t id = (uint32_t)strtol(Option, nullptr, 10);
+
+    LOCK_CHANNELS_READ;
+    LOCK_SCHEDULES_READ;
+
+    const cChannel* channel = roboTV::Hash::findChannelByUid(Channels, id);
+
+    if(channel == nullptr) {
+        channel = roboTV::Hash::findChannelByNumber(Channels, id);
+    }
+
+    if(channel == nullptr) {
+        ReplyCode = 501;
+        return "Channel unknown";
+    }
+
+    uint32_t channelUid = roboTV::Hash::createChannelUid(channel);
+
+    const cSchedule* Schedule = Schedules->GetSchedule(channel->GetChannelID());
+
+    json list = json::array();
+
+    if(!Schedule) {
+        return cString(list.dump().c_str());
+    }
+
+    Artwork artwork;
+    time_t now = time(nullptr);
+
+    for(const cEvent* event = Schedule->Events()->First(); event; event = Schedule->Events()->Next(event)) {
+        if(event->StartTime() + event->Duration() >= now) {
+            list.push_back(jsonFromEvent(channelUid, event, artwork));
+        }
     }
 
     return cString(list.dump().c_str());
@@ -125,6 +173,28 @@ json ChannelCmds::jsonFromChannel(const cChannel* channel, const char* groupName
 
     pids["audio"] = audio;
     j["pids"] = pids;
+
+    return j;
+}
+
+nlohmann::json ChannelCmds::jsonFromEvent(uint32_t channelUid, const cEvent* event, Artwork& artwork) {
+    Artwork::Holder holder;
+    artwork.getEpgImage(channelUid, event->EventID(), holder);
+
+    json j = {
+        {"title", m_toUtf8.convert(event->Title() ? event->Title() : "")},
+        {"shortText", m_toUtf8.convert(event->ShortText() ? event->ShortText() : "")},
+        {"description", m_toUtf8.convert(event->Description() ? event->Description() : "")},
+        {"eventId", event->EventID()},
+        {"channelUid", channelUid },
+        {"contentId", holder.contentId},
+        {"startTime", event->StartTime()},
+        {"duration", event->Duration()},
+        {"vpsTime", event->Vps()},
+        {"posterUrl", m_toUtf8.convert(holder.posterUrl != "x" ? holder.posterUrl : "")},
+        {"backdropUrl", m_toUtf8.convert(holder.backdropUrl != "x" ? holder.backdropUrl : "")},
+        {"parentalRating", event->ParentalRating()}
+    };
 
     return j;
 }
