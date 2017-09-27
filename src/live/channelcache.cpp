@@ -255,12 +255,12 @@ bool ChannelCache::isEnabled(uint32_t channeluid) {
                       );
 
     if(s == NULL) {
-        return false;
+        return true;
     }
 
     if(sqlite3_step(s) != SQLITE_ROW) {
         sqlite3_finalize(s);
-        return false;
+        return true;
     }
 
     bool rc = (sqlite3_column_int(s, 0) == 1);
