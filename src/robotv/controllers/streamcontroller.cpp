@@ -88,32 +88,35 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
         m_langStreamType = StreamInfo::Type::AC3;
     }
 
-    if(!m_language.empty()) {
-        isyslog("Preferred language: %s / type: %i", m_language.c_str(), (int)m_langStreamType);
-    }
+    isyslog("======================================");
+    isyslog("CHANNEL STREAM REQUEST");
+    isyslog("======================================");
 
-    stopStreaming();
 
     LOCK_TIMERS_READ;
     LOCK_CHANNELS_READ;
 
-    // try to find channel by uid first
-
-    int status;
-    MsgPacket *response = nullptr;
+    MsgPacket *response = createResponse(request);
     const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, uid);
 
-    response = createResponse(request);
-
-    if (channel == nullptr) {
-        esyslog("Can't find channel %08x", uid);
+    if(channel == nullptr) {
+        esyslog("INVALID CHANNELUID: %08x - ABORTING", uid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return response;
     }
+    else {
+        isyslog("%i - %s (%s)", channel->Number(), channel->Name(), *channel->GetChannelID().ToString());
 
-    status = startStreaming(
-            channel,
-            priority);
+        if (!m_language.empty()) {
+            isyslog("Preferred audio track: %s - %s", StreamInfo::typeName(m_langStreamType), m_language.c_str());
+        }
+    }
+
+    isyslog("--------------------------------------");
+
+    stopStreaming();
+
+    int status = startStreaming(channel, priority);
 
     if(status == ROBOTV_RET_OK) {
         isyslog("--------------------------------------");
@@ -131,7 +134,7 @@ MsgPacket* StreamController::processOpen(MsgPacket* request) {
         esyslog("Can't stream channel %s (status: %i)", channel->Name(), status);
     }
 
-    response->put_U32(status);
+    response->put_U32((uint32_t)status);
     return response;
 }
 
