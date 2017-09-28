@@ -136,10 +136,6 @@ void Artwork::triggerCleanup(int afterDays) {
 }
 
 bool Artwork::setEpgImage(const Artwork::Holder& holder) {
-    if(holder.posterUrl.empty() && holder.backdropUrl.empty()) {
-        return false;
-    }
-
     dsyslog(
         "set epg image (channelUid: %i, eventid: %i) '%s' (contentid: %i)",
         holder.channelUid,
