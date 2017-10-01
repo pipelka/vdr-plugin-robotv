@@ -175,7 +175,7 @@ int RecordingsCache::getPlayCount(uint32_t uid) {
 }
 
 cString RecordingsCache::getPosterUrl(uint32_t uid) {
-    cString url = "";
+    cString url = "x";
     sqlite3_stmt* s = query("SELECT posterurl FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
@@ -195,7 +195,7 @@ cString RecordingsCache::getPosterUrl(uint32_t uid) {
 }
 
 cString RecordingsCache::getBackgroundUrl(uint32_t uid) {
-    cString url = "";
+    cString url = "x";
     sqlite3_stmt* s = query("SELECT backgroundurl FROM recordings WHERE recid=%u;", uid);
 
     if(s == NULL) {
