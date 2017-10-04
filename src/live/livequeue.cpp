@@ -26,14 +26,14 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <string.h>
+#include <cstring>
 
 #include "config/config.h"
 #include "net/msgpacket.h"
 #include "livequeue.h"
 #include "tools/time.h"
 
-cString LiveQueue::m_timeShiftDir = "/video";
+std::string LiveQueue::m_timeShiftDir;
 uint64_t LiveQueue::m_bufferSize = 1024 * 1024 * 1024;
 
 LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket) {
@@ -45,6 +45,10 @@ LiveQueue::LiveQueue(int socket) : m_readFd(-1), m_writeFd(-1), m_socket(socket)
     m_lastSyncTime = roboTV::currentTimeMillis();
     m_writeThread = nullptr;
     m_pause = false;
+
+    if(m_timeShiftDir.empty()) {
+        m_timeShiftDir = "/video";
+    }
 }
 
 LiveQueue::~LiveQueue() {
@@ -79,7 +83,7 @@ void LiveQueue::start() {
         while(m_writerRunning) {
 
             while(m_writerRunning && !m_writerQueue.empty()) {
-                PacketData p;
+                PacketData p{};
 
                 {
                     std::lock_guard<std::mutex> lock(m_mutexQueue);
@@ -102,7 +106,7 @@ void LiveQueue::createRingBuffer() {
     m_pause = false;
     off_t length = (off_t)m_bufferSize + 1024 * 1024;
 
-    m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", (const char*)m_timeShiftDir, m_socket);
+    m_storage = cString::sprintf("%s/robotv-ringbuffer-%05i.data", m_timeShiftDir.c_str(), m_socket);
     dsyslog("timeshift file: %s", (const char*)m_storage);
 
     m_writeFd = open(m_storage, O_CREAT | O_WRONLY, 0644);
@@ -129,7 +133,7 @@ MsgPacket* LiveQueue::read() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if(m_pause) {
-        return NULL;
+        return nullptr;
     }
 
     return internalRead();
@@ -284,7 +288,7 @@ void LiveQueue::trim(off_t position) {
     }
 
     if(!m_indexList.empty()) {
-        auto p = m_indexList.front();
+        p = m_indexList.front();
         m_queueStartTime = p.wallclockTime;
     }
 }
@@ -302,7 +306,7 @@ bool LiveQueue::pause(bool on) {
 
 void LiveQueue::setTimeShiftDir(const cString& dir) {
     m_timeShiftDir = dir;
-    dsyslog("TIMESHIFTDIR: %s", (const char*)m_timeShiftDir);
+    dsyslog("TIMESHIFTDIR: %s", m_timeShiftDir.c_str());
 }
 
 void LiveQueue::setBufferSize(uint64_t s) {
@@ -311,18 +315,18 @@ void LiveQueue::setBufferSize(uint64_t s) {
 }
 
 void LiveQueue::removeTimeShiftFiles() {
-    DIR* dir = opendir((const char*)m_timeShiftDir);
+    DIR* dir = opendir(m_timeShiftDir.c_str());
 
-    if(dir == NULL) {
+    if(dir == nullptr) {
         return;
     }
 
-    struct dirent* entry = NULL;
+    struct dirent* entry = nullptr;
 
-    while((entry = readdir(dir)) != NULL) {
+    while((entry = readdir(dir)) != nullptr) {
         if(strncmp(entry->d_name, "robotv-ringbuffer-", 16) == 0) {
             isyslog("Removing old time-shift storage: %s", entry->d_name);
-            unlink(AddDirectory(m_timeShiftDir, entry->d_name));
+            unlink(AddDirectory(m_timeShiftDir.c_str(), entry->d_name));
         }
     }
 

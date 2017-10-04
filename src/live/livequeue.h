@@ -112,7 +112,7 @@ protected:
 
     int m_wrapCount;
 
-    static cString m_timeShiftDir;
+    static std::string m_timeShiftDir;
 
     static uint64_t m_bufferSize;
 
