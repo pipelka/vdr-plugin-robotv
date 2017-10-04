@@ -35,11 +35,11 @@ class MsgPacket;
 class MovieController : public Controller {
 public:
 
-    MovieController();
+    MovieController() = default;
 
-    virtual ~MovieController();
+    ~MovieController() override = default;
 
-    MsgPacket* process(MsgPacket* request);
+    MsgPacket* process(MsgPacket* request) override;
 
     static std::string folderFromName(const std::string& name);
 

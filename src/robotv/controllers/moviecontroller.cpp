@@ -24,22 +24,16 @@
 
 #include <algorithm>
 #include <set>
-#include "moviecontroller.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
+#include "moviecontroller.h"
 #include "tools/recid2uid.h"
 #include "config/config.h"
 #include "recordings/recordingscache.h"
 #include "vdr/videodir.h"
 #include "vdr/menu.h"
 
-MovieController::MovieController() {
-}
-
 MovieController::MovieController(const MovieController& orig) {
-}
-
-MovieController::~MovieController() {
 }
 
 MsgPacket* MovieController::process(MsgPacket* request) {
@@ -76,6 +70,9 @@ MsgPacket* MovieController::process(MsgPacket* request) {
 
         case ROBOTV_RECORDINGS_SEARCH:
             return processSearch(request);
+
+        default:
+            break;
     }
 
     return nullptr;
@@ -88,9 +85,9 @@ MsgPacket* MovieController::processGetDiskSpace(MsgPacket* request) {
 
     MsgPacket* response = createResponse(request);
 
-    response->put_U32(total);
-    response->put_U32(freeMb);
-    response->put_U32(percent);
+    response->put_U32((uint32_t)total);
+    response->put_U32((uint32_t)freeMb);
+    response->put_U32((uint32_t)percent);
 
     return response;
 }
@@ -147,7 +144,7 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
 
     const char* newName = request->get_String();
 
-    char* s = (char*)newName;
+    auto* s = (char*)newName;
 
     while(*s != 0) {
         if(*s == ' ' || *s == ':') {
@@ -169,7 +166,7 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
 
     isyslog("renaming recording '%s' to '%s'", recording->Name(), newName);
 
-    bool success = recording->ChangeName(newName);
+    auto success = recording->ChangeName(newName);
 
     if(success) {
         RecordingsCache::instance().update(uid, recording);
@@ -178,7 +175,7 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
     Recordings->Update();
     Recordings->TouchUpdate();
 
-    response->put_U32(success ? 0 : -1);
+    response->put_U32(success ? ROBOTV_RET_OK : ROBOTV_RET_ERROR);
     return response;
 }
 
@@ -201,7 +198,7 @@ MsgPacket* MovieController::processDelete(MsgPacket* request) {
 
     cRecordControl* rc = cRecordControls::GetRecordControl(recording->FileName());
 
-    if(rc != NULL) {
+    if(rc != nullptr) {
         esyslog("Recording \"%s\" is in use by timer %d", recording->Name(), rc->Timer()->Index() + 1);
         response->put_U32(ROBOTV_RET_DATALOCKED);
         return response;
@@ -214,7 +211,7 @@ MsgPacket* MovieController::processDelete(MsgPacket* request) {
     }
 
     Recordings->DelByName(recording->FileName());
-    isyslog("Recording \"%s\" deleted", recording->FileName());
+    isyslog("Recording deleted");
     response->put_U32(ROBOTV_RET_OK);
 
     return response;
@@ -260,7 +257,7 @@ MsgPacket* MovieController::processGetMarks(MsgPacket* request) {
 
     MsgPacket* response = createResponse(request);
 
-    if(recording == NULL) {
+    if(recording == nullptr) {
         esyslog("GetMarks: recording not found !");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return response;
@@ -275,18 +272,18 @@ MsgPacket* MovieController::processGetMarks(MsgPacket* request) {
     }
 
     response->put_U32(ROBOTV_RET_OK);
-    response->put_U64(recording->FramesPerSecond() * 10000);
+    response->put_U64((uint64_t)(recording->FramesPerSecond() * 10000));
 
-    cMark* end = NULL;
-    cMark* begin = NULL;
+    cMark* end = nullptr;
+    cMark* begin = nullptr;
 
-    while((begin = marks.GetNextBegin(end)) != NULL) {
+    while((begin = marks.GetNextBegin(end)) != nullptr) {
         end = marks.GetNextEnd(begin);
 
-        if(end != NULL) {
+        if(end != nullptr) {
             response->put_String("SCENE");
-            response->put_U64(begin->Position());
-            response->put_U64(end->Position());
+            response->put_U64((uint64_t)begin->Position());
+            response->put_U64((uint64_t)end->Position());
             response->put_String(begin->ToText());
         }
     }
@@ -321,7 +318,7 @@ MsgPacket* MovieController::processSearch(MsgPacket* request) {
     cache.search(searchTerm, [&](uint32_t recid) {
         auto recording = cache.lookup(Recordings, recid);
 
-        if(recording == NULL) {
+        if(recording == nullptr) {
             return;
         }
 
@@ -369,16 +366,16 @@ void MovieController::recordingToPacket(const cRecording* recording, MsgPacket* 
     }
 
     // recording_time
-    response->put_U32(recordingStart);
+    response->put_U32((uint32_t)recordingStart);
 
     // duration
-    response->put_U32(recordingDuration);
+    response->put_U32((uint32_t)recordingDuration);
 
     // priority
-    response->put_U32(recording->Priority());
+    response->put_U32((uint32_t)recording->Priority());
 
     // lifetime
-    response->put_U32(recording->Lifetime());
+    response->put_U32((uint32_t)recording->Lifetime());
 
     // channel_name
     response->put_String(recording->Info()->ChannelName() ? m_toUtf8.convert(recording->Info()->ChannelName()) : "");
@@ -413,10 +410,10 @@ void MovieController::recordingToPacket(const cRecording* recording, MsgPacket* 
     response->put_String(recid);
 
     // playcount
-    response->put_U32(cache.getPlayCount(uid));
+    response->put_U32((uint32_t)cache.getPlayCount(uid));
 
     // content
-    response->put_U32(content);
+    response->put_U32((uint32_t)content);
 
     // thumbnail url - for future use
     response->put_String((const char*)cache.getPosterUrl(uid));
