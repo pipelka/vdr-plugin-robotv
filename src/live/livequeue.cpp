@@ -94,7 +94,9 @@ void LiveQueue::start() {
                 write(p);
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            if(m_writerRunning) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
         }
     });
 
