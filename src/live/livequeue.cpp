@@ -120,7 +120,6 @@ void LiveQueue::createRingBuffer() {
     }
 
     m_readFd = open(m_storage, O_NOATIME | O_RDONLY, 0644);
-    posix_fadvise(m_readFd, 0, length, POSIX_FADV_SEQUENTIAL);
 
     if(m_readFd == -1) {
         esyslog("Failed to create timeshift ringbuffer !");
@@ -168,7 +167,11 @@ MsgPacket* LiveQueue::internalRead() {
     }
 
     // read packet from storage
-    return MsgPacket::read(m_readFd, 1000);
+    auto p = MsgPacket::read(m_readFd, 1000);
+
+    // do not cache the packet anymore
+    posix_fadvise(m_readFd, readPosition, p->getPacketLength(), POSIX_FADV_DONTNEED);
+    return p;
 }
 
 bool LiveQueue::isPaused() {
