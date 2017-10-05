@@ -45,7 +45,7 @@ public:
 
     void queue(MsgPacket* p, StreamInfo::Content content, int64_t pts = 0);
 
-    MsgPacket* read(bool keyFrameMode = false);
+    MsgPacket* read();
 
     int64_t seek(int64_t wallclockPositionMs);
 

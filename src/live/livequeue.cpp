@@ -125,15 +125,11 @@ void LiveQueue::createRingBuffer() {
 
 }
 
-MsgPacket* LiveQueue::read(bool keyFrameMode) {
+MsgPacket* LiveQueue::read() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if(m_pause) {
         return NULL;
-    }
-
-    if(keyFrameMode) {
-        seekNextKeyFrame();
     }
 
     return internalRead();
@@ -372,30 +368,6 @@ int64_t LiveQueue::seek(int64_t wallclockPositionMs) {
     // not found
     esyslog("fileposition not found!");
     return 0;
-}
-
-void LiveQueue::seekNextKeyFrame() {
-    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
-
-    auto i = m_indexList.begin();
-    auto j = i;
-
-    while(i != m_indexList.end()) {
-        j++;
-
-        if(j == m_indexList.end()) {
-            return;
-        }
-
-        if(i->filePosition < readPosition && readPosition <= j->filePosition) {
-            readPosition = j->filePosition;
-            break;
-        }
-
-        i++;
-    }
-
-    lseek(m_readFd, readPosition, SEEK_SET);
 }
 
 int64_t LiveQueue::getTimeshiftStartPosition() {
