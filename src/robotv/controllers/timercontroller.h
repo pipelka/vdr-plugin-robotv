@@ -34,11 +34,11 @@ class MsgPacket;
 class TimerController : public Controller {
 public:
 
-    TimerController(RoboTvClient* parent);
+    explicit TimerController(RoboTvClient* parent);
 
-    virtual ~TimerController();
+    ~TimerController() override = default;
 
-    MsgPacket* process(MsgPacket* request);
+    MsgPacket* process(MsgPacket* request) override;
 
     static void event2Packet(const cEvent* event, MsgPacket* p);
 
@@ -56,7 +56,11 @@ private:
 
     MsgPacket* processAdd(MsgPacket* request);
 
+    MsgPacket* processAddSearchTimer(MsgPacket* request);
+
     MsgPacket* processDelete(MsgPacket* request);
+
+    MsgPacket* processDeleteSearchTimer(MsgPacket* request);
 
     MsgPacket* processUpdate(MsgPacket* request);
 

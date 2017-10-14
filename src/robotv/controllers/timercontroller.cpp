@@ -39,7 +39,7 @@ Epgsearch_services_v1_0* getEpgServiceData() {
         return nullptr;
     }
 
-    Epgsearch_services_v1_0* serviceData = new Epgsearch_services_v1_0;
+    auto serviceData = new Epgsearch_services_v1_0;
 
     if(!plugin->Service("Epgsearch-services-v1.0", serviceData)) {
         esyslog("unable to get 'Epgsearch_services_v1_0' from plugin.");
@@ -53,9 +53,6 @@ TimerController::TimerController(RoboTvClient* parent) : m_parent(parent) {
 }
 
 TimerController::TimerController(const TimerController& orig) {
-}
-
-TimerController::~TimerController() {
 }
 
 MsgPacket* TimerController::process(MsgPacket* request) {
@@ -72,13 +69,20 @@ MsgPacket* TimerController::process(MsgPacket* request) {
         case ROBOTV_TIMER_ADD:
             return processAdd(request);
 
+        case ROBOTV_SEARCHTIMER_ADD:
+            return processAddSearchTimer(request);
+
         case ROBOTV_TIMER_DELETE:
             return processDelete(request);
 
+        case ROBOTV_SEARCHTIMER_DELETE:
+            return processDeleteSearchTimer(request);
+
         case ROBOTV_TIMER_UPDATE:
             return processUpdate(request);
+
         default:
-            return nullptr;
+            break;
     }
 
     return nullptr;
@@ -89,7 +93,7 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     int flags = checkTimerConflicts(timer);
     const char* fileName = timer->File();
     const char* aux = timer->Aux();
-    uint32_t searchTimerId = (uint32_t)-1;
+    auto searchTimerId = (uint32_t)-1;
 
     // we have auxillary timer data ?
     if(aux != nullptr) {
@@ -189,7 +193,7 @@ MsgPacket* TimerController::processGet(MsgPacket* request) { /* OPCODE 81 */
 
     const cTimer* timer = Timers->Get(number - 1);
 
-    if(timer == NULL) {
+    if(timer == nullptr) {
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return response;
     }
@@ -317,10 +321,10 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
     // handle instant timers
     if(startTime == -1 || startTime == 0) {
-        startTime = time(NULL);
+        startTime = time(nullptr);
     }
 
-    struct tm tm_r;
+    struct tm tm_r{};
 
     struct tm* time = localtime_r(&startTime, &tm_r);
 
@@ -340,7 +344,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
 
     const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, channelid);
 
-    if (channel == NULL) {
+    if (channel == nullptr) {
         esyslog("channel with id '%i' not found - unable to add timer !", channelid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return response;
@@ -351,7 +355,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
                               *cTimer::PrintDay(day, weekdays, true), start, stop, priority, lifetime, file, aux);
 
     // replace invalid characters in file
-    char* p = (char*)file;
+    auto* p = (char*)file;
 
     while(*p) {
         if(*p == ' ' || *p == ':') {
@@ -361,7 +365,7 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
         p++;
     }
 
-    cTimer* timer = new cTimer;
+    auto timer = new cTimer;
 
     if(timer->Parse(buffer)) {
         const cTimer* t = Timers->GetTimer(timer);
@@ -401,34 +405,165 @@ MsgPacket* TimerController::processAdd(MsgPacket* request) {
     return response;
 }
 
+MsgPacket* TimerController::processAddSearchTimer(MsgPacket* request) {
+
+    // get channelUid and search term from message
+
+    uint32_t uid = request->get_U32();
+    std::string term = request->get_String();
+
+    MsgPacket* response = createResponse(request);
+
+    LOCK_CHANNELS_READ;
+
+    // check if channel is valid
+
+    const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, uid);
+
+    if(channel == nullptr) {
+        response->put_U32(ROBOTV_RET_DATAUNKNOWN);
+        return response;
+    }
+
+    // translate term
+    std::string searchTerm;
+    for(auto& c: term) {
+        searchTerm += (c == ':') ? '|' : c;
+    }
+
+    // search term must not be empty
+
+    if(searchTerm.empty()) {
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return response;
+    }
+
+    // check for 'epgsearch' service
+
+    auto service = getEpgServiceData();
+
+    if(service == nullptr) {
+        response->put_U32(ROBOTV_RET_ERROR);
+        return response;
+    }
+
+    RoboTVServerConfig& config = RoboTVServerConfig::instance();
+
+    // assemble search timer string
+    // http://winni.vdr-developer.org/epgsearch/en/epgsearch.4.html#2__the_format_of_epgsearch_conf
+
+    // the following items are interesting for us
+    //  0 - unique search timer id
+    //  1 - the search term (will be the tv-show name)
+    //  5 - use channel (1 - interval);
+    //  6 - channel id
+    //  8 - search mode (0/1/2/3/4/5, 0 - search the whole term)
+    // 15 - use as search timer (0/1)
+    // 18 - use series recordings (0/1)
+    // 19 - directory for recordings
+    // 20 - priority
+    // 22 - time margin for start in minutes
+    // 23 - time margin for stop in minutes
+    // 24 - use VPS (0/1)
+    // 25 - action (0 - create a timer / 2 - announce only))
+    // 28 - avoid repeats (0/1)
+    // 30 - compare title
+    // 31 - compare subtitle
+    // 32 - compare description
+
+    std::string searchTimer = *cString::sprintf(
+        "%i:%s:0:::%i:%s:0:%i:1:0:0:0:::%i:0:0:%i:%s:%i:99:%i:%i:%i:%i:0::%i:0:%i:%i:%i:0:0:0:0:1:0:0::1:0:0:0:0:0:0:0:0:0:90::0",
+        0,                                   // search timer id (0 -> new timer)
+        searchTerm.c_str(),                  // the search term
+        1,                                   // use channel (1 - interval)
+        *channel->GetChannelID().ToString(), // channel id
+        0,                                   // search mode (0 - search the whole term)
+        1,                                   // use as search timer
+        1,                                   // use series recordings
+        config.seriesFolder.c_str(),         // directory for recordings
+        80,                                  // priority
+        2,                                   // time margin for start in minutes
+        10,                                  // time margin for stop in minutes
+        0,                                   // use VPS
+        0,                                   // action create timer
+        1,                                   // avoid repeats
+        1,                                   // compare title
+        1,                                   // compare subtitle
+        0                                    // compare description
+        );
+
+    if(searchTimer.empty()) {
+        esyslog("processAddSearchTimer - timer definiton is empty !");
+        response->put_U32(ROBOTV_RET_ERROR);
+        return response;
+    }
+
+    dsyslog("add search timer: '%s'", searchTimer.c_str());
+
+    int searchTimerId = service->handler->AddSearchTimer(searchTimer);
+
+    if(searchTimerId == -1) {
+        response->put_U32(ROBOTV_RET_NOTSUPPORTED);
+        return response;
+    }
+
+    response->put_U32(ROBOTV_RET_OK);
+    response->put_U32((uint32_t)searchTimerId);
+
+    return response;
+}
+
 MsgPacket* TimerController::processDelete(MsgPacket* request) {
     uint32_t uid = request->get_U32();
-    bool force = true; //(request->get_U32() == 1);
 
     LOCK_TIMERS_WRITE;
 
     cTimer* timer = roboTV::Hash::findTimerByUid(Timers, uid);
     MsgPacket* response = createResponse(request);
 
-    if(timer == NULL) {
+    if(timer == nullptr) {
         esyslog("Unable to delete timer - invalid timer identifier");
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return response;
     }
 
-    if(timer->Recording() && !force) {
-        esyslog("Timer is recording and can be deleted (use force to stop it)");
-        response->put_U32(ROBOTV_RET_RECRUNNING);
-        return response;
-    }
-
     timer->Skip();
 
-    cRecordControls::Process(Timers, time(NULL));
+    cRecordControls::Process(Timers, time(nullptr));
 
     isyslog("Deleting timer %s", *timer->ToDescr());
     Timers->Del(timer);
     Timers->SetModified();
+    response->put_U32(ROBOTV_RET_OK);
+
+    return response;
+}
+
+MsgPacket* TimerController::processDeleteSearchTimer(MsgPacket* request) {
+
+    // get search timer id
+
+    int searchTimerId = request->get_U32();
+
+    // create response
+
+    auto response = createResponse(request);
+
+    // check for 'epgsearch' service
+
+    auto service = getEpgServiceData();
+
+    if(service == nullptr) {
+        response->put_U32(ROBOTV_RET_ERROR);
+        return response;
+    }
+
+    // let 'epgsearch' remove the search timer
+
+    if(!service->handler->DelSearchTimer(searchTimerId)) {
+        response->put_U32(ROBOTV_RET_DATAUNKNOWN);
+    }
+
     response->put_U32(ROBOTV_RET_OK);
 
     return response;
@@ -449,7 +584,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
     const char* file    = request->get_String();
     const char* aux     = request->get_String();
 
-    struct tm tm_r;
+    struct tm tm_r{};
     struct tm* time = localtime_r(&startTime, &tm_r);
 
     if(day <= 0) {
@@ -467,7 +602,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
 
     const cChannel *channel = roboTV::Hash::findChannelByUid(Channels, channelid);
 
-    if (channel == NULL) {
+    if (channel == nullptr) {
         esyslog("channel with id '%i' not found - unable to update timer !", channelid);
         response->put_U32(ROBOTV_RET_DATAINVALID);
         return response;
@@ -486,7 +621,7 @@ MsgPacket* TimerController::processUpdate(MsgPacket* request) {
             aux);
 
     cTimer* timer = roboTV::Hash::findTimerByUid(Timers, uid);
-    if(timer == NULL) {
+    if(timer == nullptr) {
         esyslog("Timer not defined");
         response->put_U32(ROBOTV_RET_DATAUNKNOWN);
         return response;
@@ -563,8 +698,8 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     transponders.insert(timer->Channel()->Transponder()); // we also count ourself
     const cTimer* to_check = timer;
 
-    for(auto i = timeline.begin(); i != timeline.end(); i++) {
-        auto t = i->second;
+    for(auto& i : timeline) {
+        auto t = i.second;
 
         // this one is earlier -> no match
         if(t->StopTime() <= to_check->StartTime()) {
@@ -598,7 +733,7 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
     for(int i = 0; i < cDevice::NumDevices(); i++) {
         cDevice* device = cDevice::GetDevice(i);
 
-        if(device != NULL && device->ProvidesTransponder(timer->Channel())) {
+        if(device != nullptr && device->ProvidesTransponder(timer->Channel())) {
             number_of_devices_for_this_channel++;
         }
     }
