@@ -489,7 +489,7 @@ MsgPacket* TimerController::processAddSearchTimer(MsgPacket* request) {
         1,                                   // avoid repeats
         1,                                   // compare title
         1,                                   // compare subtitle
-        0                                    // compare description
+        1                                    // compare description
         );
 
     if(searchTimer.empty()) {
