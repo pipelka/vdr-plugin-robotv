@@ -472,12 +472,12 @@ MsgPacket* TimerController::processAddSearchTimer(MsgPacket* request) {
     // 32 - compare description
 
     std::string searchTimer = *cString::sprintf(
-        "%i:%s:0:::%i:%s:0:%i:1:0:0:0:::%i:0:0:%i:%s:%i:99:%i:%i:%i:%i:0::%i:0:%i:%i:%i:0:0:0:0:1:0:0::1:0:0:0:0:0:0:0:0:0:90::0",
+        "%i:%s:0:::%i:%s:0:%i:1:0:0:0:::%i:0:0:%i:%s:%i:99:%i:%i:%i:%i:0::%i:0:%i:%i:%i:0:0:0:0:1:0:0::1:0:0:0:0:0:0:0:0:0:%i::0",
         0,                                   // search timer id (0 -> new timer)
         searchTerm.c_str(),                  // the search term
         1,                                   // use channel (1 - interval)
         *channel->GetChannelID().ToString(), // channel id
-        0,                                   // search mode (0 - search the whole term)
+        3,                                   // search mode (0 - search the whole term / 3 - matches exactly)
         1,                                   // use as search timer
         1,                                   // use series recordings
         config.seriesFolder.c_str(),         // directory for recordings
@@ -489,7 +489,8 @@ MsgPacket* TimerController::processAddSearchTimer(MsgPacket* request) {
         1,                                   // avoid repeats
         1,                                   // compare title
         1,                                   // compare subtitle
-        1                                    // compare description
+        1,                                   // compare description
+        100                                  // the minimum required match in percent when descriptions are compared to avoid repeats
         );
 
     if(searchTimer.empty()) {
