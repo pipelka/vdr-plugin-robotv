@@ -134,12 +134,7 @@ void TimerController::timer2Packet(const cTimer* timer, MsgPacket* p) {
     }
 
     // get timer event
-    const cEvent* event = timer->Event();
-
-    // no event available (try to find it)
-    if(event == nullptr) {
-        event = findEvent(timer);
-    }
+    const cEvent* event = findEvent(timer);
 
     if(event == nullptr) {
         p->put_U8(0);
@@ -758,6 +753,12 @@ int TimerController::checkTimerConflicts(const cTimer* timer) {
 }
 
 const cEvent *TimerController::findEvent(const cTimer *timer) {
+    auto event = timer->Event();
+
+    if(event != nullptr) {
+        return event;
+    }
+
     LOCK_SCHEDULES_READ;
 
     if(Schedules == nullptr) {
@@ -766,7 +767,13 @@ const cEvent *TimerController::findEvent(const cTimer *timer) {
 
     const cSchedule* schedule = Schedules->GetSchedule(timer->Channel()->GetChannelID());
 
-    for(const cEvent* event = schedule->Events()->First(); event; event = schedule->Events()->Next(event)) {
+    for(event = schedule->Events()->First(); event; event = schedule->Events()->Next(event)) {
+        // VPS timer
+        if((timer->Flags() & tfVps) && event->Vps() == timer->StartTime()) {
+            return event;
+        }
+
+        // regular timer
         time_t eventStopTime = event->StartTime() + event->Duration();
 
         if(event->StartTime() >= timer->StartTime() && eventStopTime <= timer->StopTime()) {
