@@ -26,7 +26,7 @@
 
 #include "parser.h"
 
-Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : RingBuffer(buffersize, packetsize), m_demuxer(demuxer), m_startup(true) {
+Parser::Parser(TsDemuxer* demuxer, int buffersize, int packetsize) : RingBuffer(buffersize, 5 * 1024 * 1024, packetsize), m_demuxer(demuxer), m_startup(true) {
     m_sampleRate = 0;
     m_bitRate = 0;
     m_channels = 0;
