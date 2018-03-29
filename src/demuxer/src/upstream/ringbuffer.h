@@ -34,6 +34,7 @@
 class RingBuffer {
 private:
     int m_size;
+    int m_maxSize;
     int m_margin;
     int m_head;
     int m_tail;
@@ -41,9 +42,12 @@ private:
     uint8_t* m_buffer;
 
 protected:
-    int size(void) const {
+
+    inline int size() const {
         return m_size;
     }
+
+    bool alloc(int size);
 
     /**
      * By default a ring buffer has data ready as soon as there are at least
@@ -67,13 +71,13 @@ public:
      * @param size total size of the buffer
      * @param margin block size
      */
-    RingBuffer(int size, int margin = 0);
+    explicit RingBuffer(int size, int maxSize, int margin = 0);
 
     virtual ~RingBuffer();
 
-    int available(void) const;
+    int available() const;
 
-    int free(void) const {
+    int free() const {
         return size() - available() - 1 - m_margin;
     }
 

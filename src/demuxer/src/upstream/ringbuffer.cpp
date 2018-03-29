@@ -26,19 +26,20 @@
  */
 
 #include "ringbuffer.h"
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 
-RingBuffer::RingBuffer(int size, int margin) {
-    m_size = size;
+RingBuffer::RingBuffer(int size, int maxSize, int margin) {
+    m_size = 0;
+    m_maxSize = maxSize;
     m_tail = m_head = m_margin = margin;
     m_gotten = 0;
-    m_buffer = NULL;
+    m_buffer = nullptr;
 
     if(size > 1) {  // 'Size - 1' must not be 0!
         if(margin <= size / 2) {
-            m_buffer = (uint8_t*)malloc((size_t)size);
+            alloc(size);
             clear();
         }
     }
@@ -52,12 +53,12 @@ int RingBuffer::onDataReady(const uint8_t* data, int count) {
     return count >= m_margin ? count : 0;
 }
 
-int RingBuffer::available(void) const {
+int RingBuffer::available() const {
     int diff = m_head - m_tail;
     return (diff >= 0) ? diff : size() + diff - m_margin;
 }
 
-void RingBuffer::clear(void) {
+void RingBuffer::clear() {
     m_tail = m_head = m_margin;
 }
 
@@ -71,27 +72,31 @@ int RingBuffer::put(const uint8_t *data, int count) {
     int diff = Tail - m_head;
     int free = ((Tail < m_margin) ? rest : (diff > 0) ? diff : size() + diff - m_margin) - 1;
 
-    if(free > 0) {
-        if(free < count) {
-            count = free;
+    // try to increase buffer size
+    if(free < count) {
+        // increase buffer in 32k steps
+        int neededSize = m_size + 32 * 1024;
+
+        if(alloc(neededSize)) {
+            return put(data, count);
         }
 
-        if(count >= rest) {
-            memcpy(m_buffer + m_head, data, (size_t)rest);
+        count = 0;
+        return count;
+    }
 
-            if(count - rest) {
-                memcpy(m_buffer + m_margin, data + rest, (size_t)count - rest);
-            }
+    if(count >= rest) {
+        memcpy(m_buffer + m_head, data, (size_t)rest);
 
-            m_head = m_margin + count - rest;
+        if(count - rest) {
+            memcpy(m_buffer + m_margin, data + rest, (size_t)count - rest);
         }
-        else {
-            memcpy(m_buffer + m_head, data, (size_t)count);
-            m_head += count;
-        }
+
+        m_head = m_margin + count - rest;
     }
     else {
-        count = 0;
+        memcpy(m_buffer + m_head, data, (size_t)count);
+        m_head += count;
     }
 
     return count;
@@ -143,4 +148,31 @@ void RingBuffer::del(int count) {
     }
 
     m_tail = tail;
+}
+
+bool RingBuffer::alloc(int size) {
+    if(size > m_maxSize) {
+        return false;
+    }
+
+    if(m_buffer != nullptr) {
+        auto buffer = (uint8_t*)realloc(m_buffer, (size_t)size);
+
+        if(buffer == nullptr) {
+            return false;
+        }
+
+        m_buffer = buffer;
+        m_size = size;
+
+        return true;
+    }
+
+    m_buffer = (uint8_t*)malloc((size_t)size);
+
+    if(m_buffer != nullptr) {
+        m_size = size;
+    }
+
+    return (m_buffer != nullptr);
 }
