@@ -67,6 +67,8 @@ protected:
 
     MsgPacket* processSearch(MsgPacket* request);
 
+    MsgPacket* processGetMovie(MsgPacket* request);
+
 private:
 
     MovieController(const MovieController& orig);

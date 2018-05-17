@@ -71,6 +71,9 @@ MsgPacket* MovieController::process(MsgPacket* request) {
         case ROBOTV_RECORDINGS_SEARCH:
             return processSearch(request);
 
+        case ROBOTV_RECORDINGS_GETMOVIE:
+            return processGetMovie(request);
+
         default:
             break;
     }
@@ -420,4 +423,24 @@ void MovieController::recordingToPacket(const cRecording* recording, MsgPacket* 
 
     // icon url - for future use
     response->put_String((const char*)cache.getBackgroundUrl(uid));
+}
+
+MsgPacket *MovieController::processGetMovie(MsgPacket *request) {
+    RecordingsCache& cache = RecordingsCache::instance();
+
+    const char* id = request->get_String();
+    uint32_t recid = recid2uid(id);
+    MsgPacket* response = createResponse(request);
+
+    LOCK_RECORDINGS_READ;
+
+    auto recording = cache.lookup(Recordings, recid);
+
+    if(recording == nullptr) {
+        response->put_U32(ROBOTV_RET_DATAINVALID);
+        return response;
+    }
+
+    recordingToPacket(recording, response);
+    return response;
 }
