@@ -141,11 +141,6 @@ void TsDemuxer::setVideoInformation(int fpsScale, int fpsRate, uint16_t height, 
 }
 
 void TsDemuxer::setAudioInformation(uint8_t channels, uint32_t sampleRate, uint32_t bitRate) {
-    // only 2 and 6 channels allowed currently
-    if(channels != 2 && channels != 6) {
-        return;
-    }
-
     // only register changed audio information
     if(channels == m_channels && sampleRate == m_sampleRate) {
         return;
