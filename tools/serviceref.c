@@ -209,7 +209,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		if(sscanf(line, "%a[^:]:%d :%a[^:]:%a[^:] :%d :%a[^:]:%a[^:]:%a[^:]:%a[^:]:%d :%d :%d :%d ",
+		if(sscanf(line, "%m[^:]:%d :%m[^:]:%m[^:] :%d :%m[^:]:%m[^:]:%m[^:]:%m[^:]:%d :%d :%d :%d ",
 		          &name,
 		          &freq,
 		          &parameters,
