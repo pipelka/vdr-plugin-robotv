@@ -78,9 +78,9 @@ protected:
      */
     virtual void onPacket(MsgPacket* p, StreamInfo::Content content, int64_t pts) = 0;
 
-    void onStreamPacket(TsDemuxer::StreamPacket *p);
+    void onStreamPacket(TsDemuxer::StreamPacket *p) override;
 
-    void onStreamChange();
+    void onStreamChange() override;
 
     StreamBundle createFromPatPmt(const cPatPmtParser* patpmt);
 
@@ -89,9 +89,10 @@ protected:
     inline DemuxerBundle& getDemuxers() {
         return m_demuxers;
     }
-private:
 
     void cleanupQueue();
+
+private:
 
     cPatPmtParser m_parser;
 
