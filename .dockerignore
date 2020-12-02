@@ -1,0 +1,7 @@
+docker/mounts
+docker/example
+.git
+.vscode
+build
+*.so
+*.o
