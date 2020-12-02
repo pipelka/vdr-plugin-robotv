@@ -344,8 +344,7 @@ void LiveStreamer::processChannelChange(const cChannel* channel) {
     isyslog("ChannelChange()");
 
     Detach();
-    flush();
-    reset();
+    cleanupQueue(); // remove pre-queued packets
     switchChannel(channel);
 }
 
