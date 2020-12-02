@@ -9,7 +9,7 @@ find_package(PkgConfig REQUIRED)
 
 # check for vdr
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_CURRENT_SOURCE_DIR}/../../..")
-pkg_check_modules(VDR vdr>=2.3.8)
+pkg_check_modules(VDR vdr>=2.4.0)
 
 macro(vdr_find_variable _variable)
     execute_process(
