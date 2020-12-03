@@ -33,7 +33,7 @@ sudo mkdir -p /srv/robotv
 sudo mkdir -p /srv/video
 ```
 
-- Start the robotv-server container
+- Start the robotv container
 
 ```
 docker run --rm -ti \
@@ -46,7 +46,7 @@ docker run --rm -ti \
     -v /srv/video:/video \
     -p 34892:34892 \
     --device=/dev/dvb \
-    pipelka/robotv-server
+    pipelka/robotv
 ```
 
 ##Docker Volumes to store data
@@ -95,7 +95,7 @@ docker run --rm -ti \
     -v /srv/video:/video \
     -p 34892:34892 \
     --net=host \
-    pipelka/robotv-server
+    pipelka/robotv
 ```
 
 - connect to SAT<IP server with 4 devices
@@ -108,7 +108,7 @@ docker run --rm -ti \
     -v /srv/vdr:/data \
     -v /srv/video:/video \
     --net=host \
-    pipelka/robotv-server
+    pipelka/robotv
 ```
 
 - enable dvbapi with server 192.168.100.200 on port 2222 and pass dvb devices to the container
@@ -123,7 +123,7 @@ docker run --rm -ti \
     -v /srv/video:/video \
     -p 34892:34892 \
     --device=/dev/dvb \
-    pipelka/robotv-server
+    pipelka/robotv
 ```
 
 - use SAT<IP with dvbapi and set picons url
@@ -139,7 +139,7 @@ docker run --rm -ti \
     -v /srv/vdr:/data \
     -v /srv/video:/video \
     --net=host \
-    pipelka/robotv-server
+    pipelka/robotv
 ```
 
 ##Building the image
