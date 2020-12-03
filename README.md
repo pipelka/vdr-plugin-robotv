@@ -22,7 +22,7 @@ The "robotv" docker image is a turn-key solution to deploy a headless [VDR](http
 - Docker installation is required, see the official installation [docs](https://docs.docker.com/engine/installation/)
 - DVB card or SAT<IP server needed
 
-##Running roboTV Server
+## Running roboTV Server
 
 roboTV can run with various configurations. This sample configuration uses local DVB devices and the dvbapi plugin to access your smartcard but can be configured completely different (see examples below). It also sets an URL clients will use to fetch channel icons (Enigma Picons). The roboTV TCP/IP port must always be exposed.
 
@@ -49,7 +49,7 @@ docker run --rm -ti \
     pipelka/robotv
 ```
 
-##Docker Volumes to store data
+## Docker Volumes to store data
 
 | Host Location | Container | Description |
 | --- | --- | --- |
@@ -77,14 +77,14 @@ You can change these directories to meet your requirements.
 | VDR_DISEQC | 0 | 0 = DisEqC disabled | 1 = enabled |
 | TZ | Europe/Vienna | Timezone to use |
 
-##Ports in use
+## Ports in use
 
 | Port | Description |
 | --- | --- |
 | 34892 | roboTV port for client communication (must always be connected) |
 | 6419 | VDR svdrp port |
 
-##Examples
+## Examples
 
 - connect to SAT<IP server (autodetect)
 
@@ -142,8 +142,7 @@ docker run --rm -ti \
     pipelka/robotv
 ```
 
-##Building the image
-------------------
+## Building the image
 
 To keep the generated docker image as small as possible it is built upon alpine linux.
 The dockerfile contains 2 stages for building the image
