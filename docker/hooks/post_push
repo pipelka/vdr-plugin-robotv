@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "=> tagging and pushing roboTV docker image (version ${ROBOTV_VERSION}-${DOCKER_BUILD})"
+
+. $(pwd)/version
+
+docker tag pipelka/robotv-server:latest pipelka/robotv-server:${ROBOTV_VERSION}-${DOCKER_BUILD}
+docker push pipelka/robotv-server:${ROBOTV_VERSION}-${DOCKER_BUILD}

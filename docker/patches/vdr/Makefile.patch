@@ -1,0 +1,11 @@
+--- vdr/Makefile.orig	2020-11-30 08:25:19.012331701 +0100
++++ vdr/Makefile	2020-11-30 11:02:19.668867673 +0100
+@@ -300,7 +300,7 @@
+ 	@mkdir -p $(DESTDIR)$(RESDIR)
+ 
+ install-conf: install-dirs
+-	@cp -pn *.conf $(DESTDIR)$(CONFDIR)
++	@cp -p *.conf $(DESTDIR)$(CONFDIR)
+ 
+ # Documentation:
+ 
