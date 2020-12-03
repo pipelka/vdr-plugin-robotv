@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(robotv)
 
 set(PLUGIN "robotv")
-set(ROBOTV_VERSION "0.13.3")
+set(ROBOTV_VERSION "0.14.0")
 
 # check for pkg-config
 find_package(PkgConfig REQUIRED)
