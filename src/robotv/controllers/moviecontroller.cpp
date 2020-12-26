@@ -418,11 +418,17 @@ void MovieController::recordingToPacket(const cRecording* recording, MsgPacket* 
     // content
     response->put_U32((uint32_t)content);
 
-    // thumbnail url - for future use
+    // poster url
     response->put_String((const char*)cache.getPosterUrl(uid));
 
-    // icon url - for future use
+    // background url
     response->put_String((const char*)cache.getBackgroundUrl(uid));
+
+    // last position
+    if(response->getProtocolVersion() > 8) {
+        uint64_t position = RecordingsCache::instance().getLastPlayedPosition(uid);
+        response->put_U64(position);
+    }
 }
 
 MsgPacket *MovieController::processGetMovie(MsgPacket *request) {
