@@ -138,8 +138,12 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
         auto r = Recordings->GetByName(fileName.c_str());
 
         if(r != nullptr) {
-            const cEvent* e = r->Info()->GetEvent();
-            onRecording(e, On);
+            const cRecordingInfo* info = r->Info();
+
+            if(info != nullptr) {
+                const cEvent* e = info->GetEvent();
+                onRecording(e, On);
+            }
         }
 
         // also request timers update on recording change (the status of the
@@ -150,7 +154,7 @@ void RoboTvClient::Recording(const cDevice* Device, const char* Name, const char
 
         queueMessage(resp);
     });
-    t.detach();
+    t.join();
 }
 
 void RoboTvClient::TimerChange(const cTimer* Timer, eTimerChange Change) {
