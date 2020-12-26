@@ -26,7 +26,7 @@
 #define ROBOTV_COMMAND_H
 
 /** Current RoboTV Protocol Version number */
-#define ROBOTV_PROTOCOLVERSION          8
+#define ROBOTV_PROTOCOLVERSION          9
 
 
 /** Packet types */
