@@ -39,7 +39,8 @@
 RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
     m_streamController(this),
     m_recordingController(this),
-    m_timerController(this) {
+    m_timerController(this),
+    m_movieController(this) {
 
     m_controllers = {
         &m_streamController,

@@ -98,7 +98,6 @@ protected:
     virtual void Recording(const cDevice* Device, const char* Name, const char* FileName, bool On);
     virtual void TimerChange(const cTimer* Timer, eTimerChange Change);
     virtual void ChannelChange(const cChannel* Channel);
-    virtual void UpdateRecordings();
 
 public:
 
@@ -120,6 +119,7 @@ public:
         return m_socket;
     }
 
+    virtual void UpdateRecordings();
 };
 
 #endif // ROBOTV_CLIENT_H
