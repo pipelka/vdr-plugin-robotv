@@ -215,6 +215,7 @@ void RoboTVServer::clientConnected(int fd) {
 
 void RoboTVServer::broadcastMessage(MsgPacket* p) {
     std::lock_guard<std::mutex> lock(m_broadcastLock);
+    m_broadcast.push_back(p);
 }
 
 void RoboTVServer::Action(void) {
