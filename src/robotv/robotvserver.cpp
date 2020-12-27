@@ -47,6 +47,8 @@
 #include "tools/hash.h"
 
 unsigned int RoboTVServer::m_idCnt = 0;
+std::deque<MsgPacket*> RoboTVServer::m_broadcast;
+std::mutex RoboTVServer::m_broadcastLock;
 
 class cAllowedHosts : public cSVDRPhosts {
 public:
@@ -211,6 +213,10 @@ void RoboTVServer::clientConnected(int fd) {
     m_idCnt++;
 }
 
+void RoboTVServer::broadcastMessage(MsgPacket* p) {
+    std::lock_guard<std::mutex> lock(m_broadcastLock);
+}
+
 void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
@@ -266,6 +272,22 @@ void RoboTVServer::Action(void) {
                 }
                 else {
                     i++;
+                }
+            }
+
+            // send pending broadcast messages
+            {
+                std::lock_guard<std::mutex> lock(m_broadcastLock);
+
+                while(!m_broadcast.empty()) {
+                    MsgPacket* p = m_broadcast.front();
+
+                    for(auto& client: m_clients) {
+                        client->queueMessage(p);
+                    }
+
+                    m_broadcast.pop_front();
+                    delete p;
                 }
             }
 

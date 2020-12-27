@@ -26,11 +26,14 @@
 #define ROBOTV_SERVER_H
 
 #include <list>
+#include <deque>
+#include <mutex>
 #include <vdr/thread.h>
 
 #include "config/config.h"
 
 class RoboTvClient;
+class MsgPacket;
 
 class RoboTVServer : public cThread {
 protected:
@@ -55,11 +58,17 @@ protected:
 
     static unsigned int m_idCnt;
 
+    static std::deque<MsgPacket*> m_broadcast;
+
 public:
 
     RoboTVServer(int listenPort);
 
     virtual ~RoboTVServer();
+
+    static std::mutex m_broadcastLock;
+
+    static void broadcastMessage(MsgPacket* p);
 };
 
 #endif // ROBOTV_SERVER_H
