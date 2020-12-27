@@ -31,12 +31,11 @@
 #include "controller.h"
 
 class MsgPacket;
-class RoboTvClient;
 
 class MovieController : public Controller {
 public:
 
-    explicit MovieController(RoboTvClient* parent);
+    explicit MovieController();
 
     ~MovieController() override = default;
 
@@ -77,8 +76,6 @@ private:
     void recordingToPacket(const cRecording* recording, MsgPacket* response);
 
     Utf8Conv m_toUtf8;
-
-    RoboTvClient* m_parent;
 };
 
 #endif // ROBOTV_MOVIESCONTROLLER_H
