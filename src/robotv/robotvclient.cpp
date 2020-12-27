@@ -192,8 +192,8 @@ void RoboTvClient::ChannelChange(const cChannel* Channel) {
 }
 
 void RoboTvClient::UpdateRecordings() {
-    MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
-    broadcastMessage(resp);
+    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
+    RoboTVServer::broadcastMessage(p);
 }
 
 void RoboTvClient::onRecording(const cEvent* event, bool on) {
@@ -256,5 +256,5 @@ void RoboTvClient::broadcastMessage(MsgPacket* p) {
         return;
     }
 
-    queueMessage(p);
+    queueMessage(p->clone());
 }
