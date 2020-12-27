@@ -98,6 +98,7 @@ protected:
     virtual void Recording(const cDevice* Device, const char* Name, const char* FileName, bool On);
     virtual void TimerChange(const cTimer* Timer, eTimerChange Change);
     virtual void ChannelChange(const cChannel* Channel);
+    virtual void UpdateRecordings();
 
 public:
 
@@ -109,6 +110,8 @@ public:
 
     void queueMessage(MsgPacket* p);
 
+    void broadcastMessage(MsgPacket* p);
+
     void sendStatusMessage(const char* Message);
 
     unsigned int getId() const {
@@ -118,8 +121,6 @@ public:
     int getSocket() const {
         return m_socket;
     }
-
-    virtual void UpdateRecordings();
 };
 
 #endif // ROBOTV_CLIENT_H

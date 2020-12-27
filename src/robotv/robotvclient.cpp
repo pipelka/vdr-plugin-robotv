@@ -39,8 +39,7 @@
 RoboTvClient::RoboTvClient(int fd, unsigned int id) : m_id(id), m_socket(fd),
     m_streamController(this),
     m_recordingController(this),
-    m_timerController(this),
-    m_movieController(this) {
+    m_timerController(this) {
 
     m_controllers = {
         &m_streamController,
@@ -193,12 +192,8 @@ void RoboTvClient::ChannelChange(const cChannel* Channel) {
 }
 
 void RoboTvClient::UpdateRecordings() {
-    if(!m_loginController.statusEnabled()) {
-        return;
-    }
-
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
-    queueMessage(resp);
+    broadcastMessage(resp);
 }
 
 void RoboTvClient::onRecording(const cEvent* event, bool on) {
@@ -254,4 +249,12 @@ bool RoboTvClient::processRequest() {
 void RoboTvClient::queueMessage(MsgPacket* p) {
     std::lock_guard<std::mutex> lock(m_queueLock);
     m_queue.push_back(p);
+}
+
+void RoboTvClient::broadcastMessage(MsgPacket* p) {
+    if(!m_loginController.statusEnabled()) {
+        return;
+    }
+
+    queueMessage(p);
 }
