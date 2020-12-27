@@ -7,7 +7,7 @@ USER root
 
 RUN apk update && apk add build-base freetype-dev fontconfig-dev gettext-dev \
 	libjpeg-turbo-dev libcap-dev pugixml-dev curl-dev git bzip2 libexecinfo-dev \
-	ncurses-dev bash
+	ncurses-dev bash avahi-libs avahi-dev pcre-dev pkgconf
 
 RUN mkdir -p /build
 WORKDIR /build
@@ -80,7 +80,7 @@ ENV DVBAPI_ENABLE="0" \
     TZ="Europe/Vienna"
 
 RUN apk update && apk add freetype fontconfig libintl libexecinfo \
-    libjpeg-turbo libcap pugixml libcurl
+    libjpeg-turbo libcap pugixml libcurl avahi-libs pcre
 
 RUN mkdir -p /opt && \
     mkdir -p /data && \
