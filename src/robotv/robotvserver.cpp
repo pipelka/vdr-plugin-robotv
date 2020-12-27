@@ -284,7 +284,7 @@ void RoboTVServer::Action(void) {
                     MsgPacket* p = m_broadcast.front();
 
                     for(auto& client: m_clients) {
-                        client->queueMessage(p);
+                        client->broadcastMessage(p);
                     }
 
                     m_broadcast.pop_front();
