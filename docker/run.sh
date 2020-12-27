@@ -25,7 +25,7 @@ docker run \
     -e ROBOTV_TIMESHIFTDIR=/timeshift \
     -e ROBOTV_MAXTIMESHIFTSIZE=100000000 \
     -e VDR_LOGLEVEL=3 \
-    -e VDR_UPDATECHANNELS=5 \
+    -e VDR_UPDATECHANNELS=3 \
     -v $PWD/mounts/data:/data \
     -v $PWD/mounts/cache:/data/cache \
     -v $PWD/mounts/video:/video \
