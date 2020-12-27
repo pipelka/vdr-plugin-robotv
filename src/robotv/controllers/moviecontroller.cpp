@@ -26,12 +26,16 @@
 #include <set>
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
+#include "robotv/robotvclient.h"
 #include "moviecontroller.h"
 #include "tools/recid2uid.h"
 #include "config/config.h"
 #include "recordings/recordingscache.h"
 #include "vdr/videodir.h"
 #include "vdr/menu.h"
+
+MovieController::MovieController(RoboTvClient* parent) : m_parent(parent) {
+}
 
 MovieController::MovieController(const MovieController& orig) {
 }
@@ -216,6 +220,9 @@ MsgPacket* MovieController::processDelete(MsgPacket* request) {
     Recordings->DelByName(recording->FileName());
     isyslog("Recording deleted");
     response->put_U32(ROBOTV_RET_OK);
+
+    // queue recordings update
+    m_parent->UpdateRecordings();
 
     return response;
 }
