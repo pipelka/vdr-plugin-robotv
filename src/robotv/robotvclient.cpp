@@ -208,10 +208,13 @@ void RoboTvClient::onRecording(const cEvent* event, bool on) {
     MsgPacket* resp = new MsgPacket(ROBOTV_STATUS_RECORDING, ROBOTV_CHANNEL_STATUS);
     resp->setProtocolVersion(m_loginController.protocolVersion());
 
+    const char* title = event->Title();
+    const char* desc = event->Description();
+
     resp->put_U32((uint32_t)event->Index());
     resp->put_U32(on ? 1 : 0);
-    resp->put_String(m_toUtf8.convert(event->Title()));
-    resp->put_String(m_toUtf8.convert(event->Description()));
+    resp->put_String(m_toUtf8.convert(title != nullptr ? title : ""));
+    resp->put_String(m_toUtf8.convert(desc != nullptr ? desc : ""));
 
     TimerController::event2Packet(event, resp);
     queueMessage(resp);
