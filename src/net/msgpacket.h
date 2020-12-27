@@ -469,6 +469,8 @@ public:
 
     static bool readstream(std::istream& in, MsgPacket& p);
 
+    MsgPacket* clone();
+
     enum {
         HeaderLength = 32,						/*!< Length (in bytes) of a packet header. */
         CheckSumPos = 28,						/*!< Checksum position (uint32_t) within the header data. */

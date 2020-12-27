@@ -713,3 +713,10 @@ void MsgPacket::print() {
     std::cout << "Payload length : " << getPayloadLength() << " bytes" << std::endl;
     std::cout << "-------------------------------------------" << std::endl;
 }
+
+MsgPacket* MsgPacket::clone() {
+    auto* p = new MsgPacket(getMsgID(), getType());
+    memcpy(p->getPayload(), getPayload(), getPayloadLength());
+
+    return p;
+}
