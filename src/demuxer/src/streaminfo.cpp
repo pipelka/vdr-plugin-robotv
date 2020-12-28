@@ -46,7 +46,7 @@ StreamInfo::StreamInfo(int pid, Type type, const char* lang) {
     m_parsed = false;
 
     if(lang != nullptr) {
-        strncpy(m_language, lang, 4);
+        strncpy(m_language, lang, 3);
     }
 
     memset(m_sps, 0, sizeof(m_sps));

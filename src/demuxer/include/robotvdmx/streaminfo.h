@@ -119,7 +119,7 @@ protected:
 
     int m_pid; // transport stream pid
 
-    char m_language[4]; // ISO 639 3-letter language code (empty string if undefined)
+    char m_language[4]{0}; // ISO 639 3-letter language code (empty string if undefined)
 
     int m_fpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
 
@@ -146,9 +146,9 @@ protected:
     uint16_t m_ancillaryPageId; // ancillary page id
 
     // decoder data
-    uint8_t m_sps[128]; // SPS data (for decoder)
-    uint8_t m_pps[128]; // PPS data (for decoder)
-    uint8_t m_vps[128]; // VPS data (for decoder)
+    uint8_t m_sps[128]{0}; // SPS data (for decoder)
+    uint8_t m_pps[128]{0}; // PPS data (for decoder)
+    uint8_t m_vps[128]{0}; // VPS data (for decoder)
 
     size_t m_spsLength; // SPS length
     size_t m_ppsLength; // PPS length
