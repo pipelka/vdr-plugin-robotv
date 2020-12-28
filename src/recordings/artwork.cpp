@@ -35,7 +35,7 @@ Artwork::~Artwork() {
 }
 
 void Artwork::createDb() {
-    std::string schema =
+    const char* schema =
         "CREATE TABLE IF NOT EXISTS artwork (\n"
         "  id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
         "  contenttype INTEGER NOT NULL,\n"
@@ -142,10 +142,12 @@ bool Artwork::setEpgImage(const Artwork::Holder& holder) {
         holder.eventId,
         holder.backdropUrl.c_str(),
         holder.contentId);
+    dsyslog("timestamp: %li", holder.timestamp);
+    dsyslog("backgroundurl: '%s'", holder.backdropUrl.c_str());
 
     return exec(
             "INSERT OR REPLACE INTO epgartwork(eventid,channeluid,contentid,timestamp,url,posterurl) "
-            "VALUES(%i,%i,%i,%i,%Q,%Q)",
+            "VALUES(%i,%i,%i,%i,%Q,%Q);",
             holder.eventId,
             holder.channelUid,
             holder.contentId,
