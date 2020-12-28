@@ -142,8 +142,6 @@ bool Artwork::setEpgImage(const Artwork::Holder& holder) {
         holder.eventId,
         holder.backdropUrl.c_str(),
         holder.contentId);
-    dsyslog("timestamp: %li", holder.timestamp);
-    dsyslog("backgroundurl: '%s'", holder.backdropUrl.c_str());
 
     return exec(
             "INSERT OR REPLACE INTO epgartwork(eventid,channeluid,contentid,timestamp,url,posterurl) "
