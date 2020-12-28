@@ -272,7 +272,7 @@ void RecordingsCache::gc(const cRecordings* recordings) {
 }
 
 void RecordingsCache::createDb() {
-    std::string schema =
+    const char* schema =
         "CREATE TABLE IF NOT EXISTS recordings (\n"
         "  recid INTEGER PRIMARY KEY,\n"
         "  filename TEXT NOT NULL,\n"
