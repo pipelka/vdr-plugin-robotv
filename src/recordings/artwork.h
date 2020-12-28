@@ -35,6 +35,18 @@ public:
         _Holder() : eventId(0), channelUid(0), contentId(0), timestamp(time(nullptr)) {
         }
 
+        bool hasArtwork() {
+            if(posterUrl.empty() || posterUrl == "x") {
+                return false;
+            }
+
+            if(backdropUrl.empty() || backdropUrl == "x") {
+                return false;
+            }
+
+            return true;
+        }
+
         uint32_t eventId;
         uint32_t channelUid;
         uint32_t contentId;
