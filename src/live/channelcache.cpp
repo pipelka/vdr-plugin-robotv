@@ -40,7 +40,7 @@ void ChannelCache::gc() {
 }
 
 void ChannelCache::createDb() {
-    std::string schema =
+    const char* schema =
         "CREATE TABLE IF NOT EXISTS channelcache (\n"
         "  channeluid INT NOT NULL,\n"
         "  pid INT NOT NULL,\n"
@@ -194,14 +194,14 @@ StreamBundle ChannelCache::lookup(uint32_t channeluid) {
         return StreamBundle();
     }
 
-    StreamBundle bundle;
+    StreamBundle bundle{};
 
     while(sqlite3_step(s) == SQLITE_ROW) {
-        StreamInfo info;
+        StreamInfo info{};
         info.m_pid = sqlite3_column_int(s, 0);
         info.m_content = (StreamInfo::Content)sqlite3_column_int(s, 1);
         info.m_type = (StreamInfo::Type)sqlite3_column_int(s, 2);
-        strncpy(info.m_language, (const char*)sqlite3_column_text(s, 3), sizeof(info.m_language));
+        strncpy(info.m_language, (const char*)sqlite3_column_text(s, 3), sizeof(info.m_language) - 1);
         // 4 - reserved (was audioType)
         info.m_fpsScale = sqlite3_column_int(s, 5);
         info.m_fpsRate = sqlite3_column_int(s, 6);
