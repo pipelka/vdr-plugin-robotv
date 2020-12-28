@@ -59,9 +59,12 @@ bool Database::open(const std::string& db) {
     }
 
     sqlite3_busy_timeout(m_db, 2000);
-    exec("PRAGMA synchronous = NORMAL");
-    exec("PRAGMA mmap_size = 268435456");
-    return (exec("PRAGMA journal_mode = WAL") == SQLITE_OK);
+    exec("PRAGMA synchronous = NORMAL;"); // normal synchronization for WAL mode
+    exec("PRAGMA auto_vacuum = incremental;"); // incremental auto vacuum mode
+    exec("PRAGMA incremental_vacuum;"); // enabled incremental vacuum
+    exec("PRAGMA mmap_size = 5242880;"); // 5MB memory map
+
+    return (exec("PRAGMA journal_mode = WAL;") == SQLITE_OK); // WAL mode
 }
 
 bool Database::close() {
@@ -83,7 +86,6 @@ bool Database::isOpen() {
 }
 
 char* Database::prepareQueryBuffer(const char* query, va_list ap) {
-    dsyslog("query: %s", query);
     return sqlite3_vmprintf(query, ap);
 }
 
