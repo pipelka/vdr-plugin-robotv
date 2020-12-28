@@ -24,6 +24,7 @@
 
 #include "database.h"
 #include "config/config.h"
+#include "vdr/tools.h"
 
 using namespace roboTV;
 
@@ -81,15 +82,16 @@ bool Database::isOpen() {
     return (m_db != NULL);
 }
 
-char* Database::prepareQueryBuffer(const std::string& query, va_list ap) {
-    return sqlite3_vmprintf(query.c_str(), ap);
+char* Database::prepareQueryBuffer(const char* query, va_list ap) {
+    dsyslog("query: %s", query);
+    return sqlite3_vmprintf(query, ap);
 }
 
 void Database::releaseQueryBuffer(char* querybuffer) {
     sqlite3_free(querybuffer);
 }
 
-int Database::exec(const std::string& query, ...) {
+int Database::exec(const char* query, ...) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -97,7 +99,7 @@ int Database::exec(const std::string& query, ...) {
     }
 
     va_list ap;
-    va_start(ap, &query);
+    va_start(ap, query);
     char* querybuffer = prepareQueryBuffer(query, ap);
     va_end(ap);
 
@@ -132,7 +134,7 @@ int Database::exec(const std::string& query, ...) {
     return rc;
 }
 
-sqlite3_stmt* Database::query(const std::string& query, ...) {
+sqlite3_stmt* Database::query(const char* query, ...) {
     std::lock_guard<std::mutex> lock(m_lock);
 
     if(m_db == NULL) {
@@ -140,7 +142,7 @@ sqlite3_stmt* Database::query(const std::string& query, ...) {
     }
 
     va_list ap;
-    va_start(ap, &query);
+    va_start(ap, query);
     char* querybuffer = prepareQueryBuffer(query, ap);
     va_end(ap);
 

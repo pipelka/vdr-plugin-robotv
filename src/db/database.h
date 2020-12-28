@@ -69,14 +69,14 @@ public:
      * @param query The SQL statement to execute. Accepts "printf" style formatting.
      * @return the SQLite return code.
      */
-    int exec(const std::string& query, ...);
+    int exec(const char* query, ...);
 
     /** @short Execute a SQL query.
      * Executes the statement and returns a SQLite resultset.
      * @param query The SQL statement to execute. Accepts "printf" style formatting.
      * @return pointer to sqlite3_stmt containing the resultset or NULL on failure
      */
-    sqlite3_stmt* query(const std::string& query, ...);
+    sqlite3_stmt* query(const char* query, ...);
 
     /** @short Open a blob.
      * Opens a binary large object stored in a database table.
@@ -115,7 +115,7 @@ public:
 
 private:
 
-    char* prepareQueryBuffer(const std::string& query, va_list ap);
+    char* prepareQueryBuffer(const char* query, va_list ap);
 
     void releaseQueryBuffer(char* querybuffer);
 
