@@ -70,7 +70,9 @@ MsgPacket* ArtworkController::processGet(MsgPacket* request) {
             holder.posterUrl = poster;
             holder.backdropUrl = background;
 
-            m_artwork.setEpgImage(holder);
+            if(holder.hasArtwork()) {
+                m_artwork.setEpgImage(holder);
+            }
         }
     }
 
