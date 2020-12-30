@@ -149,7 +149,11 @@ bool Artwork::setEpgImage(const Artwork::Holder& holder) {
             holder.eventId,
             holder.channelUid,
             holder.contentId,
+#ifdef __arm__
+            (uint32_t)holder.timestamp,
+#else
             holder.timestamp,
+#endif
             holder.backdropUrl.c_str(),
             holder.posterUrl.c_str()
     ) == SQLITE_OK;
