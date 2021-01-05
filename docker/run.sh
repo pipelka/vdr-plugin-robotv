@@ -4,14 +4,9 @@ TOP=`dirname $0`
 cd $TOP
 PWD=`pwd`
 
-docker stop robotv-server > /dev/null 2>&1 || true
-docker rm robotv-server > /dev/null 2>&1 || true
-
 mkdir -p mounts/data
 mkdir -p mounts/cache
 mkdir -p mounts/video
-
-#    -e ROBOTV_MAXTIMESHIFTSIZE=5000000000 \
 
 docker run \
     -ti \
