@@ -67,7 +67,7 @@ ENV DVBAPI_ENABLE="0" \
     DVBAPI_OFFSET=0 \
     STREAMDEV_CLIENT_PORT=2004 \
     SATIP_NUMDEVICES="2" \
-    SATIP_SERVER="192.168.16.10" \
+    SATIP_SERVER="" \
     ROBOTV_TIMESHIFTDIR="/video" \
     ROBOTV_MAXTIMESHIFTSIZE="4000000000" \
     ROBOTV_PICONSURL= \
@@ -91,6 +91,7 @@ RUN mkdir -p /opt && \
 COPY --from=robotv-build /opt/ /opt/
 COPY docker/bin/runvdr.sh /opt/vdr/
 COPY docker/templates/diseqc.conf /opt/templates/
+COPY docker/templates/scr.conf /opt/templates/
 COPY docker/templates/sources.conf /opt/templates/
 COPY docker/templates/channels.conf /opt/templates/
 
