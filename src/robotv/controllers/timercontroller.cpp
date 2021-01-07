@@ -565,8 +565,7 @@ MsgPacket* TimerController::processDeleteSearchTimer(MsgPacket* request) {
     response->put_U32(ROBOTV_RET_OK);
 
     // broadcast recordings update
-    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
-    RoboTVServer::broadcastMessage(p);
+    RoboTVServer::UpdateTimers();
 
     return response;
 }
