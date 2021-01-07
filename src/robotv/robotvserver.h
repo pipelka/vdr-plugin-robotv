@@ -60,15 +60,21 @@ protected:
 
     static std::deque<MsgPacket*> m_broadcast;
 
+private:
+
+    static void broadcastMessage(MsgPacket* p);
+
+    static std::mutex m_broadcastLock;
+
 public:
 
     RoboTVServer(int listenPort);
 
     virtual ~RoboTVServer();
 
-    static std::mutex m_broadcastLock;
+    static void UpdateRecordings();
 
-    static void broadcastMessage(MsgPacket* p);
+    static void UpdateTimers();
 };
 
 #endif // ROBOTV_SERVER_H

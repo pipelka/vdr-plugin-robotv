@@ -218,6 +218,18 @@ void RoboTVServer::broadcastMessage(MsgPacket* p) {
     m_broadcast.push_back(p);
 }
 
+void RoboTVServer::UpdateRecordings() {
+    // broadcast recordings update
+    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
+    broadcastMessage(p);
+}
+
+void RoboTVServer::UpdateTimers() {
+    // broadcast timers update
+    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_TIMERCHANGE, ROBOTV_CHANNEL_STATUS);
+    broadcastMessage(p);
+}
+
 void RoboTVServer::Action(void) {
     fd_set fds;
     struct timeval tv;
