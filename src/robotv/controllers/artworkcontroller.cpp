@@ -23,6 +23,7 @@
  */
 
 #include "artworkcontroller.h"
+#include "robotv/robotvserver.h"
 #include "net/msgpacket.h"
 #include "robotv/robotvcommand.h"
 
@@ -91,6 +92,7 @@ MsgPacket* ArtworkController::processSet(MsgPacket* request) {
     const char* poster = request->get_String();
     const char* background = request->get_String();
     uint32_t externalId = request->get_U32();
+    bool updateRecordings = (request->get_U32() == 1);
 
     m_artwork.set(content, title, poster, background, externalId);
 
@@ -108,6 +110,10 @@ MsgPacket* ArtworkController::processSet(MsgPacket* request) {
 
             m_artwork.setEpgImage(holder);
         }
+    }
+
+    if(updateRecordings) {
+        RoboTVServer::UpdateRecordings();
     }
 
     return createResponse(request);
