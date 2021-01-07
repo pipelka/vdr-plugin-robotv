@@ -87,12 +87,17 @@ MsgPacket* ArtworkController::processGet(MsgPacket* request) {
 }
 
 MsgPacket* ArtworkController::processSet(MsgPacket* request) {
+    bool updateRecordings = false;
+
     const char* title = request->get_String();
     uint32_t content = request->get_U32();
     const char* poster = request->get_String();
     const char* background = request->get_String();
     uint32_t externalId = request->get_U32();
-    bool updateRecordings = (request->get_U32() == 1);
+
+    if(request->getProtocolVersion() >= 9) {
+        updateRecordings = (request->get_U32() == 1);
+    }
 
     m_artwork.set(content, title, poster, background, externalId);
 
