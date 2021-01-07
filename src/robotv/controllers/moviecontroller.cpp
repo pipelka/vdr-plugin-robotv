@@ -183,8 +183,7 @@ MsgPacket* MovieController::processRename(MsgPacket* request) {
     Recordings->TouchUpdate();
 
     // broadcast recordings update
-    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
-    RoboTVServer::broadcastMessage(p);
+    RoboTVServer::UpdateRecordings();
 
     response->put_U32(success ? ROBOTV_RET_OK : ROBOTV_RET_ERROR);
     return response;
@@ -226,8 +225,7 @@ MsgPacket* MovieController::processDelete(MsgPacket* request) {
     response->put_U32(ROBOTV_RET_OK);
 
     // broadcast recordings update
-    MsgPacket* p = new MsgPacket(ROBOTV_STATUS_RECORDINGSCHANGE, ROBOTV_CHANNEL_STATUS);
-    RoboTVServer::broadcastMessage(p);
+    RoboTVServer::UpdateRecordings();
 
     return response;
 }
