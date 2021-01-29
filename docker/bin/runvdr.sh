@@ -30,7 +30,7 @@ echo "dvbapi.OSCamPort = ${DVBAPI_PORT}" >> ${CONFDIR}/setup.conf
 
 rm -f ${CONFDIR}/conf.d/40-dvbapi.conf
 
-if [ "${DVBAPI_ENABLE}" = "1" ] ; then 
+if [ "${DVBAPI_ENABLE}" = "1" ] ; then
     echo "[dvbapi]" > ${CONFDIR}/conf.d/40-dvbapi.conf
     echo "-o ${DVBAPI_OFFSET}" >> ${CONFDIR}/conf.d/40-dvbapi.conf
 fi
@@ -38,17 +38,20 @@ fi
 
 # SATIP configuration
 
-mkdir -p ${CONFDIR}/plugins/satip
-echo "[satip]" > ${CONFDIR}/conf.d/50-satip.conf
+if [ "${SATIP_ENABLE}" = "1" ] ; then
+    mkdir -p ${CONFDIR}/plugins/satip
+    echo "[satip]" > ${CONFDIR}/conf.d/50-satip.conf
 
-if [ ! -z "${SATIP_NUMDEVICES}" ] ; then
-    echo "-d ${SATIP_NUMDEVICES}" >> ${CONFDIR}/conf.d/50-satip.conf
+    if [ ! -z "${SATIP_NUMDEVICES}" ] ; then
+        echo "-d ${SATIP_NUMDEVICES}" >> ${CONFDIR}/conf.d/50-satip.conf
+    fi
+
+    if [ ! -z "${SATIP_SERVER}" ] ; then
+        echo "-s ${SATIP_SERVER}" >> ${CONFDIR}/conf.d/50-satip.conf
+    fi
+else
+    [ -f ${CONFDIR}/conf.d/50-satip.conf ] && rm -f ${CONFDIR}/conf.d/50-satip.conf
 fi
-
-if [ ! -z "${SATIP_SERVER}" ] ; then
-    echo "-s \"${SATIP_SERVER}\"" >> ${CONFDIR}/conf.d/50-satip.conf
-fi
-
 
 # VDR configuration
 
