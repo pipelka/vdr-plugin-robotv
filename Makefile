@@ -58,7 +58,16 @@ SOFILE = libvdr-$(PLUGIN).so
 
 ### Includes and Defines (add further entries here):
 
-INCLUDES += -I./src -I./src/demuxer/include -I./src/demuxer/src -I./src/vdr -I./src/sqlite3 -I../../../include $(AVAHI_CFLAGS)
+INCLUDES += -I./src -I./src/demuxer/include -I./src/demuxer/src -I./src/vdr -I../../../include $(AVAHI_CFLAGS)
+
+ifndef LIBSQLITE
+    INCLUDES += -I./src/sqlite3
+    SQLITE_OBJS = src/db/sqlite3.o
+    SQLITE_LIBS =
+else
+    SQLITE_OBJS =
+    SQLITE_LIBS = -lsqlite3
+endif
 
 ifdef DEBUG
 INCLUDES += -DDEBUG
@@ -80,22 +89,22 @@ OBJS = \
 	src/config/config.o \
 	src/db/database.o \
 	src/db/storage.o \
-    src/demuxer/src/demuxer.o \
-    src/demuxer/src/demuxerbundle.o \
-    src/demuxer/src/streambundle.o \
-    src/demuxer/src/streaminfo.o \
-    src/demuxer/src/parsers/parser_ac3.o \
-    src/demuxer/src/parsers/parser_adts.o \
-    src/demuxer/src/parsers/parser_h264.o \
-    src/demuxer/src/parsers/parser_h265.o \
-    src/demuxer/src/parsers/parser_latm.o \
-    src/demuxer/src/parsers/parser_mpegaudio.o \
-    src/demuxer/src/parsers/parser_mpegvideo.o \
-    src/demuxer/src/parsers/parser_pes.o \
-    src/demuxer/src/parsers/parser_subtitle.o \
-    src/demuxer/src/parsers/parser.o \
-    src/demuxer/src/upstream/ringbuffer.o \
-    src/demuxer/src/upstream/bitstream.o \
+	src/demuxer/src/demuxer.o \
+	src/demuxer/src/demuxerbundle.o \
+	src/demuxer/src/streambundle.o \
+	src/demuxer/src/streaminfo.o \
+	src/demuxer/src/parsers/parser_ac3.o \
+	src/demuxer/src/parsers/parser_adts.o \
+	src/demuxer/src/parsers/parser_h264.o \
+	src/demuxer/src/parsers/parser_h265.o \
+	src/demuxer/src/parsers/parser_latm.o \
+	src/demuxer/src/parsers/parser_mpegaudio.o \
+	src/demuxer/src/parsers/parser_mpegvideo.o \
+	src/demuxer/src/parsers/parser_pes.o \
+	src/demuxer/src/parsers/parser_subtitle.o \
+	src/demuxer/src/parsers/parser.o \
+	src/demuxer/src/upstream/ringbuffer.o \
+	src/demuxer/src/upstream/bitstream.o \
 	src/live/channelcache.o \
 	src/live/livequeue.o \
 	src/live/livestreamer.o \
@@ -126,10 +135,7 @@ OBJS = \
 	src/robotv/robotvserver.o \
 	src/robotv/StreamPacketProcessor.o
 
-SQLITE_OBJS = \
-	src/db/sqlite3.o
-
-LIBS = -lz $(AVAHI_LIBS)
+LIBS = -lz $(AVAHI_LIBS) $(SQLITE_LIBS)
 
 ### The main target:
 
