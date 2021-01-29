@@ -7,7 +7,7 @@ Prerequisites
 -------------
 
 - Docker installation is required, see the official installation [docs](https://docs.docker.com/engine/installation/)
-- DVB card or SAT<IP server needed
+- DVB card or SAT>IP server needed
 
 Running roboTV Server
 ---------------------
@@ -56,6 +56,7 @@ Configuration variables
 | DVBAPI_HOST | 127.0.0.1 | dvbapi host |
 | DVBAPI_PORT | 2000 | dvbapi host port |
 | DVBAPI_OFFSET | 0 | dvbapi device offset |
+| SATIP_ENABLE | 0 | 0 / 1 - disable / enable SAT>IP plugin |
 | SATIP_NUMDEVICES | 2 | number of dvb devices to open on the server |
 | SATIP_SERVER | | SAT<IP server configuration |
 | ROBOTV_MAXTIMESHIFTSIZE | 4000000000 | Maximum timeshift ringbuffer size in bytes |
@@ -64,7 +65,7 @@ Configuration variables
 | ROBOTV_EPGIMAGEURL | | URL for EPG images |
 | VDR_LOGLEVEL | 2 | 0 = no logging, 1 = errors only, 2 = errors and info, 3 = errors, info and debug |
 | VDR_UPDATECHANNELS | 5 | 0 = disables, 1 = channel names only, 2 = pids only, 3 = channels names and pids, 4 = add new channels, 5 = add new transponders |
-| VDR_DISEQC | 0 | 0 = DisEqC disabled | 1 = enabled |
+| VDR_DISEQC | 0 | 0 = DisEqC disabled | 1 = enabled (scr.conf needed) |
 | TZ | Europe/Vienna | Timezone to use |
 
 Ports in use
@@ -78,11 +79,12 @@ Ports in use
 Examples
 --------
 
-- connect to SAT<IP server (autodetect)
+- connect to SAT>IP server (autodetect)
 
 ```
 docker run --rm -ti \
     --cap-add=SYS_NICE \
+    -e SATIP_ENABLE=1 \
     -v /srv/vdr:/data \
     -v /srv/video:/video \
     -p 34892:34892 \
@@ -90,12 +92,13 @@ docker run --rm -ti \
     pipelka/robotv-server
 ```
 
-- connect to SAT<IP server with 4 devices
+- connect to SAT>IP server with 4 devices
 
 ```
 docker run --rm -ti \
     --cap-add=SYS_NICE \
-    -e SATIP_SERVER="192.168.100.201|DVBS2-4|Triax SatIP Converter" \
+    -e SATIP_ENABLE=1 \
+    -e SATIP_SERVER="192.168.100.201" \
     -e SATIP_NUMDEVICES=4 \
     -v /srv/vdr:/data \
     -v /srv/video:/video \
@@ -118,7 +121,7 @@ docker run --rm -ti \
     pipelka/robotv-server
 ```
 
-- use SAT<IP with dvbapi and set picons url
+- use SAT>IP with dvbapi and set picons url
 
 ```
 docker run --rm -ti \
@@ -126,6 +129,7 @@ docker run --rm -ti \
     -e DVBAPI_ENABLE=1 \
     -e DVBAPI_HOST=192.168.100.200 \
     -e DVBAPI_PORT=2222 \
+    -e SATIP_ENABLE=1 \
     -e SATIP_SERVER="192.168.100.202|DVBS2-2|minisatip" \
     -e ROBOTV_PICONS=http://192.168.100.202/picons \
     -v /srv/vdr:/data \
