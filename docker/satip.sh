@@ -26,6 +26,8 @@ docker run \
 	-v $PWD/mounts/cache:/data/cache \
 	-v $PWD/mounts/video:/video \
 	-v $PWD/mounts/timeshift:/timeshift \
+	-e SATIP_ENABLE=1 \
+	-e SATIP_SERVER="192.168.16.12" \
 	-e SATIP_NUMDEVICES=2 \
 	--net=host \
 	-p 34892:34892 \

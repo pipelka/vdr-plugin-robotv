@@ -29,5 +29,4 @@ docker run \
     -p 6419:6419 \
     -p 3000:3000 \
     -p 2004:2004 \
-    --device=/dev/dvb \
     pipelka/robotv:latest
