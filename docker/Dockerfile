@@ -7,7 +7,7 @@ USER root
 
 RUN apk update && apk add build-base freetype-dev fontconfig-dev gettext-dev \
 	libjpeg-turbo-dev libcap-dev pugixml-dev curl-dev git bzip2 libexecinfo-dev \
-	ncurses-dev bash avahi-libs avahi-dev pcre-dev pkgconf
+	ncurses-dev bash avahi-libs avahi-dev pcre-dev sqlite-dev pkgconf
 
 RUN mkdir -p /build
 WORKDIR /build
@@ -37,10 +37,10 @@ RUN for patch in `ls /build/patches/vdr`; do \
         patch -p1 < /build/patches/vdr/${patch} ; \
     done
 
-RUN make -j 8
+RUN make LIBSQLITE=1 -j 8
 RUN mkdir -p /opt/vdr
 
-RUN make install
+RUN make LIBSQLITE=1 install
 
 RUN for plugin in robotv epgsearch satip streamdev-server ; do \
         strip -s --strip-debug /opt/vdr/lib/libvdr-${plugin}.so.* ; \
@@ -80,7 +80,7 @@ ENV DVBAPI_ENABLE="0" \
     TZ="Europe/Vienna"
 
 RUN apk update && apk add freetype fontconfig libintl libexecinfo \
-    libjpeg-turbo libcap pugixml libcurl avahi-libs pcre
+    libjpeg-turbo libcap pugixml libcurl avahi-libs sqlite-libs pcre
 
 RUN mkdir -p /opt && \
     mkdir -p /data && \
