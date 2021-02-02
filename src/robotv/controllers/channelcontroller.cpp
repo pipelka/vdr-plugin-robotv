@@ -274,7 +274,7 @@ std::string ChannelController::createLogoUrl(const cChannel* channel) {
 }
 
 std::string ChannelController::createLogoUrl(const cChannel* channel, const std::string& baseUrl) {
-    if(baseUrl.empty()) {
+    if(channel == nullptr || baseUrl.empty()) {
         return "";
     }
 
