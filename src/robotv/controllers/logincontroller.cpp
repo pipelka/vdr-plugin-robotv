@@ -63,7 +63,17 @@ MsgPacket* LoginController::processLogin(MsgPacket* request) {
 
     if(m_protocolVersion > ROBOTV_PROTOCOLVERSION || m_protocolVersion < 7) {
         esyslog("Client '%s' has unsupported protocol version '%u', terminating client", clientName, m_protocolVersion);
-        return nullptr;
+        m_loggedIn = false;
+
+        // for client versions below 9 just terminate the connection
+        if(m_protocolVersion < 9) {
+            return nullptr;
+        }
+
+        // for newer versions send back the server protocol version
+        MsgPacket* response = createResponse(request);
+        response->setProtocolVersion(m_protocolVersion);
+        return response;
     }
 
     isyslog("Welcome client '%s' with protocol version '%u' and priority %i", clientName, m_protocolVersion, m_socketPriority);
