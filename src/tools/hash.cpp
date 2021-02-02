@@ -109,7 +109,7 @@ uint32_t Hash::createStringHash(const std::string& string) {
 }
 
 uint32_t Hash::createChannelUid(const cChannel* channel) {
-    cString channelid = channel->GetChannelID().ToString();
+    cString channelid = (channel != nullptr) ? channel->GetChannelID().ToString() : "";
     return createStringHash((const char*)channelid);
 }
 
