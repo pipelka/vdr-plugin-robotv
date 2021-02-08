@@ -49,6 +49,8 @@ if [ "${SATIP_ENABLE}" = "1" ] ; then
     if [ ! -z "${SATIP_SERVER}" ] ; then
         echo "-s ${SATIP_SERVER}" >> ${CONFDIR}/conf.d/50-satip.conf
     fi
+
+    echo "satip.EnableEITScan = ${SATIP_ENABLEEITSCAN}" >> ${CONFDIR}/setup.conf
 else
     [ -f ${CONFDIR}/conf.d/50-satip.conf ] && rm -f ${CONFDIR}/conf.d/50-satip.conf
 fi
