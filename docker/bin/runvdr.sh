@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# check if the container has the needed terminal devices
+
+[ ! -c /dev/console ] && mknod /dev/console c 5 1 > /dev/null 2>&1
+[ -L /dev/ptmx ] && rm -f /dev/ptmx > /dev/null 2>&1
+[ ! -c /dev/ptmx ] && mknod /dev/ptmx c 5 2 > /dev/null 2>&1
+
 export LANG="en_US.UTF-8"
 
 CONFDIR=/data/etc
