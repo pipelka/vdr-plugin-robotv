@@ -15,7 +15,7 @@ docker run \
     --privileged \
     --net=host \
     -e STREAMDEV_CLIENT_ENABLE=1 \
-    -e STREAMDEV_CLIENT_REMOTE=192.168.16.10 \
+    -e STREAMDEV_CLIENT_REMOTE=192.168.16.11 \
     -e ROBOTV_PICONSURL=http://192.168.16.10/picons \
     -e ROBOTV_TIMESHIFTDIR=/timeshift \
     -e ROBOTV_MAXTIMESHIFTSIZE=100000000 \
