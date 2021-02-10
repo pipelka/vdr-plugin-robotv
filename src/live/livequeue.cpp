@@ -214,10 +214,15 @@ bool LiveQueue::write(const PacketData& data) {
     // ring-buffer overrun ?
 
     off_t writePosition = lseek(m_writeFd, 0, SEEK_CUR);
-    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
 
     if(writePosition >= (off_t) m_bufferSize) {
         isyslog("timeshift: write buffer wrap");
+        int rc = ftruncate(m_writeFd, (off_t)writePosition);
+
+        if(rc == -1) {
+            esyslog("truncating the timeshift buffer failed: %i - %s", errno, strerror(errno));
+        }
+
         lseek(m_writeFd, 0, SEEK_SET);
         writePosition = 0;
 
@@ -229,6 +234,7 @@ bool LiveQueue::write(const PacketData& data) {
     }
 
     off_t packetEndPosition = writePosition + p->getPacketLength();
+    off_t readPosition = lseek(m_readFd, 0, SEEK_CUR);
 
     // check if write position is still behind read position (if wrapped)
     // if not -> discard packet
