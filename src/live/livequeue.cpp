@@ -170,7 +170,10 @@ MsgPacket* LiveQueue::internalRead() {
     auto p = MsgPacket::read(m_readFd, 1000);
 
     // do not cache the packet anymore
-    posix_fadvise(m_readFd, readPosition, p->getPacketLength(), POSIX_FADV_DONTNEED);
+    if(p != nullptr) {
+        posix_fadvise(m_readFd, readPosition, p->getPacketLength(), POSIX_FADV_DONTNEED);
+    }
+
     return p;
 }
 
