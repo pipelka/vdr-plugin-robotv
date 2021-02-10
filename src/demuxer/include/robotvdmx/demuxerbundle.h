@@ -69,8 +69,6 @@ protected:
 
 private:
 
-    bool m_pendingError;
-
     std::list<TsDemuxer*> m_list;
 
 };

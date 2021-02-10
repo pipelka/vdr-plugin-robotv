@@ -29,7 +29,6 @@
 #include "robotvdmx/pes.h"
 
 DemuxerBundle::DemuxerBundle(TsDemuxer::Listener* listener) : m_listener(listener) {
-    m_pendingError = false;
 }
 
 DemuxerBundle::~DemuxerBundle() {
@@ -169,12 +168,10 @@ void DemuxerBundle::updateFrom(StreamBundle* bundle) {
 
 bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) {
     if(*packet != 0x47) {
-        m_pendingError = true;
         return false;
     }
 
-    if(TsError(packet) || TsIsScrambled(packet)) {
-        m_pendingError = true;
+    if(TsIsScrambled(packet)) {
         return false;
     }
 
@@ -199,16 +196,6 @@ bool DemuxerBundle::processTsPacket(uint8_t* packet, int64_t streamPosition) {
 
     // valid packet ?
     if(pusi && !PesIsHeader(&packet[offset])) {
-        m_pendingError = true;
-        return false;
-    }
-
-    if(m_pendingError && pusi) {
-        reset();
-        m_pendingError = false;
-    }
-
-    if(m_pendingError) {
         return false;
     }
 
