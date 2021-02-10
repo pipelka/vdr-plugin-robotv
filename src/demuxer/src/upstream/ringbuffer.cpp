@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <vdr/tools.h>
 
 RingBuffer::RingBuffer(int size, int margin) {
     m_size = size;
@@ -73,6 +74,7 @@ int RingBuffer::put(const uint8_t *data, int count) {
 
     if(free > 0) {
         if(free < count) {
+            esyslog("ringbuffer: not enough space - writing %i bytes out of %i", free, count);
             count = free;
         }
 
@@ -91,6 +93,7 @@ int RingBuffer::put(const uint8_t *data, int count) {
         }
     }
     else {
+        esyslog("ringbuffer: unable to write %i bytes - overflow", count);
         count = 0;
     }
 

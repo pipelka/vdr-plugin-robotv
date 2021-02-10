@@ -482,7 +482,7 @@ MsgPacket* MsgPacket::read(int fd, bool& closed, int timeout_ms) {
     uint8_t* data = header + sizeof(uint32_t);
     uint32_t datalen = HeaderLength - sizeof(uint32_t);
 
-    int rc = socketread(fd, data, datalen, timeout_ms);
+    rc = socketread(fd, data, datalen, timeout_ms);
     if(rc != 0) {
         std::cerr << "socketread failed - rc = " << rc << std::endl;
 
