@@ -1,4 +1,4 @@
-FROM alpine:3.13 AS robotv-build
+FROM alpine:3.12 AS robotv-build
 MAINTAINER Alexander pipelka <alexander.pipelka@gmail.com>
 
 ARG VDR_VERSION=2.4
@@ -57,7 +57,7 @@ RUN for lib in ${LIBS} ; do \
         rm -f /opt/vdr/lib/libvdr-${lib}* ; \
     done
 
-FROM alpine:3.13 AS robotv
+FROM alpine:3.12 AS robotv
 
 USER root
 

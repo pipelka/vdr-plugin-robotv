@@ -1,4 +1,4 @@
-FROM arm32v7/alpine:3.13 AS robotv-build
+FROM arm32v7/alpine:3.12 AS robotv-build
 MAINTAINER Alexander pipelka <alexander.pipelka@gmail.com>
 
 COPY docker/qemu/qemu-arm-static /usr/bin
@@ -59,7 +59,7 @@ RUN for lib in ${LIBS} ; do \
         rm -f /opt/vdr/lib/libvdr-${lib}* ; \
     done
 
-FROM arm32v7/alpine:3.13 AS robotv
+FROM arm32v7/alpine:3.12 AS robotv
 
 COPY docker/qemu/qemu-arm-static /usr/bin
 
