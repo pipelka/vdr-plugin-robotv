@@ -31,6 +31,7 @@ RUN make -C vdr/PLUGINS/src/robotv clean
 WORKDIR vdr
 COPY docker/templates/Make.* /build/vdr/
 
+# VDR patches
 RUN mkdir -p /build/patches
 COPY docker/patches/ /build/patches/
 
@@ -38,6 +39,9 @@ RUN for patch in `ls /build/patches/vdr`; do \
         echo ${patch} ; \
         patch -p1 < /build/patches/vdr/${patch} ; \
     done
+
+# satip patches
+RUN patch -d PLUGINS/src/satip -p1 < /build/patches/satip/disable-server-timeout.patch
 
 RUN make LIBSQLITE=1 LIBDVBCSA=1 -j 8
 RUN mkdir -p /opt/vdr

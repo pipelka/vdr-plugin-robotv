@@ -32,10 +32,14 @@ COPY docker/templates/Make.* /build/vdr/
 RUN mkdir -p /build/patches
 COPY docker/patches/ /build/patches/
 
+# VDR patches
 RUN for patch in `ls /build/patches/vdr`; do \
         echo ${patch} ; \
         patch -p1 < /build/patches/vdr/${patch} ; \
     done
+
+# satip patches
+RUN patch -d PLUGINS/src/satip -p1 < /build/patches/satip/disable-server-timeout.patch
 
 RUN make LIBSQLITE=1 -j 8
 RUN mkdir -p /opt/vdr
