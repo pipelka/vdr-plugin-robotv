@@ -1,16 +1,7 @@
 diff --git a/eitscan.c b/eitscan.c
-index 1ff8b954..f3212838 100644
+index 1ff8b954..023a4909 100644
 --- a/eitscan.c
 +++ b/eitscan.c
-@@ -142,7 +142,7 @@ void cEITScanner::Process(void)
-               scanList->AddTransponders(Channels);
-               }
-            bool AnyDeviceSwitched = false;
--           for (int i = 0; i < cDevice::NumDevices(); i++) {
-+           for (int i = cDevice::NumDevices() - 1; i >= 0; i--) {
-                cDevice *Device = cDevice::GetDevice(i);
-                if (Device && Device->ProvidesEIT()) {
-                   for (cScanData *ScanData = scanList->First(); ScanData; ScanData = scanList->Next(ScanData)) {
 @@ -176,6 +176,7 @@ void cEITScanner::Process(void)
                           }
                        }
