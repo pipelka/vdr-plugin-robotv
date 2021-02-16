@@ -15,12 +15,13 @@ docker run \
     --privileged \
     --net=host \
     -e STREAMDEV_CLIENT_ENABLE=1 \
-    -e STREAMDEV_CLIENT_REMOTE=192.168.16.11 \
-    -e ROBOTV_PICONSURL=http://192.168.16.10/picons \
+    -e STREAMDEV_CLIENT_REMOTE=192.168.16.12 \
+    -e ROBOTV_PICONSURL=http://192.168.16.12/picons \
     -e ROBOTV_TIMESHIFTDIR=/timeshift \
     -e ROBOTV_MAXTIMESHIFTSIZE=100000000 \
     -e VDR_LOGLEVEL=3 \
     -e VDR_UPDATECHANNELS=3 \
+    -e VDR_EPGSCANTYPE=1 \
     -v $PWD/mounts/data:/data \
     -v $PWD/mounts/cache:/data/cache \
     -v $PWD/mounts/video:/video \
@@ -30,3 +31,4 @@ docker run \
     -p 3000:3000 \
     -p 2004:2004 \
     pipelka/robotv:latest
+

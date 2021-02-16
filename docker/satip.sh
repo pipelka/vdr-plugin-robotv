@@ -15,13 +15,15 @@ docker run \
 	--cap-add=SYS_NICE \
 	--cap-add=NET_ADMIN \
 	-e DVBAPI_ENABLE=1 \
-	-e DVBAPI_HOST=192.168.16.11 \
+	-e DVBAPI_OFFSET=4 \
+	-e DVBAPI_HOST=192.168.16.12 \
 	-e DVBAPI_PORT=2000 \
-	-e ROBOTV_PICONSURL=http://192.168.16.10/picons \
+	-e ROBOTV_PICONSURL=http://192.168.16.12/picons \
 	-e ROBOTV_TIMESHIFTDIR=/timeshift \
 	-e ROBOTV_MAXTIMESHIFTSIZE=100000000 \
 	-e VDR_LOGLEVEL=3 \
 	-e VDR_UPDATECHANNELS=3 \
+	-e VDR_EPGSCANTYPE=2 \
 	-v $PWD/mounts/data:/data \
 	-v $PWD/mounts/cache:/data/cache \
 	-v $PWD/mounts/video:/video \

@@ -15,10 +15,9 @@ WORKDIR /build
 RUN echo "building roboTV ..."
 
 RUN git clone git://git.tvdr.de/vdr.git -b stable/${VDR_VERSION} vdr
-RUN git clone https://github.com/manio/vdr-plugin-dvbapi.git vdr/PLUGINS/src/dvbapi
-RUN cd vdr/PLUGINS/src/dvbapi ; git checkout cd1f00caa271c02641a13c541afaa9b3c0d695c1 ; cd /build
+RUN git clone --single-branch -b v2.2.5 https://github.com/manio/vdr-plugin-dvbapi.git vdr/PLUGINS/src/dvbapi
 RUN git clone https://github.com/vdr-projects/vdr-plugin-epgsearch.git vdr/PLUGINS/src/epgsearch
-RUN git clone https://github.com/rofafor/vdr-plugin-satip.git vdr/PLUGINS/src/satip
+RUN git clone --single-branch -b v2.4.0 https://github.com/rofafor/vdr-plugin-satip.git vdr/PLUGINS/src/satip
 RUN git clone https://github.com/vdr-projects/vdr-plugin-streamdev.git vdr/PLUGINS/src/streamdev
 
 # COPY ROBOTV PLUGIN SOURCES
