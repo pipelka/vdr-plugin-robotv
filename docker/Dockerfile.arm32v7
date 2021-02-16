@@ -73,6 +73,7 @@ ENV DVBAPI_ENABLE="0" \
     DVBAPI_HOST="127.0.0.1" \
     DVBAPI_PORT="2000" \
     DVBAPI_OFFSET=0 \
+    STREAMDEV_CLIENT_ENABLE=0 \
     STREAMDEV_CLIENT_PORT=2004 \
     SATIP_ENABLE="0" \
     SATIP_NUMDEVICES="2" \
@@ -87,10 +88,11 @@ ENV DVBAPI_ENABLE="0" \
     VDR_LOGLEVEL=2 \
     VDR_UPDATECHANNELS=3 \
     VDR_DISEQC=0 \
+    VDR_EPGSCANTYPE=1 \
     TZ="Europe/Vienna"
 
 RUN apk update && apk add freetype fontconfig libintl libexecinfo \
-    libjpeg-turbo libcap pugixml libcurl avahi-libs sqlite-libs libdvbcsa pcre
+    libjpeg-turbo libcap pugixml libcurl avahi-libs sqlite-libs libdvbcsa pcre tzdata
 
 RUN mkdir -p /opt && \
     mkdir -p /data && \

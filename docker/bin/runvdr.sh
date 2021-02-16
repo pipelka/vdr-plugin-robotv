@@ -26,6 +26,10 @@ echo "DiSEqC = ${VDR_DISEQC}" > ${CONFDIR}/setup.conf
 
 echo "UpdateChannels = ${VDR_UPDATECHANNELS}" >> ${CONFDIR}/setup.conf
 
+# EPGScanType
+
+echo "EPGScanType = ${VDR_EPGSCANTYPE}" >> ${CONFDIR}/setup.conf
+
 # DVBAPI configuration
 
 echo "dvbapi.LogLevel = 2" >> ${CONFDIR}/setup.conf
@@ -82,7 +86,6 @@ mkdir -p ${CONFDIR}/plugins/streamdev-server
 echo "[streamdev-server]" > ${CONFDIR}/conf.d/50-streamdev-server.conf
 echo "0.0.0.0/0" > ${CONFDIR}/plugins/streamdev-server/streamdevhosts.conf
 echo "streamdev-server.AllowSuspend = 1" >> ${CONFDIR}/setup.conf
-echo "streamdev-server.SuspendMode = 1" >> ${CONFDIR}/setup.conf
 
 
 # streamdev-client configuration
