@@ -1,12 +1,91 @@
+commit de86ae2bb98d16344a8616b9a9176e50eeaed4d9
+Author: Alexander Pipelka <alexander.pipelka@gmail.com>
+Date:   Tue Feb 16 16:01:58 2021 +0100
+
+    Add different EPG scan methods
+    
+    There is a new setup parameter 'EPGScanType'.
+    
+    This type defines the EPG scan behaviour:
+    
+    0 - use VDR default EPG scan (scan all devices)
+    1 - use only the first device for EPG scan if it's idle
+        No scanning will be done on other channels when watching Live TV.
+    2 - use the first idle device for scanning
+        Only one additional device will be used for EPG scanning when watching
+        Live TV
+    
+    Why the heck am I doing this ?
+    
+    My SAT>IP Server (Kathrein EXIP 418) periodically resets if all devices (4 in
+    my case) are permanently switching through all the channels. This patch
+    dramatically reduces the load on the SAT>IP server and makes it run happily.
+
+diff --git a/config.c b/config.c
+index 43c3cbbb..00334f6f 100644
+--- a/config.c
++++ b/config.c
+@@ -497,6 +497,7 @@ cSetup::cSetup(void)
+   ChannelsWrap = 0;
+   ShowChannelNamesWithSource = 0;
+   EmergencyExit = 1;
++  EPGScanType = 0;
+ }
+ 
+ cSetup& cSetup::operator= (const cSetup &s)
+@@ -725,6 +726,7 @@ bool cSetup::Parse(const char *Name, const char *Value)
+   else if (!strcasecmp(Name, "ChannelsWrap"))        ChannelsWrap       = atoi(Value);
+   else if (!strcasecmp(Name, "ShowChannelNamesWithSource")) ShowChannelNamesWithSource = atoi(Value);
+   else if (!strcasecmp(Name, "EmergencyExit"))       EmergencyExit      = atoi(Value);
++  else if (!strcasecmp(Name, "EPGScanType"))         EPGScanType        = atoi(Value);
+   else if (!strcasecmp(Name, "LastReplayed"))        cReplayControl::SetRecording(Value);
+   else
+      return false;
+@@ -857,6 +859,7 @@ bool cSetup::Save(void)
+   Store("ChannelsWrap",       ChannelsWrap);
+   Store("ShowChannelNamesWithSource", ShowChannelNamesWithSource);
+   Store("EmergencyExit",      EmergencyExit);
++  Store("EPGScanType",        EPGScanType);
+   Store("LastReplayed",       cReplayControl::LastReplayed());
+ 
+   Sort();
+diff --git a/config.h b/config.h
+index 6706f07a..da4bbceb 100644
+--- a/config.h
++++ b/config.h
+@@ -359,6 +359,7 @@ public:
+   int ChannelsWrap;
+   int ShowChannelNamesWithSource;
+   int EmergencyExit;
++  int EPGScanType;
+   int __EndData__;
+   cString InitialChannel;
+   cString DeviceBondings;
 diff --git a/eitscan.c b/eitscan.c
-index 1ff8b954..023a4909 100644
+index 1ff8b954..3ae4c981 100644
 --- a/eitscan.c
 +++ b/eitscan.c
-@@ -176,6 +176,7 @@ void cEITScanner::Process(void)
+@@ -176,6 +176,10 @@ void cEITScanner::Process(void)
                           }
                        }
                    }
-+                  break;
++                  if(Setup.EPGScanType == 1) // use first device for EIT scan if device is idle
++                     break;
++                  else if(Setup.EPGScanType == 2 && AnyDeviceSwitched) // use first idle device for EIT scan
++                     break;
                 }
             if (!AnyDeviceSwitched) {
                delete scanList;
+diff --git a/vdr.c b/vdr.c
+index 709e2f85..b5f3b6db 100644
+--- a/vdr.c
++++ b/vdr.c
+@@ -785,6 +785,8 @@ int main(int argc, char *argv[])
+   Folders.Load(AddDirectory(ConfigDirectory, "folders.conf"));
+   CamResponsesLoad(AddDirectory(ConfigDirectory, "camresponses.conf"), true);
+ 
++  isyslog("EPG scan type: %i", Setup.EPGScanType);
++
+   if (!*cFont::GetFontFileName(Setup.FontOsd)) {
+      const char *msg = "no fonts available - OSD will not show any text!";
+      fprintf(stderr, "vdr: %s\n", msg);
