@@ -31,6 +31,8 @@ done
 
 rm -Rf opt
 
+export DOCKER_BUILDKIT=1
+
 docker build \
     --force-rm \
     -t pipelka/robotv:${VERSION} \
