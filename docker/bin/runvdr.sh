@@ -43,6 +43,8 @@ rm -f ${CONFDIR}/conf.d/40-dvbapi.conf
 if [ "${DVBAPI_ENABLE}" = "1" ] ; then
     echo "[dvbapi]" > ${CONFDIR}/conf.d/40-dvbapi.conf
     echo "-o ${DVBAPI_OFFSET}" >> ${CONFDIR}/conf.d/40-dvbapi.conf
+else
+    rm -f ${CONFDIR}/conf.d/40-dvbapi.conf
 fi
 
 
@@ -96,6 +98,8 @@ if [ "${STREAMDEV_CLIENT_ENABLE}" = "1" ] ; then
     echo "streamdev-client.RemoteIp = ${STREAMDEV_CLIENT_REMOTE}" >> ${CONFDIR}/setup.conf
     echo "streamdev-client.RemotePort = ${STREAMDEV_CLIENT_PORT}" >> ${CONFDIR}/setup.conf
     echo "streamdev-client.StartClient = 1" >> ${CONFDIR}/setup.conf
+else
+    rm -f ${CONFDIR}/conf.d/50-streamdev-client.conf
 fi
 
 # RoboTV configuration

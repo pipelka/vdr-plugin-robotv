@@ -14,7 +14,7 @@ COPY docker/templates/scr.conf /opt/templates/
 COPY docker/templates/sources.conf /opt/templates/
 COPY docker/templates/channels.conf /opt/templates/
 
-RUN rm -f /usr/bin/qemu-*
 RUN chmod +x /opt/vdr/runvdr.sh
+RUN rm -f /usr/bin/qemu-*
 
 ENTRYPOINT [ "/opt/vdr/runvdr.sh" ]
