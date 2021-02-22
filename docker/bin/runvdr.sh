@@ -67,6 +67,7 @@ if [ "${SATIP_ENABLE}" = "1" ] ; then
     fi
 
     echo "satip.EnableEITScan = ${SATIP_ENABLEEITSCAN}" >> ${CONFDIR}/setup.conf
+    echo "satip.TransportMode = ${SATIP_TRANSPORTMODE}" >> ${CONFDIR}/setup.conf
 else
     [ -f ${CONFDIR}/conf.d/50-satip.conf ] && rm -f ${CONFDIR}/conf.d/50-satip.conf
 fi

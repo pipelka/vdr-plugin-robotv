@@ -58,7 +58,7 @@ docker run --rm -ti \
 
 You can change these directories to meet your requirements.
 
-##Configuration variables
+## Configuration variables
 
 | Variable | Default | Description |
 | --- | --- | ---------- |
@@ -67,9 +67,11 @@ You can change these directories to meet your requirements.
 | DVBAPI_PORT | 2000 | dvbapi host port |
 | DVBAPI_OFFSET | 0 | dvbapi device offset |
 | SATIP_ENABLE | 0 | 0 - disable / 1 - enable SAT>IP plugin |
-| SATIP_ENABLEEITSCAN | 1 | 0 - disable / 1 - enable EIT scan |
-| SATIP_NUMDEVICES | 2 | number of dvb devices to open on the server |
 | SATIP_SERVER | | SAT>IP server configuration |
+| SATIP_NUMDEVICES | 2 | number of dvb devices to open on the server |
+| SATIP_ENABLEEITSCAN | 1 | 0 - disable / 1 - enable EIT scan |
+| SATIP_PORTRANGE | | range of UDP ports to use (from-to) |
+| SATIP_TRANSPORTMODE | 0 | transport mode (0 - UDP / 1 - multicast / 2 - TCP) |
 | ROBOTV_MAXTIMESHIFTSIZE | 4000000000 | Maximum timeshift ringbuffer size in bytes |
 | ROBOTV_PICONSURL |  | URL for the enigma channel icons |
 | ROBOTV_SERIESFOLDER | Serien | Folder for TV shows |
