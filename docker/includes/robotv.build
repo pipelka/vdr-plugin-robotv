@@ -12,7 +12,7 @@ RUN echo "building roboTV ..."
 RUN git clone https://github.com/pipelka/vdr.git -b vdr-robotv/${VDR_VERSION} vdr
 RUN git clone --single-branch -b pr-sockethandler-v2.2.5 https://github.com/pipelka/vdr-plugin-dvbapi.git vdr/PLUGINS/src/dvbapi
 RUN git clone https://github.com/vdr-projects/vdr-plugin-epgsearch.git vdr/PLUGINS/src/epgsearch
-RUN git clone --single-branch -b v2.4.0 https://github.com/rofafor/vdr-plugin-satip.git vdr/PLUGINS/src/satip
+RUN git clone --single-branch -b pr-pid-accounting https://github.com/pipelka/vdr-plugin-satip.git vdr/PLUGINS/src/satip
 RUN git clone https://github.com/vdr-projects/vdr-plugin-streamdev.git vdr/PLUGINS/src/streamdev
 
 # COPY ROBOTV PLUGIN SOURCES
