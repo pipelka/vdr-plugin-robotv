@@ -68,6 +68,7 @@ if [ "${SATIP_ENABLE}" = "1" ] ; then
 
     echo "satip.EnableEITScan = ${SATIP_ENABLEEITSCAN}" >> ${CONFDIR}/setup.conf
     echo "satip.TransportMode = ${SATIP_TRANSPORTMODE}" >> ${CONFDIR}/setup.conf
+    echo "satip.EnableFrontendReuse = ${SATIP_ENABLEFRONTENDREUSE}" >> ${CONFDIR}/setup.conf
 else
     [ -f ${CONFDIR}/conf.d/50-satip.conf ] && rm -f ${CONFDIR}/conf.d/50-satip.conf
 fi
