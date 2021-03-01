@@ -30,7 +30,7 @@ docker run \
 	-v $PWD/mounts/video:/video \
 	-v $PWD/mounts/timeshift:/timeshift \
 	-e SATIP_ENABLE=1 \
-	-e SATIP_SERVER="192.168.16.2|DVBS2-8|Kathrein:0x41" \
+	-e SATIP_SERVER="192.168.16.2|DVBS2-8|Kathrein:0x45" \
 	-e SATIP_NUMDEVICES=2 \
 	-e SATIP_TRANSPORTMODE=0 \
 	-e SATIP_PORTRANGE="23000-23007" \
