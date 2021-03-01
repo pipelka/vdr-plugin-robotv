@@ -67,17 +67,18 @@ You can change these directories to meet your requirements.
 | DVBAPI_PORT | 2000 | dvbapi host port |
 | DVBAPI_OFFSET | 0 | dvbapi device offset |
 | SATIP_ENABLE | 0 | 0 - disable / 1 - enable SAT>IP plugin |
-| SATIP_SERVER | | SAT>IP server configuration |
+| SATIP_SERVER | | SAT>IP server configuration (<ipaddress>[:<port>]|<model>) |
 | SATIP_NUMDEVICES | 2 | number of dvb devices to open on the server |
 | SATIP_ENABLEEITSCAN | 1 | 0 - disable / 1 - enable EIT scan |
 | SATIP_PORTRANGE | | range of UDP ports to use (from-to) |
 | SATIP_TRANSPORTMODE | 0 | transport mode (0 - UDP / 1 - multicast / 2 - TCP) |
+| SATIP_ENABLEFRONTENDREUSE | 1 | frontend reuse (0 - disabled / 1 - enabled) |
 | ROBOTV_MAXTIMESHIFTSIZE | 4000000000 | Maximum timeshift ringbuffer size in bytes |
 | ROBOTV_PICONSURL |  | URL for the enigma channel icons |
 | ROBOTV_SERIESFOLDER | Serien | Folder for TV shows |
 | ROBOTV_EPGIMAGEURL | | URL for EPG images |
 | VDR_LOGLEVEL | 2 | 0 = no logging, 1 = errors only, 2 = errors and info, 3 = errors, info and debug |
-| VDR_UPDATECHANNELS | 5 | 0 = disables, 1 = channel names only, 2 = pids only, 3 = channels names and pids, 4 = add new channels, 5 = add new transponders |
+| VDR_UPDATECHANNELS | 5 | 0 = disabled, 1 = channel names only, 2 = pids only, 3 = channels names and pids, 4 = add new channels, 5 = add new transponders |
 | VDR_DISEQC | 0 | 0 = DisEqC disabled | 1 = enabled |
 | TZ | Europe/Vienna | Timezone to use |
 
