@@ -100,6 +100,7 @@ void Parser::putData(unsigned char* data, int length, bool pusi) {
         // reset buffer on overflow
         if(bytesPut < length) {
             clear();
+            m_startup = true;
         }
     }
 }
