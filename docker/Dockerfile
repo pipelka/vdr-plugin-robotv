@@ -84,6 +84,7 @@ ENV DVBAPI_ENABLE="0" \
     VDR_UPDATECHANNELS=3 \
     VDR_DISEQC=0 \
     VDR_EPGSCANTYPE=1 \
+    VDR_EPGSCANTIMEOUT=5 \
     TZ="Europe/Vienna"
 
 RUN apk update && apk add freetype fontconfig libintl libexecinfo \
