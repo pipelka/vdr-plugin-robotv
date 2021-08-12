@@ -22,6 +22,7 @@ docker run \
     -e VDR_LOGLEVEL=3 \
     -e VDR_UPDATECHANNELS=3 \
     -e VDR_EPGSCANTYPE=1 \
+    -e VDR_EGSCANTIMEOUT=5 \
     -v $PWD/mounts/data:/data \
     -v $PWD/mounts/cache:/data/cache \
     -v $PWD/mounts/video:/video \

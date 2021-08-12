@@ -30,6 +30,11 @@ echo "UpdateChannels = ${VDR_UPDATECHANNELS}" >> ${CONFDIR}/setup.conf
 
 echo "EPGScanType = ${VDR_EPGSCANTYPE}" >> ${CONFDIR}/setup.conf
 
+# EPGScanTimeout
+
+echo "EPGScanTimeout = ${VDR_EPGSCANTIMEOUT}" >> ${CONFDIR}/setup.conf
+
+
 # DVBAPI configuration
 
 echo "dvbapi.LogLevel = 2" >> ${CONFDIR}/setup.conf
