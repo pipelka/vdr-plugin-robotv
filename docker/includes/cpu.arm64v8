@@ -1,0 +1,2 @@
+ARG BUILDFLAGS="LIBSQLITE=1 LIBDVBCSA=1"
+COPY docker/qemu/qemu-aarch64-static /usr/bin

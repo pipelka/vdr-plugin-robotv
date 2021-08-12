@@ -1,0 +1,20 @@
+RUN apk update && apk add freetype fontconfig libintl libexecinfo \
+    libjpeg-turbo libcap pugixml libcurl avahi-libs sqlite-libs pcre tzdata libdvbcsa
+
+RUN mkdir -p /opt && \
+    mkdir -p /data && \
+    mkdir -p /video && \
+    mkdir -p /opt/templates && \
+    mkdir -p /timeshift
+
+COPY --from=robotv-build /opt/ /opt/
+COPY docker/bin/runvdr.sh /opt/vdr/
+COPY docker/templates/diseqc.conf /opt/templates/
+COPY docker/templates/scr.conf /opt/templates/
+COPY docker/templates/sources.conf /opt/templates/
+COPY docker/templates/channels.conf /opt/templates/
+
+RUN chmod +x /opt/vdr/runvdr.sh
+RUN rm -f /usr/bin/qemu-*
+
+ENTRYPOINT [ "/opt/vdr/runvdr.sh" ]

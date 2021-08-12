@@ -65,6 +65,10 @@ void ParserPes::parse(unsigned char* data, int size, bool pusi) {
 
     // we start with the beginning of a packet
     if(!m_startup) {
-        put(data, size);
+        if(put(data, size) < size) {
+            // clear buffer on overflow
+            clear();
+            m_startup = true;
+        }
     }
 }
