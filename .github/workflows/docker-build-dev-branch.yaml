@@ -31,4 +31,4 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          tags: user/app:latest
+          tags: pipelka/robotv:latest
