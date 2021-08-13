@@ -190,6 +190,8 @@ clean:
 astyle:
 	astyle  --exclude=src/db/sqlite3.h --exclude=src/db/sqlite3ext.h --options=./astylerc -r "src/*.cpp" "src/*.h"
 
+run-container:
+	. .devcontainer/env ; ./docker/bin/runvdr.sh
 
 .PHONY: i18n astyle clean
 
