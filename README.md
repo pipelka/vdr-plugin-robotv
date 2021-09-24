@@ -97,7 +97,7 @@ You can change these directories to meet your requirements.
 ```
 docker run --rm -ti \
     --cap-add=SYS_NICE \
-    -e SATIP_ENABLE = 1 \
+    -e SATIP_ENABLE=1 \
     -v /srv/vdr:/data \
     -v /srv/video:/video \
     --net=host \
@@ -109,7 +109,7 @@ docker run --rm -ti \
 ```
 docker run --rm -ti \
     --cap-add=SYS_NICE \
-    -e SATIP_ENABLE = 1 \
+    -e SATIP_ENABLE=1 \
     -e SATIP_SERVER="192.168.100.201|DVBS2-4|Triax SatIP Converter" \
     -e SATIP_NUMDEVICES=4 \
     -v /srv/vdr:/data \
@@ -141,7 +141,7 @@ docker run --rm -ti \
     -e DVBAPI_ENABLE=1 \
     -e DVBAPI_HOST=192.168.100.200 \
     -e DVBAPI_PORT=2222 \
-    -e SATIP_ENABLE = 1 \
+    -e SATIP_ENABLE=1 \
     -e SATIP_SERVER="192.168.100.202|DVBS2-2|minisatip" \
     -e ROBOTV_PICONS=http://192.168.100.202/picons \
     -v /srv/vdr:/data \
