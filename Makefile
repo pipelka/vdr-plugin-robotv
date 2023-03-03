@@ -170,8 +170,8 @@ install-lib: $(SOFILE)
 	install -D $^ $(DESTDIR)$(LIBDIR)/$^.$(APIVERSION)
 
 install-conf:
-	install -Dm644 $(PLUGIN)/allowed_hosts.conf $(DESTDIR)$(CFGDIR)/allowed_hosts.conf
-	install -Dm644 $(PLUGIN)/$(PLUGIN).conf $(DESTDIR)$(CFGDIR)/$(PLUGIN).conf
+	install -Dm644 config/allowed_hosts.conf $(DESTDIR)$(CFGDIR)/allowed_hosts.conf
+	install -Dm644 config/$(PLUGIN).conf $(DESTDIR)$(CFGDIR)/$(PLUGIN).conf
 
 install: install-lib
 
